@@ -1,0 +1,9 @@
+# IDE
+.vscode/
+
+# clangd related
+.cache/
+compile_flags.txt
+
+# build folder
+build/
