@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(gec VERSION 0.1.0
-                       DESCRIPTION "Generic Elliptic Curve Lib"
-                       LANGUAGES CXX)
+project(
+    gec
+    VERSION 0.1.0
+    DESCRIPTION "Generic Elliptic Curve Lib"
+    LANGUAGES CXX)
 
 option(GEC_ENABLE_CUDA "use CUDA" OFF)
 if(GEC_ENABLE_CUDA)
@@ -20,7 +22,7 @@ endif()
 
 # # force MSVC compile with utf-8
 if(MSVC)
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/utf-8" )
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/utf-8")
 endif()
 
 add_library(gec INTERFACE)
