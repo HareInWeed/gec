@@ -62,7 +62,7 @@ struct JPoint {
     __host__ __device__ GEC_INLINE void from_APoint() { z = z.one(); }
 
     __host__ __device__ GEC_INLINE JPoint &operator+=(const JPoint &other) {
-        add_inplace(*this, other);
+        add(*this, other);
         return *this;
     }
 
@@ -79,7 +79,7 @@ struct JPoint {
         // TODO
     }
 
-    static __host__ __device__ void add_inplace(JPoint &a, const JPoint &b) {
+    static __host__ __device__ void add(JPoint &a, const JPoint &b) {
         // TODO
     }
 };

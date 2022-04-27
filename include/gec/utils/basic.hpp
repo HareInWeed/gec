@@ -2,12 +2,16 @@
 #ifndef GEC_UTILS_BASIC_HPP
 #define GEC_UTILS_BASIC_HPP
 
+#ifdef GEC_DEBUG
+#include <cstdio>
+#endif // GEC_DEBUG
+
 // architecture macro
-#if !defined(__x86_64__) && defined(_M_X64)
-#define __x86_64__
+#if defined(__x86_64__) || defined(_M_X64)
+#define GEC_AMD64
 #endif
-#if !defined(__i386__) && defined(_M_IX86)
-#define __i386__
+#if defined(__i386__) || defined(_M_IX86)
+#define GEC_X86
 #endif
 
 // c++ concepts flag, currently takes no effects
@@ -94,6 +98,7 @@
 #endif
 
 #include <cinttypes>
+#include <limits>
 
 namespace gec {
 

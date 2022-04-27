@@ -56,8 +56,7 @@ class ModAddSubMixin
                     const ModAddSubMixin &GEC_RSTRCT c) {
         bool borrow = utils::seq_sub<LIMB_N>(
             a.core().get_arr(), b.core().get_arr(), c.core().get_arr());
-        if (borrow || utils::VtSeqCmp<LIMB_N, LIMB_T>::call(
-                          a.core().get_arr(), MOD) != utils::CmpEnum::Lt) {
+        if (borrow) {
             utils::seq_add<LIMB_N>(a.core().get_arr(), MOD);
         }
     }

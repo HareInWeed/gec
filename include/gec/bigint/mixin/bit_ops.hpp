@@ -67,7 +67,7 @@ class BitOpsMixin : public CRTP<Core, BitOpsMixin<Core, LIMB_T, LIMB_N>> {
      */
     template <size_t B>
     __host__ __device__ GEC_INLINE void shift_right() {
-        utils::seq_shift_right_inplace<LIMB_N, B>(this->core().get_arr());
+        utils::seq_shift_right<LIMB_N, B>(this->core().get_arr());
     }
 
     // TODO: shift_right
@@ -83,7 +83,7 @@ class BitOpsMixin : public CRTP<Core, BitOpsMixin<Core, LIMB_T, LIMB_N>> {
      */
     template <size_t B>
     __host__ __device__ GEC_INLINE void shift_left() {
-        utils::seq_shift_left_inplace<LIMB_N, B>(this->core().get_arr());
+        utils::seq_shift_left<LIMB_N, B>(this->core().get_arr());
     }
 
     // TODO: shift_right

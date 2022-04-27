@@ -2,10 +2,6 @@
 #ifndef GEC_UTILS_SEQUENCE_HPP
 #define GEC_UTILS_SEQUENCE_HPP
 
-#ifdef GEC_DEBUG
-#include <cstdio>
-#endif // GEC_DEBUG
-
 #include <type_traits>
 
 #include "basic.hpp"
@@ -14,11 +10,6 @@
 namespace gec {
 
 namespace utils {
-
-template <typename T>
-struct BitLen {
-    const static size_t value = 8 * sizeof(T);
-};
 
 /** @brief fill `dst` with the rest of arguments, from lower to higher (big
  * endian)
@@ -192,7 +183,8 @@ struct SeqBinOp<1, T, F> {
 template <size_t N, size_t LS, size_t BS, typename T>
 struct SeqShiftRightInplace {
     __host__ __device__ GEC_INLINE static void call(T *a) {
-        *a = (*(a + LS) >> BS) | (*(a + LS + 1) << (BitLen<T>::value - BS));
+        *a = (*(a + LS) >> BS) |
+             (*(a + LS + 1) << (std::numeric_limits<T>::digits - BS));
         SeqShiftRightInplace<N - 1, LS, BS, T>::call(a + 1);
     }
 };
@@ -227,12 +219,16 @@ struct SeqShiftRightInplace<0, LS, 0, T> {
 };
 /** @brief inplace right shift
  *
- * Beware, if `LEN < B`, the compiler may hang forever
+ * @param LEN limb number
+ * @param B   the bit length to shift
+ * @param a   the sequence to be shifted
+ *
+ * Beware, if `LEN * limb_bits < B`, the compiler may hang forever
  */
 template <size_t LEN, size_t B, typename T>
-__host__ __device__ GEC_INLINE void seq_shift_right_inplace(T *a) {
-    constexpr size_t LS = B / BitLen<T>::value;
-    constexpr size_t BS = B % BitLen<T>::value;
+__host__ __device__ GEC_INLINE void seq_shift_right(T *a) {
+    constexpr size_t LS = B / std::numeric_limits<T>::digits;
+    constexpr size_t BS = B % std::numeric_limits<T>::digits;
     constexpr size_t N = LEN - LS;
     SeqShiftRightInplace<N, LS, BS, T>::call(a);
     fill_seq_limb<LS, T>(a + N, 0);
@@ -244,7 +240,8 @@ template <size_t N, size_t LS, size_t BS, typename T>
 struct SeqShiftLeftInplace {
     __host__ __device__ GEC_INLINE static void call(T *a) {
         *(a + LS + N - 1) =
-            (*(a + N - 1) << BS) | (*(a + N - 2) >> (BitLen<T>::value - BS));
+            (*(a + N - 1) << BS) |
+            (*(a + N - 2) >> (std::numeric_limits<T>::digits - BS));
         SeqShiftLeftInplace<N - 1, LS, BS, T>::call(a);
     }
 };
@@ -279,12 +276,16 @@ struct SeqShiftLeftInplace<0, LS, 0, T> {
 };
 /** @brief inplace left shift
  *
- * Beware, if `LEN < B`, the compiler may hang forever
+ * @param LEN limb number
+ * @param B   the bit length to shift
+ * @param a   the sequence to be shifted
+ *
+ * Beware, if `LEN * limb_bits < B`, the compiler may hang forever
  */
 template <size_t LEN, size_t B, typename T>
-__host__ __device__ GEC_INLINE void seq_shift_left_inplace(T *a) {
-    constexpr size_t LS = B / BitLen<T>::value;
-    constexpr size_t BS = B % BitLen<T>::value;
+__host__ __device__ GEC_INLINE void seq_shift_left(T *a) {
+    constexpr size_t LS = B / std::numeric_limits<T>::digits;
+    constexpr size_t BS = B % std::numeric_limits<T>::digits;
     constexpr size_t N = LEN - LS;
     SeqShiftLeftInplace<N, LS, BS, T>::call(a);
     fill_seq_limb<LS, T>(a, 0);

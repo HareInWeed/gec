@@ -1,18 +1,18 @@
-#include "test_common.hpp"
+#include "common.hpp"
 
 #include <gec/bigint.hpp>
 #include <gec/bigint/mixin/ostream.hpp>
 
-#include <catch2/catch.hpp>
+#include "configured_catch.hpp"
 
 using namespace gec;
 using namespace bigint;
 
-class Field : public Array<LIMB_T, LIMB_N>,
-              public VtCompareMixin<Field, LIMB_T, LIMB_N>,
-              public BitOpsMixin<Field, LIMB_T, LIMB_N>,
-              public AddSubMixin<Field, LIMB_T, LIMB_N>,
-              public ArrayOstreamMixin<Field, LIMB_T, LIMB_N> {
+class Field : public Array<LIMB_T, LN_160>,
+              public VtCompareMixin<Field, LIMB_T, LN_160>,
+              public BitOpsMixin<Field, LIMB_T, LN_160>,
+              public AddSubMixin<Field, LIMB_T, LN_160>,
+              public ArrayOstreamMixin<Field, LIMB_T, LN_160> {
   public:
     using Array::Array;
 };

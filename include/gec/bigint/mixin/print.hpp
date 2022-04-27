@@ -42,9 +42,9 @@ template <class Core, class LIMB_T, size_t LIMB_N>
 class ArrayPrintMixin
     : public CRTP<Core, ArrayPrintMixin<Core, LIMB_T, LIMB_N>> {
   public:
-    __host__ __device__ void print() {
+    __host__ __device__ void print() const {
         printf("0x");
-        print::print(this->core().get_arr()[0]);
+        print::print(this->core().get_arr()[LIMB_N - 1]);
         for (size_t i = 1; i < LIMB_N; ++i) {
             printf(" ");
             print::print(this->core().get_arr()[LIMB_N - 1 - i]);

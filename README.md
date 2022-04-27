@@ -26,5 +26,13 @@
     - [x] add group `sub`: $a = b - c \pmod{M}$
     - [ ] add group `sub` inplace: $a = a - b \pmod{M}$
   - [ ] mul
+    - [ ] Interleaved Multiplication-reduction Method
+    - [x] Montgomery Multiplication
+      - [ ] Q: What about $N$ that is not coprime with $b$?
+        - [x] Q: Is mon-mul capable of handling this?\
+              A: No
+          - [x] Q: If not, what's a good alternative?\
+                A: A possible alternative is to use Interleaved Multiplication-reduction Method instead
+          - [ ] Q: Is mon-arthmetic + $\mathbb{F}_{2^q}$ arthmetic + modulo reduction a probable or even a good solution?
   - [ ] inv
-- [ ] use concepts
+    - [ ] Montgomery Inversion
