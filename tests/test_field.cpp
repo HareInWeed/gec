@@ -13,7 +13,7 @@ class Field : public Array<LIMB_T, LN_160>,
               public VtCompareMixin<Field, LIMB_T, LN_160>,
               public BitOpsMixin<Field, LIMB_T, LN_160>,
               public ModAddSubMixin<Field, LIMB_T, LN_160, MOD160>,
-              public Montgomery<Field, LIMB_T, LN_160, MOD160, MOD160_P>,
+              public Montgomery<Field, LIMB_T, LN_160, MOD160, MOD_P160>,
               public ArrayOstreamMixin<Field, LIMB_T, LN_160>,
               public ArrayPrintMixin<Field, LIMB_T, LN_160> {
   public:
@@ -110,7 +110,7 @@ TEST_CASE("add group sub", "[add_group][field]") {
 
 TEST_CASE("montgomery", "[ring][field]") {
     const Field &Mod = reinterpret_cast<const Field &>(MOD160);
-    const Field &R2 = reinterpret_cast<const Field &>(R160_SQR);
+    const Field &RR = reinterpret_cast<const Field &>(RR160);
     const Field One(1);
 
     std::random_device rd;
@@ -121,13 +121,13 @@ TEST_CASE("montgomery", "[ring][field]") {
 
     Field a, b;
 
-    Field::mul(a, Field(), R2);
+    Field::mul(a, Field(), RR);
     REQUIRE(Field(0) == a);
 
     Field::mul(b, a, One);
     REQUIRE(Field(0) == b);
 
-    Field::mul(a, Field(0xffffffffu), R2);
+    Field::mul(a, Field(0xffffffffu), RR);
     REQUIRE(Field(0xad37b410u, 0x255c6eb2u, 0x7601a883u, 0x659883e8u,
                   0x070707fcu) == a);
 
@@ -142,12 +142,8 @@ TEST_CASE("montgomery", "[ring][field]") {
     } while (c >= Mod);
 
     d = c;
-    Field::mul(e, d, R2);
-    e.print();
-    printf("\n");
+    Field::mul(e, d, RR);
     Field::mul(d, e, One);
-    d.print();
-    printf("\n");
     REQUIRE(c == d);
 
     LIMB_T l, h, x, y;
@@ -156,8 +152,8 @@ TEST_CASE("montgomery", "[ring][field]") {
     x = 0xd8b2f21eu;
     y = 0xabf7c642u;
     utils::uint_mul_lh(l, h, x, y);
-    Field::mul(mon_x, Field(x), R2);
-    Field::mul(mon_y, Field(y), R2);
+    Field::mul(mon_x, Field(x), RR);
+    Field::mul(mon_y, Field(y), RR);
     Field::mul(mon_xy, mon_x, mon_y);
     Field::mul(xy, mon_xy, One);
     REQUIRE(l == xy.get_arr()[0]);
@@ -166,21 +162,18 @@ TEST_CASE("montgomery", "[ring][field]") {
     x = dis_u32(gen);
     y = dis_u32(gen);
     utils::uint_mul_lh(l, h, x, y);
-    printf("0x%08xu, 0x%08xu\n", x, y);
-    printf("0x%08x%08xu\n", h, l);
-    Field::mul(mon_x, Field(x), R2);
-    Field::mul(mon_y, Field(y), R2);
+    Field::mul(mon_x, Field(x), RR);
+    Field::mul(mon_y, Field(y), RR);
     Field::mul(mon_xy, mon_x, mon_y);
     Field::mul(xy, mon_xy, One);
-    printf("0x%08x%08xu\n", xy.get_arr()[1], xy.get_arr()[0]);
     REQUIRE(l == xy.get_arr()[0]);
     REQUIRE(h == xy.get_arr()[1]);
 
     x = dis_u32(gen);
     y = dis_u32(gen);
     utils::uint_mul_lh(l, h, x, y);
-    Field::mul(mon_x, R2, Field(x));
-    Field::mul(mon_y, R2, Field(y));
+    Field::mul(mon_x, RR, Field(x));
+    Field::mul(mon_y, RR, Field(y));
     Field::mul(mon_xy, mon_x, mon_y);
     Field::mul(xy, One, mon_xy);
     REQUIRE(l == xy.get_arr()[0]);
@@ -188,8 +181,8 @@ TEST_CASE("montgomery", "[ring][field]") {
 }
 
 TEST_CASE("montgomery bench", "[ring][field][bench]") {
-    const Field &F_R2 = reinterpret_cast<const Field &>(R160_SQR);
-    const Field F_One(1);
+    const Field &RR = reinterpret_cast<const Field &>(RR160);
+    const Field One(1);
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -197,22 +190,28 @@ TEST_CASE("montgomery bench", "[ring][field][bench]") {
     std::uniform_int_distribution<LIMB_T> dis_u32(
         std::numeric_limits<LIMB_T>::min(), std::numeric_limits<LIMB_T>::max());
     Field x, y, mon_x, mon_y;
-    for (int i = 0; i < LN_160; ++i) {
-        x.arr[i] = dis_u32(gen);
-        y.arr[i] = dis_u32(gen);
-    }
-    Field::mul(mon_x, x, F_R2);
-    Field::mul(mon_y, y, F_R2);
+    do {
+        for (int i = 0; i < LN_160; ++i) {
+            x.arr[i] = dis_u32(gen);
+        }
+    } while (x < RR);
+    do {
+        for (int i = 0; i < LN_160; ++i) {
+            y.arr[i] = dis_u32(gen);
+        }
+    } while (x < RR);
+    Field::mul(mon_x, x, RR);
+    Field::mul(mon_y, y, RR);
 
     BENCHMARK("into montgomery form") {
         Field res;
-        Field::mul(res, x, F_R2);
+        Field::mul(res, x, RR);
         return res;
     };
 
     BENCHMARK("from montgomery form") {
         Field res;
-        Field::mul(res, mon_x, F_One);
+        Field::mul(res, mon_x, One);
         return res;
     };
 
