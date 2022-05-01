@@ -12,8 +12,8 @@ using namespace bigint;
 class Field : public Array<LIMB_T, LN_160>,
               public VtCompareMixin<Field, LIMB_T, LN_160>,
               public BitOpsMixin<Field, LIMB_T, LN_160>,
-              public ModAddSubMixin<Field, LIMB_T, LN_160, MOD160>,
-              public Montgomery<Field, LIMB_T, LN_160, MOD160, MOD_P160>,
+              public ModAddSubMixin<Field, LIMB_T, LN_160, MOD_160>,
+              public Montgomery<Field, LIMB_T, LN_160, MOD_160, MOD_P160>,
               public ArrayOstreamMixin<Field, LIMB_T, LN_160>,
               public ArrayPrintMixin<Field, LIMB_T, LN_160> {
   public:
@@ -109,8 +109,8 @@ TEST_CASE("add group sub", "[add_group][field]") {
 }
 
 TEST_CASE("montgomery", "[ring][field]") {
-    const Field &Mod = reinterpret_cast<const Field &>(MOD160);
-    const Field &RR = reinterpret_cast<const Field &>(RR160);
+    const Field &Mod = reinterpret_cast<const Field &>(MOD_160);
+    const Field &RR = reinterpret_cast<const Field &>(RR_160);
     const Field One(1);
 
     std::random_device rd;
@@ -181,7 +181,7 @@ TEST_CASE("montgomery", "[ring][field]") {
 }
 
 TEST_CASE("montgomery bench", "[ring][field][bench]") {
-    const Field &RR = reinterpret_cast<const Field &>(RR160);
+    const Field &RR = reinterpret_cast<const Field &>(RR_160);
     const Field One(1);
 
     std::random_device rd;

@@ -17,9 +17,9 @@ template <class Core, typename LIMB_T, size_t LIMB_N,
 class Montgomery
     : public CRTP<Core, Montgomery<Core, LIMB_T, LIMB_N, MOD, MOD_P>> {
   public:
-    __host__ __device__ GEC_INLINE static void
-    add_mul(Montgomery &GEC_RSTRCT a, const Montgomery &GEC_RSTRCT b,
-            const Montgomery &GEC_RSTRCT c) {
+    __host__ __device__ static void add_mul(Montgomery &GEC_RSTRCT a,
+                                            const Montgomery &GEC_RSTRCT b,
+                                            const Montgomery &GEC_RSTRCT c) {
         using namespace utils;
         LIMB_T *a_arr = a.core().get_arr();
         const LIMB_T *b_arr = b.core().get_arr();
