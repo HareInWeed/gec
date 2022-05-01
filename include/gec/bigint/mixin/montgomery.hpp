@@ -2,6 +2,8 @@
 #ifndef GEC_BIGINT_MIXIN_MONTGOMERY_HPP
 #define GEC_BIGINT_MIXIN_MONTGOMERY_HPP
 
+#include <immintrin.h>
+
 #include <gec/utils/arithmetic.hpp>
 #include <gec/utils/context_check.hpp>
 #include <gec/utils/crtp.hpp>
@@ -333,6 +335,123 @@ class MontgomeryCarryFree
             r.set_pow2(2 * Bits - k);
             mul(a, t, r);
         }
+    }
+};
+
+/** @brief mixin that enables Montgomery Multiplication with AVX2
+ */
+template <class Core, typename LIMB_T, size_t LIMB_N,
+          const LIMB_T (&MOD)[LIMB_N], LIMB_T MOD_P>
+class AVX2Montgomery
+    : public CRTP<Core, AVX2Montgomery<Core, LIMB_T, LIMB_N, MOD, MOD_P>> {
+  public:
+    __host__ static void add_mul(AVX2Montgomery &GEC_RSTRCT a,
+                                 const AVX2Montgomery &GEC_RSTRCT b,
+                                 const AVX2Montgomery &GEC_RSTRCT c);
+
+    __host__ static void mul(AVX2Montgomery &GEC_RSTRCT a,
+                             const AVX2Montgomery &GEC_RSTRCT b,
+                             const AVX2Montgomery &GEC_RSTRCT c);
+};
+
+/** @brief mixin that enables Montgomery Multiplication with AVX2
+ */
+template <class Core, const uint32_t (&MOD)[8], uint32_t MOD_P>
+class AVX2Montgomery<Core, uint32_t, 8, MOD, MOD_P>
+    : public CRTP<Core, AVX2Montgomery<Core, uint32_t, 8, MOD, MOD_P>> {
+    using LIMB_T = uint32_t;
+    constexpr static size_t LIMB_N = 8;
+
+    __host__ GEC_INLINE static __m256i add_limbs(__m256i &a, const __m256i &b,
+                                                 const __m256i &c,
+                                                 const __m256i &least_mask) {
+        __m256i m = _mm256_max_epu32(b, c);
+        a = _mm256_add_epi32(b, c);
+        return _mm256_andnot_si256(
+            _mm256_cmpeq_epi32(_mm256_max_epu32(a, m), a), least_mask);
+    }
+
+    __host__ GEC_INLINE static void
+    mul_limbs(__m256i &l, __m256i &h, const __m256i &a, const __m256i &b) {
+        __m256i a_odd = _mm256_shuffle_epi32(a, 0xf5);
+        __m256i b_odd = _mm256_shuffle_epi32(b, 0xf5);
+        __m256i p_even = _mm256_mul_epu32(a, b);
+        __m256i p_odd = _mm256_mul_epu32(a_odd, b_odd);
+        __m256i lo = _mm256_unpacklo_epi32(p_even, p_odd);
+        __m256i hi = _mm256_unpackhi_epi32(p_even, p_odd);
+        l = _mm256_unpacklo_epi64(lo, hi);
+        h = _mm256_unpackhi_epi64(lo, hi);
+    }
+
+  public:
+    __host__ static void add_mul(AVX2Montgomery &GEC_RSTRCT a,
+                                 const AVX2Montgomery &GEC_RSTRCT b,
+                                 const AVX2Montgomery &GEC_RSTRCT c) {
+        using namespace utils;
+        using V = __m256i *;
+        using CV = const __m256i *;
+
+        constexpr static uint32_t cir_right[8] = {1, 2, 3, 4, 5, 6, 7, 0};
+        constexpr static uint32_t least_mask[8] = {1, 1, 1, 1, 1, 1, 1, 1};
+        uint32_t carries[8];
+
+        LIMB_T *a_arr = a.core().get_arr();
+        const LIMB_T *b_arr = b.core().get_arr();
+        const LIMB_T *c_arr = c.core().get_arr();
+
+        __m256i lm = _mm256_loadu_si256(reinterpret_cast<CV>(least_mask));
+        __m256i cr = _mm256_loadu_si256(reinterpret_cast<CV>(cir_right));
+        __m256i vm = _mm256_loadu_si256(reinterpret_cast<CV>(MOD));
+        __m256i va = _mm256_loadu_si256(reinterpret_cast<CV>(a_arr));
+        __m256i vb = _mm256_loadu_si256(reinterpret_cast<CV>(b_arr));
+        __m256i vc = _mm256_loadu_si256(reinterpret_cast<CV>(c_arr));
+        __m256i c0 = _mm256_broadcastd_epi32(_mm256_castsi256_si128(vc));
+        __m256i mp = _mm256_set1_epi32(static_cast<int>(MOD_P));
+        __m256i carry = _mm256_setzero_si256();
+
+        for (int i = 0; i < LIMB_N; ++i) {
+            __m256i vl, vh1, vh2, new_carry;
+            __m256i bi = _mm256_broadcastd_epi32(_mm256_castsi256_si128(vb));
+            __m256i m = _mm256_mullo_epi32(
+                _mm256_add_epi32(
+                    _mm256_broadcastd_epi32(_mm256_castsi256_si128(va)),
+                    _mm256_mullo_epi32(bi, c0)),
+                mp);
+
+            mul_limbs(vl, vh1, bi, vc);
+            new_carry = add_limbs(va, va, vl, lm);
+            carry = _mm256_add_epi32(carry, new_carry);
+
+            mul_limbs(vl, vh2, m, vm);
+            new_carry = add_limbs(va, va, vl, lm);
+            carry = _mm256_add_epi32(carry, new_carry);
+
+            va = _mm256_permutevar8x32_epi32(va, cr);
+            carry = add_limbs(va, va, carry, lm);
+
+            new_carry = add_limbs(va, va, vh1, lm);
+            carry = _mm256_add_epi32(carry, new_carry);
+            new_carry = add_limbs(va, va, vh2, lm);
+            carry = _mm256_add_epi32(carry, new_carry);
+
+            vb = _mm256_permutevar8x32_epi32(vb, cr);
+        }
+
+        _mm256_storeu_si256(reinterpret_cast<V>(carries), carry);
+        _mm256_storeu_si256(reinterpret_cast<V>(a_arr), va);
+
+        seq_add<LIMB_N - 1>(a_arr + 1, carries);
+
+        if (VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, MOD) != CmpEnum::Lt) {
+            seq_sub<LIMB_N>(a_arr, MOD);
+        }
+    }
+
+    __host__ static void mul(AVX2Montgomery &GEC_RSTRCT a,
+                             const AVX2Montgomery &GEC_RSTRCT b,
+                             const AVX2Montgomery &GEC_RSTRCT c) {
+        utils::fill_seq_limb<LIMB_N>(a.core().get_arr(), LIMB_T(0));
+        add_mul(a, b, c);
     }
 };
 
