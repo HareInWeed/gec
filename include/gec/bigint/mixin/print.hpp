@@ -50,6 +50,10 @@ class ArrayPrintMixin
             print::print(this->core().get_arr()[LIMB_N - 1 - i]);
         }
     }
+    __host__ __device__ void println() const {
+        print();
+        printf("\n");
+    }
 };
 
 } // namespace bigint
