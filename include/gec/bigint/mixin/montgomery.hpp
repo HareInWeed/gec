@@ -12,8 +12,8 @@ namespace bigint {
 
 /** @brief mixin that enables Montgomery Multiplication
  */
-template <class Core, typename LIMB_T, size_t LIMB_N,
-          const LIMB_T (&MOD)[LIMB_N], LIMB_T MOD_P>
+template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD,
+          LIMB_T MOD_P>
 class Montgomery
     : public CRTP<Core, Montgomery<Core, LIMB_T, LIMB_N, MOD, MOD_P>> {
   public:

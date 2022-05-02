@@ -12,8 +12,7 @@ namespace bigint {
 
 /** @brief mixin that enables addition and substrcation operation
  */
-template <class Core, typename LIMB_T, size_t LIMB_N,
-          const LIMB_T (&MOD)[LIMB_N]>
+template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD>
 class ModAddSubMixin
     : public CRTP<Core, ModAddSubMixin<Core, LIMB_T, LIMB_N, MOD>> {
   public:

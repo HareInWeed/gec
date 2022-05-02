@@ -12,22 +12,27 @@
 using namespace std;
 
 using LIMB_T = uint32_t;
+using LIMB2_T = uint64_t;
 
 /// @brief number of limbs for 160 bits bigint
 constexpr size_t LN_160 = 5;
 /// @brief the modulus with 160 bits
-extern const LIMB_T MOD_160[LN_160];
-/// @brief -MOD^{-1} (mod limb_bits)
-constexpr LIMB_T MOD_P160 = 0x96c9e927u;
+alignas(8) extern const LIMB_T MOD_160[LN_160 + 1];
+/// @brief -MOD^{-1} (mod 2^32)
+constexpr LIMB_T MOD_P_160 = 0x96c9e927u;
+/// @brief -MOD^{-1} (mod 2^64)
+constexpr LIMB2_T MOD_P2_160 = 0x1c23727c96c9e927u;
 /// @brief R^2 (mod MOD)
-extern const LIMB_T RR_160[LN_160];
+alignas(8) extern const LIMB_T RR_160[LN_160 + 1];
 
 /// @brief number of limbs for 256 bits bigint
 constexpr size_t LN_256 = 8;
 /// @brief the modulus with 256 bits
 alignas(32) extern const LIMB_T MOD_256[LN_256];
-/// @brief -MOD^{-1} (mod limb_bits)
+/// @brief -MOD^{-1} (mod 2^32)
 constexpr LIMB_T MOD_P_256 = 0xd2253531u;
+/// @brief -MOD^{-1} (mod 2^64)
+constexpr LIMB2_T MOD_P2_256 = 0xd838091dd2253531u;
 /// @brief R^2 (mod MOD)
 alignas(32) extern const LIMB_T RR_256[LN_256];
 

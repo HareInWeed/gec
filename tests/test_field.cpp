@@ -13,7 +13,7 @@ class Field : public Array<LIMB_T, LN_160>,
               public VtCompareMixin<Field, LIMB_T, LN_160>,
               public BitOpsMixin<Field, LIMB_T, LN_160>,
               public ModAddSubMixin<Field, LIMB_T, LN_160, MOD_160>,
-              public Montgomery<Field, LIMB_T, LN_160, MOD_160, MOD_P160>,
+              public Montgomery<Field, LIMB_T, LN_160, MOD_160, MOD_P_160>,
               public ArrayOstreamMixin<Field, LIMB_T, LN_160>,
               public ArrayPrintMixin<Field, LIMB_T, LN_160> {
   public:
