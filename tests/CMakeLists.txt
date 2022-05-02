@@ -6,7 +6,7 @@ add_executable(unit_test)
 
 target_sources(
     unit_test PRIVATE "test_main.cpp" "common.cpp" "test_arithmetic.cpp"
-                      "test_bigint.cpp" "test_field.cpp" "bench_montgomery.cpp")
+                      "test_bigint.cpp" "test_field.cpp")
 
 target_compile_features(unit_test PRIVATE cxx_std_14)
 target_link_libraries(unit_test PRIVATE gec)
