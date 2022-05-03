@@ -201,6 +201,38 @@ TEST_CASE("montgomery multiplication", "[ring][field]") {
                   0xa1c4f697u) == mon_xy);
 }
 
+TEST_CASE("montgomery inverse", "[field]") {
+    const auto &RR = reinterpret_cast<const Field &>(RR_160);
+    const Field One(1);
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    std::uniform_int_distribution<LIMB_T> dis_u32(
+        std::numeric_limits<LIMB_T>::min(), std::numeric_limits<LIMB_T>::max());
+
+    Field a, mon_a, inv_a, mon_prod, prod, r, s, t;
+    for (int k = 0; k < 10000; ++k) {
+        do {
+            for (int k = 0; k < LN_160; ++k) {
+                a.get_arr()[k] = dis_u32(gen);
+            }
+        } while (a >= RR);
+        // a = Field(0x31a50ad6u, 0x93f524b7u, 0xa6ea2efeu, 0xed31237au,
+        //           0x2d2731f7u);
+        a.println();
+        Field::mul(mon_a, a, RR);
+        mon_a.println();
+        Field::inv(inv_a, mon_a, r, s, t);
+        inv_a.println();
+        Field::mul(mon_prod, mon_a, inv_a);
+        mon_prod.println();
+        Field::mul(prod, mon_prod, One);
+        prod.println();
+        REQUIRE(One == prod);
+    }
+}
+
 TEST_CASE("montgomery multiplication bench", "[ring][field][bench]") {
     const auto &RR = reinterpret_cast<const Field2 &>(RR_160);
     const Field2 One(1);
