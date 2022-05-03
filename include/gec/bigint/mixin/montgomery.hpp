@@ -36,7 +36,8 @@ class Montgomery
             a_arr[LIMB_N - 1] = last0;
         }
 
-        if (VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, MOD) != CmpEnum::Lt) {
+        if (carry ||
+            VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, MOD) != CmpEnum::Lt) {
             seq_sub<LIMB_N>(a_arr, MOD);
         }
     }
