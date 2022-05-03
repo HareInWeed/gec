@@ -26,37 +26,34 @@ class ModAddSubMixin
 
     /** @brief a = b + c (mod MOD)
      */
-    static void add(ModAddSubMixin &GEC_RSTRCT a,
-                    const ModAddSubMixin &GEC_RSTRCT b,
-                    const ModAddSubMixin &GEC_RSTRCT c) {
-        bool carry = utils::seq_add<LIMB_N>(
-            a.core().get_arr(), b.core().get_arr(), c.core().get_arr());
-        if (carry || utils::VtSeqCmp<LIMB_N, LIMB_T>::call(
-                         a.core().get_arr(), MOD) != utils::CmpEnum::Lt) {
-            utils::seq_sub<LIMB_N>(a.core().get_arr(), MOD);
+    static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                    const Core &GEC_RSTRCT c) {
+        bool carry =
+            utils::seq_add<LIMB_N>(a.get_arr(), b.get_arr(), c.get_arr());
+        if (carry || utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.get_arr(), MOD) !=
+                         utils::CmpEnum::Lt) {
+            utils::seq_sub<LIMB_N>(a.get_arr(), MOD);
         }
     }
 
     /** @brief a = - b (mod MOD)
      */
-    static void neg(ModAddSubMixin &GEC_RSTRCT a,
-                    const ModAddSubMixin &GEC_RSTRCT b) {
+    static void neg(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         if (b.is_zero()) {
             a.set_zero();
         } else {
-            utils::seq_sub<LIMB_N>(a.core().get_arr(), MOD, b.core().get_arr());
+            utils::seq_sub<LIMB_N>(a.get_arr(), MOD, b.get_arr());
         }
     }
 
     /** @brief a = b - c (mod MOD)
      */
-    static void sub(ModAddSubMixin &GEC_RSTRCT a,
-                    const ModAddSubMixin &GEC_RSTRCT b,
-                    const ModAddSubMixin &GEC_RSTRCT c) {
-        bool borrow = utils::seq_sub<LIMB_N>(
-            a.core().get_arr(), b.core().get_arr(), c.core().get_arr());
+    static void sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                    const Core &GEC_RSTRCT c) {
+        bool borrow =
+            utils::seq_sub<LIMB_N>(a.get_arr(), b.get_arr(), c.get_arr());
         if (borrow) {
-            utils::seq_add<LIMB_N>(a.core().get_arr(), MOD);
+            utils::seq_add<LIMB_N>(a.get_arr(), MOD);
         }
     }
 };

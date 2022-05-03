@@ -14,35 +14,28 @@ namespace bigint {
 template <class Core, class LIMB_T, size_t LIMB_N>
 struct VtCompareMixin
     : public CRTP<Core, VtCompareMixin<Core, LIMB_T, LIMB_N>> {
-    __host__ __device__ GEC_INLINE utils::CmpEnum
-    cmp(const VtCompareMixin &other) const {
+    __host__ __device__ GEC_INLINE utils::CmpEnum cmp(const Core &other) const {
         return utils::VtSeqCmp<LIMB_N, LIMB_T>::call(this->core().get_arr(),
-                                                     other.core().get_arr());
+                                                     other.get_arr());
     }
-    __host__ __device__ GEC_INLINE bool
-    operator==(const VtCompareMixin &other) const {
+    __host__ __device__ GEC_INLINE bool operator==(const Core &other) const {
         return utils::VtSeqAll<LIMB_N, LIMB_T, utils::ops::Eq<LIMB_T>>::call(
-            this->core().get_arr(), other.core().get_arr());
+            this->core().get_arr(), other.get_arr());
     }
-    __host__ __device__ GEC_INLINE bool
-    operator!=(const VtCompareMixin &other) const {
-        return !(*this == other);
+    __host__ __device__ GEC_INLINE bool operator!=(const Core &other) const {
+        return !(this->core() == other);
     }
-    __host__ __device__ GEC_INLINE bool
-    operator<(const VtCompareMixin &other) const {
+    __host__ __device__ GEC_INLINE bool operator<(const Core &other) const {
         return this->cmp(other) == utils::CmpEnum::Lt;
     }
-    __host__ __device__ GEC_INLINE bool
-    operator>=(const VtCompareMixin &other) const {
-        return !(*this < other);
+    __host__ __device__ GEC_INLINE bool operator>=(const Core &other) const {
+        return !(this->core() < other);
     }
-    __host__ __device__ GEC_INLINE bool
-    operator>(const VtCompareMixin &other) const {
+    __host__ __device__ GEC_INLINE bool operator>(const Core &other) const {
         return this->cmp(other) == utils::CmpEnum::Gt;
     }
-    __host__ __device__ GEC_INLINE bool
-    operator<=(const VtCompareMixin &other) const {
-        return !(*this > other);
+    __host__ __device__ GEC_INLINE bool operator<=(const Core &other) const {
+        return !(this->core() > other);
     }
 };
 

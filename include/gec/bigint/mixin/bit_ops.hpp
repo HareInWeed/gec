@@ -16,48 +16,47 @@ template <class Core, class LIMB_T, size_t LIMB_N>
 class BitOpsMixin : public CRTP<Core, BitOpsMixin<Core, LIMB_T, LIMB_N>> {
   public:
     __host__ __device__ GEC_INLINE static void
-    bit_and(BitOpsMixin &GEC_RSTRCT a, const BitOpsMixin &GEC_RSTRCT b,
-            const BitOpsMixin &GEC_RSTRCT c) {
+    bit_and(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+            const Core &GEC_RSTRCT c) {
         utils::SeqBinOp<LIMB_N, LIMB_T, utils::ops::BitAnd<LIMB_T>>::call(
-            a.core().get_arr(), b.core().get_arr(), c.core().get_arr());
+            a.get_arr(), b.get_arr(), c.get_arr());
     }
     __host__ __device__ GEC_INLINE static void
-    bit_or(BitOpsMixin &GEC_RSTRCT a, const BitOpsMixin &GEC_RSTRCT b,
-           const BitOpsMixin &GEC_RSTRCT c) {
+    bit_or(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+           const Core &GEC_RSTRCT c) {
         utils::SeqBinOp<LIMB_N, LIMB_T, utils::ops::BitOr<LIMB_T>>::call(
-            a.core().get_arr(), b.core().get_arr(), c.core().get_arr());
+            a.get_arr(), b.get_arr(), c.get_arr());
     }
     __host__ __device__ GEC_INLINE static void
-    bit_not(BitOpsMixin &GEC_RSTRCT a, const BitOpsMixin &GEC_RSTRCT b) {
+    bit_not(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         utils::SeqUnaryOp<LIMB_N, LIMB_T, utils::ops::BitNot<LIMB_T>>::call(
-            a.core().get_arr(), b.core().get_arr());
+            a.get_arr(), b.get_arr());
     }
     __host__ __device__ GEC_INLINE static void
-    bit_xor(BitOpsMixin &GEC_RSTRCT a, const BitOpsMixin &GEC_RSTRCT b,
-            const BitOpsMixin &GEC_RSTRCT c) {
+    bit_xor(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+            const Core &GEC_RSTRCT c) {
         utils::SeqBinOp<LIMB_N, LIMB_T, utils::ops::BitXor<LIMB_T>>::call(
-            a.core().get_arr(), b.core().get_arr(), c.core().get_arr());
+            a.get_arr(), b.get_arr(), c.get_arr());
     }
 
-    __host__ __device__ GEC_INLINE BitOpsMixin &
-    bit_and(const BitOpsMixin &GEC_RSTRCT a, const BitOpsMixin &GEC_RSTRCT b) {
-        bit_and(*this, a, b);
-        return *this;
+    __host__ __device__ GEC_INLINE Core &bit_and(const Core &GEC_RSTRCT a,
+                                                 const Core &GEC_RSTRCT b) {
+        bit_and(this->core(), a, b);
+        return this->core();
     }
-    __host__ __device__ GEC_INLINE BitOpsMixin &
-    bit_or(const BitOpsMixin &GEC_RSTRCT a, const BitOpsMixin &GEC_RSTRCT b) {
-        bit_or(*this, a, b);
-        return *this;
+    __host__ __device__ GEC_INLINE Core &bit_or(const Core &GEC_RSTRCT a,
+                                                const Core &GEC_RSTRCT b) {
+        bit_or(this->core(), a, b);
+        return this->core();
     }
-    __host__ __device__ GEC_INLINE BitOpsMixin &
-    bit_not(const BitOpsMixin &GEC_RSTRCT a) {
-        bit_not(*this, a);
-        return *this;
+    __host__ __device__ GEC_INLINE Core &bit_not(const Core &GEC_RSTRCT a) {
+        bit_not(this->core(), a);
+        return this->core();
     }
-    __host__ __device__ GEC_INLINE BitOpsMixin &
-    bit_xor(const BitOpsMixin &GEC_RSTRCT a, const BitOpsMixin &GEC_RSTRCT b) {
-        bit_xor(*this, a, b);
-        return *this;
+    __host__ __device__ GEC_INLINE Core &bit_xor(const Core &GEC_RSTRCT a,
+                                                 const Core &GEC_RSTRCT b) {
+        bit_xor(this->core(), a, b);
+        return this->core();
     }
 
     /** @brief shift element by `B` bit

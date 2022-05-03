@@ -27,68 +27,62 @@ class AddSubMixin : public CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>> {
      *
      * return the carry bit
      */
-    static bool add(AddSubMixin &GEC_RSTRCT a, const AddSubMixin &GEC_RSTRCT b,
-                    const AddSubMixin &GEC_RSTRCT c) {
-        return utils::seq_add<LIMB_N>(a.core().get_arr(), b.core().get_arr(),
-                                      c.core().get_arr());
+    static bool add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                    const Core &GEC_RSTRCT c) {
+        return utils::seq_add<LIMB_N>(a.get_arr(), b.get_arr(), c.get_arr());
     }
 
     /** @brief a + carry = a + b
      *
      * return the carry bit
      */
-    static bool add(AddSubMixin &GEC_RSTRCT a,
-                    const AddSubMixin &GEC_RSTRCT b) {
-        return utils::seq_add<LIMB_N>(a.core().get_arr(), b.core().get_arr());
+    static bool add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+        return utils::seq_add<LIMB_N>(a.get_arr(), b.get_arr());
     }
 
     /** @brief a + borrow = b - c
      *
      * return the borrow bit
      */
-    static bool sub(AddSubMixin &GEC_RSTRCT a, const AddSubMixin &GEC_RSTRCT b,
-                    const AddSubMixin &GEC_RSTRCT c) {
-        return utils::seq_sub<LIMB_N>(a.core().get_arr(), b.core().get_arr(),
-                                      c.core().get_arr());
+    static bool sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                    const Core &GEC_RSTRCT c) {
+        return utils::seq_sub<LIMB_N>(a.get_arr(), b.get_arr(), c.get_arr());
     }
 
     /** @brief a + borrow = a - b
      *
      * return the borrow bit
      */
-    static bool sub(AddSubMixin &GEC_RSTRCT a,
-                    const AddSubMixin &GEC_RSTRCT b) {
-        return utils::seq_sub<LIMB_N>(a.core().get_arr(), b.core().get_arr());
+    static bool sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+        return utils::seq_sub<LIMB_N>(a.get_arr(), b.get_arr());
     }
 
-    AddSubMixin &add(const AddSubMixin &GEC_RSTRCT a,
-                     const AddSubMixin &GEC_RSTRCT b) {
-        add(*this, a, b);
-        return *this;
+    Core &add(const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+        add(this->core(), a, b);
+        return this->core();
     }
-    AddSubMixin &add(const AddSubMixin &GEC_RSTRCT a) {
-        add(*this, a);
-        return *this;
-    }
-
-    AddSubMixin &sub(const AddSubMixin &GEC_RSTRCT a,
-                     const AddSubMixin &GEC_RSTRCT b) {
-        sub(*this, a, b);
-        return *this;
-    }
-    AddSubMixin &sub(const AddSubMixin &GEC_RSTRCT a) {
-        sub(*this, a);
-        return *this;
+    Core &add(const Core &GEC_RSTRCT a) {
+        add(this->core(), a);
+        return this->core();
     }
 
-    AddSubMixin &operator+=(const AddSubMixin &GEC_RSTRCT a) {
+    Core &sub(const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+        sub(this->core(), a, b);
+        return this->core();
+    }
+    Core &sub(const Core &GEC_RSTRCT a) {
+        sub(this->core(), a);
+        return this->core();
+    }
+
+    Core &operator+=(const Core &GEC_RSTRCT a) {
         add(a);
-        return *this;
+        return this->core();
     }
 
-    AddSubMixin &operator-=(const AddSubMixin &GEC_RSTRCT a) {
+    Core &operator-=(const Core &GEC_RSTRCT a) {
         sub(a);
-        return *this;
+        return this->core();
     }
 };
 

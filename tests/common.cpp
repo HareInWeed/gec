@@ -1,11 +1,14 @@
 #include "common.hpp"
 
-alignas(8) const LIMB_T MOD_160[LN_160 + 1] = {0x5e3b0969u, 0x5c17ef6cu,
-                                               0xf5d7cecau, 0xd8db9627u,
-                                               0xb77902abu, 0x00000000u};
-alignas(8) const LIMB_T RR_160[LN_160 + 1] = {0x61260cf2u, 0x399ce6a5u,
-                                              0x46c1c15au, 0x8aec7519u,
-                                              0x7cd393b3u, 0x00000000u};
+const LIMB_T MOD_160[LN_160] = {0x5e3b0969u, 0x5c17ef6cu, 0xf5d7cecau,
+                                0xd8db9627u, 0xb77902abu};
+const LIMB_T RR_160[LN_160] = {0x61260cf2u, 0x399ce6a5u, 0x46c1c15au,
+                               0x8aec7519u, 0x7cd393b3u};
+
+const LIMB2_T MOD2_160[LN2_160] = {0x5c17ef6c5e3b0969u, 0xd8db9627f5d7cecau,
+                                   0xb77902abu};
+const LIMB2_T RR2_160[LN2_160] = {0x399ce6a561260cf2u, 0x8aec751946c1c15au,
+                                  0x7cd393b3u};
 
 alignas(32) const LIMB_T MOD_256[LN_256] = {
     0xfffffc2fu, 0xfffffffeu, 0xffffffffu, 0xffffffffu,

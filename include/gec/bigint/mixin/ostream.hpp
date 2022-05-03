@@ -17,13 +17,12 @@ template <class Core, class LIMB_T, size_t LIMB_N>
 class ArrayOstreamMixin
     : public CRTP<Core, ArrayOstreamMixin<Core, LIMB_T, LIMB_N>> {
   public:
-    friend std::ostream &operator<<(std::ostream &o,
-                                    const ArrayOstreamMixin &bigint) {
+    friend std::ostream &operator<<(std::ostream &o, const Core &bigint) {
         using namespace std;
         o << "0x";
         for (size_t i = 0; i < LIMB_N; ++i) {
             o << setw(2 * sizeof(LIMB_T)) << setfill('0') << hex
-              << bigint.core().get_arr()[LIMB_N - 1 - i] << ' ';
+              << bigint.get_arr()[LIMB_N - 1 - i] << ' ';
         }
         return o;
     }

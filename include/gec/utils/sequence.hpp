@@ -71,6 +71,7 @@ __host__ __device__ GEC_INLINE void fill_seq_limb(T *GEC_RSTRCT dst,
 }
 
 /** @brief test if sequence is fill with same limb
+ * TODO: rename with `VtSeqEqLimb`
  */
 template <size_t LEN, typename T>
 struct SeqEqLimb {

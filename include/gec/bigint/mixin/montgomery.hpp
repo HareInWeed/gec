@@ -13,17 +13,17 @@ namespace bigint {
 /** @brief mixin that enables Montgomery Multiplication
  */
 template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD,
-          LIMB_T MOD_P>
+          LIMB_T MOD_P, const LIMB_T *RR>
 class Montgomery
-    : public CRTP<Core, Montgomery<Core, LIMB_T, LIMB_N, MOD, MOD_P>> {
+    : public CRTP<Core, Montgomery<Core, LIMB_T, LIMB_N, MOD, MOD_P, RR>> {
   public:
-    __host__ __device__ static void add_mul(Montgomery &GEC_RSTRCT a,
-                                            const Montgomery &GEC_RSTRCT b,
-                                            const Montgomery &GEC_RSTRCT c) {
+    __host__ __device__ static void add_mul(Core &GEC_RSTRCT a,
+                                            const Core &GEC_RSTRCT b,
+                                            const Core &GEC_RSTRCT c) {
         using namespace utils;
-        LIMB_T *a_arr = a.core().get_arr();
-        const LIMB_T *b_arr = b.core().get_arr();
-        const LIMB_T *c_arr = c.core().get_arr();
+        LIMB_T *a_arr = a.get_arr();
+        const LIMB_T *b_arr = b.get_arr();
+        const LIMB_T *c_arr = c.get_arr();
 
         bool carry = false;
         for (int i = 0; i < LIMB_N; ++i) {
@@ -41,10 +41,10 @@ class Montgomery
         }
     }
 
-    __host__ __device__ static void mul(Montgomery &GEC_RSTRCT a,
-                                        const Montgomery &GEC_RSTRCT b,
-                                        const Montgomery &GEC_RSTRCT c) {
-        utils::fill_seq_limb<LIMB_N>(a.core().get_arr(), LIMB_T(0));
+    __host__ __device__ static void mul(Core &GEC_RSTRCT a,
+                                        const Core &GEC_RSTRCT b,
+                                        const Core &GEC_RSTRCT c) {
+        utils::fill_seq_limb<LIMB_N>(a.get_arr(), LIMB_T(0));
         add_mul(a, b, c);
     }
 };
