@@ -25,8 +25,8 @@ class Field2 : public Array<LIMB2_T, LN2_160>,
                public VtCompareMixin<Field2, LIMB2_T, LN2_160>,
                public BitOpsMixin<Field2, LIMB2_T, LN2_160>,
                public ModAddSubMixin<Field2, LIMB2_T, LN2_160, MOD2_160>,
-               public Montgomery<Field2, LIMB2_T, LN2_160, MOD2_160, MOD2_P_160,
-                                 RR2_160>,
+               public MontgomeryCarryFree<Field2, LIMB2_T, LN2_160, MOD2_160,
+                                          MOD2_P_160, RR2_160>,
                public ArrayOstreamMixin<Field2, LIMB2_T, LN2_160>,
                public ArrayPrintMixin<Field2, LIMB2_T, LN2_160> {
   public:
@@ -121,7 +121,7 @@ TEST_CASE("add group sub", "[add_group][field]") {
                   0x240a6b52u) == e);
 }
 
-TEST_CASE("montgomery multiplication", "[ring][field]") {
+TEST_CASE("montgomery mul", "[ring][field]") {
     const Field &Mod = reinterpret_cast<const Field &>(MOD_160);
     const Field &RR = reinterpret_cast<const Field &>(RR_160);
     const Field One(1);
@@ -201,7 +201,7 @@ TEST_CASE("montgomery multiplication", "[ring][field]") {
                   0xa1c4f697u) == mon_xy);
 }
 
-TEST_CASE("montgomery inverse", "[field]") {
+TEST_CASE("montgomery inv", "[field]") {
     const auto &RR = reinterpret_cast<const Field &>(RR_160);
     const Field One(1);
 
@@ -233,8 +233,9 @@ TEST_CASE("montgomery inverse", "[field]") {
     }
 }
 
-TEST_CASE("montgomery multiplication bench", "[ring][field][bench]") {
-    const auto &RR = reinterpret_cast<const Field2 &>(RR_160);
+TEST_CASE("montgomery mul bench", "[ring][field][bench]") {
+    const auto &MOD = reinterpret_cast<const Field2 &>(MOD2_160);
+    const auto &RR = reinterpret_cast<const Field2 &>(RR2_160);
     const Field2 One(1);
 
     std::random_device rd;
@@ -250,12 +251,12 @@ TEST_CASE("montgomery multiplication bench", "[ring][field][bench]") {
         x0.get_arr()[0] = dis_u64(gen);
         x0.get_arr()[1] = dis_u64(gen);
         x0.get_arr()[2] = dis_u32(gen);
-    } while (x0 >= RR);
+    } while (x0 >= MOD);
     do {
         y0.get_arr()[0] = dis_u64(gen);
         y0.get_arr()[1] = dis_u64(gen);
         y0.get_arr()[2] = dis_u32(gen);
-    } while (y0 >= RR);
+    } while (y0 >= MOD);
     Field2::mul(mon_x0, x0, RR);
     Field2::mul(mon_y0, y0, RR);
 
@@ -289,7 +290,7 @@ TEST_CASE("montgomery multiplication bench", "[ring][field][bench]") {
 
     {
         using F = Field2;
-        const F &RR = reinterpret_cast<const F &>(RR_160);
+        const F &RR = reinterpret_cast<const F &>(RR2_160);
         const F One(1);
         const F &x = reinterpret_cast<const F &>(x0);
         const F &y = reinterpret_cast<const F &>(y0);
@@ -312,6 +313,54 @@ TEST_CASE("montgomery multiplication bench", "[ring][field][bench]") {
             F xy;
             F::mul(xy, mon_x, mon_y);
             return xy;
+        };
+    }
+}
+
+TEST_CASE("montgomery inv bench", "[field][bench]") {
+    const auto &MOD = reinterpret_cast<const Field2 &>(MOD2_160);
+    const auto &RR = reinterpret_cast<const Field2 &>(RR2_160);
+    const Field2 One(1);
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    std::uniform_int_distribution<LIMB_T> dis_u32(
+        std::numeric_limits<LIMB_T>::min(), std::numeric_limits<LIMB_T>::max());
+    std::uniform_int_distribution<LIMB2_T> dis_u64(
+        std::numeric_limits<LIMB2_T>::min(),
+        std::numeric_limits<LIMB2_T>::max());
+    Field2 x0, mon_x0, r0, s0, t0;
+    do {
+        x0.get_arr()[0] = dis_u64(gen);
+        x0.get_arr()[1] = dis_u64(gen);
+        x0.get_arr()[2] = dis_u32(gen);
+    } while (x0 >= MOD);
+    Field2::mul(mon_x0, x0, RR);
+
+    {
+        using F = Field;
+        const F &mon_x = reinterpret_cast<const F &>(mon_x0);
+        F &r = reinterpret_cast<F &>(r0);
+        F &s = reinterpret_cast<F &>(s0);
+        F &t = reinterpret_cast<F &>(t0);
+        BENCHMARK("32-bits montgomery inv") {
+            F inv_x;
+            F::inv(inv_x, mon_x, r, s, t);
+            return inv_x;
+        };
+    }
+
+    {
+        using F = Field2;
+        const F &mon_x = reinterpret_cast<const F &>(mon_x0);
+        F &r = reinterpret_cast<F &>(r0);
+        F &s = reinterpret_cast<F &>(s0);
+        F &t = reinterpret_cast<F &>(t0);
+        BENCHMARK("64-bits montgomery inv") {
+            F inv_x;
+            F::inv(inv_x, mon_x, r, s, t);
+            return inv_x;
         };
     }
 }
