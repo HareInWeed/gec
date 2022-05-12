@@ -2,10 +2,8 @@
 #ifndef GEC_BIGINT_MIXIN_EXPONENTIATION_HPP
 #define GEC_BIGINT_MIXIN_EXPONENTIATION_HPP
 
-#include <gec/utils/arithmetic.hpp>
 #include <gec/utils/context_check.hpp>
 #include <gec/utils/crtp.hpp>
-#include <gec/utils/sequence.hpp>
 #include <utility>
 
 namespace gec {
