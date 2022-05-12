@@ -33,6 +33,6 @@
               A: No
           - [x] Q: If not, what's a good alternative?\
                 A: A possible alternative is to use Interleaved Multiplication-reduction Method instead
-          - [ ] Q: Is mon-arthmetic + $\mathbb{F}_{2^q}$ arthmetic + modulo reduction a probable or even a good solution?
+          - [ ] Q: Is mon-arthmetic + $\mathbb{F}_{2^q}$ arthmetic + CRT a probable or even a good solution?
   - [ ] inv
     - [ ] Montgomery Inversion

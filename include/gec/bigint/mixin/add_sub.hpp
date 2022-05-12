@@ -13,23 +13,17 @@ namespace bigint {
 /** @brief mixin that enables addition and substrcation operation
  */
 template <class Core, typename LIMB_T, size_t LIMB_N>
-class AddSubMixin : public CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>> {
+class AddSubMixin : protected CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>> {
+    friend CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>>;
+
   public:
-    __host__ __device__ GEC_INLINE bool is_zero() const {
-        return utils::seq_all_limb<LIMB_N, LIMB_T>(this->core().get_arr(), 0);
-    }
-
-    __host__ __device__ GEC_INLINE void set_zero() {
-        utils::fill_seq_limb<LIMB_N>(this->core().get_arr(), 0);
-    }
-
     /** @brief a + carry = b + c
      *
      * return the carry bit
      */
     static bool add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
                     const Core &GEC_RSTRCT c) {
-        return utils::seq_add<LIMB_N>(a.get_arr(), b.get_arr(), c.get_arr());
+        return utils::seq_add<LIMB_N>(a.array(), b.array(), c.array());
     }
 
     /** @brief a + carry = a + b
@@ -37,7 +31,7 @@ class AddSubMixin : public CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>> {
      * return the carry bit
      */
     static bool add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
-        return utils::seq_add<LIMB_N>(a.get_arr(), b.get_arr());
+        return utils::seq_add<LIMB_N>(a.array(), b.array());
     }
 
     /** @brief a + borrow = b - c
@@ -46,7 +40,7 @@ class AddSubMixin : public CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>> {
      */
     static bool sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
                     const Core &GEC_RSTRCT c) {
-        return utils::seq_sub<LIMB_N>(a.get_arr(), b.get_arr(), c.get_arr());
+        return utils::seq_sub<LIMB_N>(a.array(), b.array(), c.array());
     }
 
     /** @brief a + borrow = a - b
@@ -54,7 +48,7 @@ class AddSubMixin : public CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>> {
      * return the borrow bit
      */
     static bool sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
-        return utils::seq_sub<LIMB_N>(a.get_arr(), b.get_arr());
+        return utils::seq_sub<LIMB_N>(a.array(), b.array());
     }
 
     Core &add(const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {

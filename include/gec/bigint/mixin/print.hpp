@@ -36,18 +36,19 @@ inline __host__ __device__ void print<uint64_t>(const uint64_t &data) {
 
 namespace bigint {
 
-/** @brief mixin that enables output array with stdio
+/** @brief mixin that enables output array() with stdio
  */
 template <class Core, class LIMB_T, size_t LIMB_N>
-class ArrayPrintMixin
-    : public CRTP<Core, ArrayPrintMixin<Core, LIMB_T, LIMB_N>> {
+class ArrayPrint : protected CRTP<Core, ArrayPrint<Core, LIMB_T, LIMB_N>> {
+    friend CRTP<Core, ArrayPrint<Core, LIMB_T, LIMB_N>>;
+
   public:
     __host__ __device__ void print() const {
         printf("0x");
-        print::print(this->core().get_arr()[LIMB_N - 1]);
+        print::print(this->core().array()[LIMB_N - 1]);
         for (size_t i = 1; i < LIMB_N; ++i) {
             printf(" ");
-            print::print(this->core().get_arr()[LIMB_N - 1 - i]);
+            print::print(this->core().array()[LIMB_N - 1 - i]);
         }
     }
     __host__ __device__ void println() const {

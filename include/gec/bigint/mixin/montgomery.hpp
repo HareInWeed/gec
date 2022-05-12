@@ -3,6 +3,7 @@
 #define GEC_BIGINT_MIXIN_MONTGOMERY_HPP
 
 #include <gec/utils/arithmetic.hpp>
+#include <gec/utils/context_check.hpp>
 #include <gec/utils/crtp.hpp>
 #include <gec/utils/sequence.hpp>
 
@@ -12,20 +13,27 @@ namespace bigint {
 
 /** @brief mixin that enables Montgomery multiplication
  *
- * TODO: detailed description
+ * require `Core::set_zero`, `Core::set_one`, `Core::set_pow2` methods
  */
 template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD,
-          LIMB_T MOD_P, const LIMB_T *RR>
+          LIMB_T MOD_P, const LIMB_T *RR, const LIMB_T *OneR>
 class Montgomery
-    : public CRTP<Core, Montgomery<Core, LIMB_T, LIMB_N, MOD, MOD_P, RR>> {
+    : public CRTP<Core,
+                  Montgomery<Core, LIMB_T, LIMB_N, MOD, MOD_P, RR, OneR>> {
   public:
+    bool is_mul_id() const {
+        return utils::VtSeqAll<LIMB_N, LIMB_T, utils::ops::Eq<LIMB_T>>::call(
+            this->core().array(), OneR);
+    }
+    void set_mul_id() { utils::fill_seq<LIMB_N>(this->core().array(), OneR); }
+
     __host__ __device__ static void add_mul(Core &GEC_RSTRCT a,
                                             const Core &GEC_RSTRCT b,
                                             const Core &GEC_RSTRCT c) {
         using namespace utils;
-        LIMB_T *a_arr = a.get_arr();
-        const LIMB_T *b_arr = b.get_arr();
-        const LIMB_T *c_arr = c.get_arr();
+        LIMB_T *a_arr = a.array();
+        const LIMB_T *b_arr = b.array();
+        const LIMB_T *c_arr = c.array();
 
         bool carry = false;
         for (int i = 0; i < LIMB_N; ++i) {
@@ -44,40 +52,44 @@ class Montgomery
         }
     }
 
-    __host__ __device__ static void mul(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        const Core &GEC_RSTRCT c) {
-        utils::fill_seq_limb<LIMB_N>(a.get_arr(), LIMB_T(0));
+    __host__ __device__ GEC_INLINE static void mul(Core &GEC_RSTRCT a,
+                                                   const Core &GEC_RSTRCT b,
+                                                   const Core &GEC_RSTRCT c) {
+        a.set_zero();
         add_mul(a, b, c);
     }
 
-    __host__ __device__ static void inv(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        Core &GEC_RSTRCT r, Core &GEC_RSTRCT s,
-                                        Core &GEC_RSTRCT t) {
-        utils::fill_seq<LIMB_N>(a.get_arr(), b.get_arr());
-        inv(a, r, s, t);
+    template <typename CTX>
+    __host__ __device__ GEC_INLINE static void
+    inv(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+        a = b;
+        inv(a, ctx);
     }
 
-    __host__ __device__ static void inv(Core &GEC_RSTRCT a, Core &GEC_RSTRCT r,
-                                        Core &GEC_RSTRCT s,
-                                        Core &GEC_RSTRCT t) {
+    template <typename CTX>
+    __host__ __device__ static void inv(Core &GEC_RSTRCT a,
+                                        CTX &GEC_RSTRCT ctx) {
+        GEC_CTX_CAP(CTX, 3);
+
         using utils::CmpEnum;
         const auto &rr = *reinterpret_cast<const Core *>(RR);
         constexpr size_t LimbBit = std::numeric_limits<LIMB_T>::digits;
         constexpr size_t Bits = LimbBit * LIMB_N;
         constexpr LIMB_T mask = LIMB_T(1) << (LimbBit - 1);
 
-        LIMB_T *a_arr = a.get_arr();
-        LIMB_T *r_arr = r.get_arr();
-        LIMB_T *s_arr = s.get_arr();
-        LIMB_T *t_arr = t.get_arr();
+        Core &r = ctx.template get<0>();
+        Core &s = ctx.template get<1>();
+        Core &t = ctx.template get<2>();
 
-        utils::fill_seq<LIMB_N>(r_arr, a_arr);
-        s_arr[0] = LIMB_T(1);
-        utils::fill_seq_limb<LIMB_N - 1>(s_arr + 1, LIMB_T(0));
+        LIMB_T *a_arr = a.array();
+        LIMB_T *r_arr = r.array();
+        LIMB_T *s_arr = s.array();
+        LIMB_T *t_arr = t.array();
+
+        r = a;
+        s.set_one();
         utils::fill_seq<LIMB_N>(t_arr, MOD);
-        utils::fill_seq_limb<LIMB_N>(a_arr, LIMB_T(0));
+        a.set_zero();
         int k = 0;
         bool a_carry = false, s_carry = false;
         while (!utils::SeqEqLimb<LIMB_N, LIMB_T>::call(r_arr, 0)) {
@@ -116,16 +128,12 @@ class Montgomery
 
             mul(s, t, rr);
 
-            utils::fill_seq_limb<LIMB_N>(r_arr, LIMB_T(0));
-            int bit = 2 * Bits - k;
-            r_arr[bit / LimbBit] = LIMB_T(1) << (bit % LimbBit);
+            r.set_pow2(2 * Bits - k);
             mul(a, s, r);
         } else {
             mul(t, s, rr);
 
-            utils::fill_seq_limb<LIMB_N>(r_arr, LIMB_T(0));
-            int bit = 2 * Bits - k;
-            r_arr[bit / LimbBit] = LIMB_T(1) << (bit % LimbBit);
+            r.set_pow2(2 * Bits - k);
             mul(a, t, r);
         }
     }
@@ -134,21 +142,33 @@ class Montgomery
 /** @brief mixin that enables Montgomery multiplication without checking carry
  * bit
  *
- * TODO: detailed description
+ * Note this mixin does not check overflow during calculation.
+ *
+ * If `Core` can hold twice as `MOD`, than replacing `ModAddSubMixin` with this
+ * mixin might have a performance boost. Otherwise, the mixin could lead to
+ * incorrect result.
+ *
+ * require `Core::set_zero`, `Core::set_one`, `Core::set_pow2` methods
  */
 template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD,
-          LIMB_T MOD_P, const LIMB_T *RR>
+          LIMB_T MOD_P, const LIMB_T *RR, const LIMB_T *OneR>
 class MontgomeryCarryFree
-    : public CRTP<Core,
-                  MontgomeryCarryFree<Core, LIMB_T, LIMB_N, MOD, MOD_P, RR>> {
+    : public CRTP<Core, MontgomeryCarryFree<Core, LIMB_T, LIMB_N, MOD, MOD_P,
+                                            RR, OneR>> {
   public:
+    bool is_mul_id() const {
+        return utils::VtSeqAll<LIMB_N, LIMB_T, utils::ops::Eq<LIMB_T>>::call(
+            this->core().array(), OneR);
+    }
+    void set_mul_id() { utils::fill_seq<LIMB_N>(this->core().array(), OneR); }
+
     __host__ __device__ static void add_mul(Core &GEC_RSTRCT a,
                                             const Core &GEC_RSTRCT b,
                                             const Core &GEC_RSTRCT c) {
         using namespace utils;
-        LIMB_T *a_arr = a.get_arr();
-        const LIMB_T *b_arr = b.get_arr();
-        const LIMB_T *c_arr = c.get_arr();
+        LIMB_T *a_arr = a.array();
+        const LIMB_T *b_arr = b.array();
+        const LIMB_T *c_arr = c.array();
 
         for (int i = 0; i < LIMB_N; ++i) {
             LIMB_T m = (a_arr[0] + b_arr[i] * c_arr[0]) * MOD_P;
@@ -165,40 +185,44 @@ class MontgomeryCarryFree
         }
     }
 
-    __host__ __device__ static void mul(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        const Core &GEC_RSTRCT c) {
-        utils::fill_seq_limb<LIMB_N>(a.get_arr(), LIMB_T(0));
+    __host__ __device__ GEC_INLINE static void mul(Core &GEC_RSTRCT a,
+                                                   const Core &GEC_RSTRCT b,
+                                                   const Core &GEC_RSTRCT c) {
+        a.set_zero();
         add_mul(a, b, c);
     }
 
-    __host__ __device__ static void inv(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        Core &GEC_RSTRCT r, Core &GEC_RSTRCT s,
-                                        Core &GEC_RSTRCT t) {
-        utils::fill_seq<LIMB_N>(a.get_arr(), b.get_arr());
-        inv(a, r, s, t);
+    template <typename CTX>
+    __host__ __device__ GEC_INLINE static void
+    inv(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+        a = b;
+        inv(a, ctx);
     }
 
-    __host__ __device__ static void inv(Core &GEC_RSTRCT a, Core &GEC_RSTRCT r,
-                                        Core &GEC_RSTRCT s,
-                                        Core &GEC_RSTRCT t) {
+    template <typename CTX>
+    __host__ __device__ static void inv(Core &GEC_RSTRCT a,
+                                        CTX &GEC_RSTRCT ctx) {
+        GEC_CTX_CAP(CTX, 3);
+
         using utils::CmpEnum;
         const auto &rr = *reinterpret_cast<const Core *>(RR);
         constexpr size_t LimbBit = std::numeric_limits<LIMB_T>::digits;
         constexpr size_t Bits = LimbBit * LIMB_N;
         constexpr LIMB_T mask = LIMB_T(1) << (LimbBit - 1);
 
-        LIMB_T *a_arr = a.get_arr();
-        LIMB_T *r_arr = r.get_arr();
-        LIMB_T *s_arr = s.get_arr();
-        LIMB_T *t_arr = t.get_arr();
+        Core &r = ctx.template get<0>();
+        Core &s = ctx.template get<1>();
+        Core &t = ctx.template get<2>();
 
-        utils::fill_seq<LIMB_N>(r_arr, a_arr);
-        s_arr[0] = LIMB_T(1);
-        utils::fill_seq_limb<LIMB_N - 1>(s_arr + 1, LIMB_T(0));
+        LIMB_T *a_arr = a.array();
+        LIMB_T *r_arr = r.array();
+        LIMB_T *s_arr = s.array();
+        LIMB_T *t_arr = t.array();
+
+        r = a;
+        s.set_one();
         utils::fill_seq<LIMB_N>(t_arr, MOD);
-        utils::fill_seq_limb<LIMB_N>(a_arr, LIMB_T(0));
+        a.set_zero();
         int k = 0;
         while (!utils::SeqEqLimb<LIMB_N, LIMB_T>::call(r_arr, 0)) {
             if (!(t_arr[0] & 0x1)) {
@@ -231,16 +255,12 @@ class MontgomeryCarryFree
 
             mul(s, t, rr);
 
-            utils::fill_seq_limb<LIMB_N>(r_arr, LIMB_T(0));
-            int bit = 2 * Bits - k;
-            r_arr[bit / LimbBit] = LIMB_T(1) << (bit % LimbBit);
+            r.set_pow2(2 * Bits - k);
             mul(a, s, r);
         } else {
             mul(t, s, rr);
 
-            utils::fill_seq_limb<LIMB_N>(r_arr, LIMB_T(0));
-            int bit = 2 * Bits - k;
-            r_arr[bit / LimbBit] = LIMB_T(1) << (bit % LimbBit);
+            r.set_pow2(2 * Bits - k);
             mul(a, t, r);
         }
     }

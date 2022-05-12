@@ -12,29 +12,51 @@ namespace bigint {
 
 /** @brief mixin that enables addition and substrcation operation
  *
- * TODO: detailed description
+ * require `Core::is_zero`, `Core::set_zero` methods
  */
 template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD>
-class ModAddSubMixin
-    : public CRTP<Core, ModAddSubMixin<Core, LIMB_T, LIMB_N, MOD>> {
+class ModAddSub : protected CRTP<Core, ModAddSub<Core, LIMB_T, LIMB_N, MOD>> {
+    friend CRTP<Core, ModAddSub<Core, LIMB_T, LIMB_N, MOD>>;
+
+    template <size_t K>
+    __host__ __device__ GEC_INLINE static void
+    mul_pow2_helper(Core &GEC_RSTRCT a) {
+        constexpr size_t Idx = LIMB_N - 1;
+        constexpr LIMB_T Mask = LIMB_T(1)
+                                << (std::numeric_limits<LIMB_T>::digits - 1);
+
+        bool carry = bool(a.array()[Idx] & Mask);
+        utils::seq_shift_left<LIMB_N, 1>(a.array());
+        if (carry || utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), MOD) !=
+                         utils::CmpEnum::Lt) {
+            utils::seq_sub<LIMB_N>(a.array(), MOD);
+        }
+        mul_pow2_helper<K - 1>(a);
+    }
+
+    template <>
+    __host__ __device__ GEC_INLINE static void
+    mul_pow2_helper<0>(Core &GEC_RSTRCT a) {}
+
   public:
-    __host__ __device__ GEC_INLINE bool is_zero() const {
-        return utils::seq_all_limb<LIMB_N, LIMB_T>(this->core().get_arr(), 0);
-    }
-
-    __host__ __device__ GEC_INLINE void set_zero() {
-        utils::fill_seq_limb<LIMB_N, LIMB_T>(this->core().get_arr(), 0);
-    }
-
     /** @brief a = b + c (mod MOD)
      */
     static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
                     const Core &GEC_RSTRCT c) {
-        bool carry =
-            utils::seq_add<LIMB_N>(a.get_arr(), b.get_arr(), c.get_arr());
-        if (carry || utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.get_arr(), MOD) !=
+        bool carry = utils::seq_add<LIMB_N>(a.array(), b.array(), c.array());
+        if (carry || utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), MOD) !=
                          utils::CmpEnum::Lt) {
-            utils::seq_sub<LIMB_N>(a.get_arr(), MOD);
+            utils::seq_sub<LIMB_N>(a.array(), MOD);
+        }
+    }
+
+    /** @brief a = a + c (mod MOD)
+     */
+    static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+        bool carry = utils::seq_add<LIMB_N>(a.array(), b.array());
+        if (carry || utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), MOD) !=
+                         utils::CmpEnum::Lt) {
+            utils::seq_sub<LIMB_N>(a.array(), MOD);
         }
     }
 
@@ -44,7 +66,7 @@ class ModAddSubMixin
         if (b.is_zero()) {
             a.set_zero();
         } else {
-            utils::seq_sub<LIMB_N>(a.get_arr(), MOD, b.get_arr());
+            utils::seq_sub<LIMB_N>(a.array(), MOD, b.array());
         }
     }
 
@@ -52,39 +74,85 @@ class ModAddSubMixin
      */
     static void sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
                     const Core &GEC_RSTRCT c) {
-        bool borrow =
-            utils::seq_sub<LIMB_N>(a.get_arr(), b.get_arr(), c.get_arr());
+        bool borrow = utils::seq_sub<LIMB_N>(a.array(), b.array(), c.array());
         if (borrow) {
-            utils::seq_add<LIMB_N>(a.get_arr(), MOD);
+            utils::seq_add<LIMB_N>(a.array(), MOD);
         }
+    }
+
+    /** @brief a = a - b (mod MOD)
+     */
+    static void sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+        bool borrow = utils::seq_sub<LIMB_N>(a.array(), b.array());
+        if (borrow) {
+            utils::seq_add<LIMB_N>(a.array(), MOD);
+        }
+    }
+
+    /** @brief a = a * 2^K (mod MOD)
+     */
+    template <size_t K>
+    __host__ __device__ static void mul_pow2(Core &GEC_RSTRCT a) {
+        mul_pow2_helper<K>(a);
+    }
+
+    /** @brief a = 2 * a (mod MOD)
+     */
+    __host__ __device__ static void add_self(Core &GEC_RSTRCT a) {
+        mul_pow2_helper<1>(a);
     }
 };
 
-/** @brief mixin that enables addition and substrcation operation without
+/** @brief Mixin that enables addition and substrcation operation without
  * checking for carry bit
  *
- * TODO: detailed description
+ * Note this mixin does not check overflow during calculation.
+ *
+ * If `Core` can hold twice as `MOD`, than replacing `ModAddSubMixin` with this
+ * mixin might have a performance boost. Otherwise, the mixin could lead to
+ * incorrect result.
+ *
+ * require `Core::is_zero`, `Core::set_zero` methods
  */
 template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD>
 class ModAddSubMixinCarryFree
-    : public CRTP<Core, ModAddSubMixinCarryFree<Core, LIMB_T, LIMB_N, MOD>> {
+    : protected CRTP<Core, ModAddSubMixinCarryFree<Core, LIMB_T, LIMB_N, MOD>> {
+    friend CRTP<Core, ModAddSubMixinCarryFree<Core, LIMB_T, LIMB_N, MOD>>;
+
+    template <size_t K>
+    __host__ __device__ GEC_INLINE static void
+    mul_pow2_helper(Core &GEC_RSTRCT a) {
+        utils::seq_shift_left<LIMB_N, K>(a.array());
+        if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), MOD) !=
+            utils::CmpEnum::Lt) {
+            utils::seq_sub<LIMB_N>(a.array(), MOD);
+        }
+        mul_pow2_helper<K - 1>(a);
+    }
+
+    template <>
+    __host__ __device__ GEC_INLINE static void
+    mul_pow2_helper<0>(Core &GEC_RSTRCT a) {}
+
   public:
-    __host__ __device__ GEC_INLINE bool is_zero() const {
-        return utils::seq_all_limb<LIMB_N, LIMB_T>(this->core().get_arr(), 0);
-    }
-
-    __host__ __device__ GEC_INLINE void set_zero() {
-        utils::fill_seq_limb<LIMB_N, LIMB_T>(this->core().get_arr(), 0);
-    }
-
     /** @brief a = b + c (mod MOD)
      */
     static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
                     const Core &GEC_RSTRCT c) {
-        utils::seq_add<LIMB_N>(a.get_arr(), b.get_arr(), c.get_arr());
-        if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.get_arr(), MOD) !=
+        utils::seq_add<LIMB_N>(a.array(), b.array(), c.array());
+        if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), MOD) !=
             utils::CmpEnum::Lt) {
-            utils::seq_sub<LIMB_N>(a.get_arr(), MOD);
+            utils::seq_sub<LIMB_N>(a.array(), MOD);
+        }
+    }
+
+    /** @brief a = a + c (mod MOD)
+     */
+    static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+        utils::seq_add<LIMB_N>(a.array(), b.array());
+        if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), MOD) !=
+            utils::CmpEnum::Lt) {
+            utils::seq_sub<LIMB_N>(a.array(), MOD);
         }
     }
 
@@ -94,7 +162,7 @@ class ModAddSubMixinCarryFree
         if (b.is_zero()) {
             a.set_zero();
         } else {
-            utils::seq_sub<LIMB_N>(a.get_arr(), MOD, b.get_arr());
+            utils::seq_sub<LIMB_N>(a.array(), MOD, b.array());
         }
     }
 
@@ -102,11 +170,32 @@ class ModAddSubMixinCarryFree
      */
     static void sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
                     const Core &GEC_RSTRCT c) {
-        bool borrow =
-            utils::seq_sub<LIMB_N>(a.get_arr(), b.get_arr(), c.get_arr());
+        bool borrow = utils::seq_sub<LIMB_N>(a.array(), b.array(), c.array());
         if (borrow) {
-            utils::seq_add<LIMB_N>(a.get_arr(), MOD);
+            utils::seq_add<LIMB_N>(a.array(), MOD);
         }
+    }
+
+    /** @brief a = a - c (mod MOD)
+     */
+    static void sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+        bool borrow = utils::seq_sub<LIMB_N>(a.array(), b.array());
+        if (borrow) {
+            utils::seq_add<LIMB_N>(a.array(), MOD);
+        }
+    }
+
+    /** @brief a = a * 2^K (mod MOD)
+     */
+    template <size_t K>
+    __host__ __device__ static void mul_pow2(Core &GEC_RSTRCT a) {
+        mul_pow2_helper<K>(a);
+    }
+
+    /** @brief a = 2 * a (mod MOD)
+     */
+    __host__ __device__ static void add_self(Core &GEC_RSTRCT a) {
+        mul_pow2_helper<1>(a);
     }
 };
 

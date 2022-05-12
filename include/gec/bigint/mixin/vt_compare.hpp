@@ -12,15 +12,16 @@ namespace bigint {
 /** @brief TODO:
  */
 template <class Core, class LIMB_T, size_t LIMB_N>
-struct VtCompareMixin
-    : public CRTP<Core, VtCompareMixin<Core, LIMB_T, LIMB_N>> {
+struct VtCompare : protected CRTP<Core, VtCompare<Core, LIMB_T, LIMB_N>> {
+    friend CRTP<Core, VtCompare<Core, LIMB_T, LIMB_N>>;
+
     __host__ __device__ GEC_INLINE utils::CmpEnum cmp(const Core &other) const {
-        return utils::VtSeqCmp<LIMB_N, LIMB_T>::call(this->core().get_arr(),
-                                                     other.get_arr());
+        return utils::VtSeqCmp<LIMB_N, LIMB_T>::call(this->core().array(),
+                                                     other.array());
     }
     __host__ __device__ GEC_INLINE bool operator==(const Core &other) const {
         return utils::VtSeqAll<LIMB_N, LIMB_T, utils::ops::Eq<LIMB_T>>::call(
-            this->core().get_arr(), other.get_arr());
+            this->core().array(), other.array());
     }
     __host__ __device__ GEC_INLINE bool operator!=(const Core &other) const {
         return !(this->core() == other);

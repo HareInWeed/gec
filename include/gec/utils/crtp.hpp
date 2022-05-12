@@ -4,6 +4,8 @@
 
 #include "basic.hpp"
 
+#include <type_traits>
+
 namespace gec {
 
 template <typename Core, typename Mixin>

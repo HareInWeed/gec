@@ -135,6 +135,8 @@ uint_add_with_carry<uint16_t>(uint16_t &GEC_RSTRCT a,
 #endif
 
 /** @brief a + carry' = a + b + carry
+ *
+ * optimized for inplace add rether than simply calling `uint_add_with_carry`
  */
 template <typename T>
 __host__ __device__ GEC_INLINE bool
@@ -327,7 +329,7 @@ __host__ GEC_INLINE void uint_mul_lh<uint64_t>(uint64_t &GEC_RSTRCT l,
 
 #define GEC_specialized_uint_mul_lh(U, DU)                                     \
     template <>                                                                \
-    __host__ GEC_INLINE void uint_mul_lh<U>(                                   \
+    __host__ __device__ GEC_INLINE void uint_mul_lh<U>(                        \
         U & GEC_RSTRCT l, U & GEC_RSTRCT h, const U &GEC_RSTRCT a,             \
         const U &GEC_RSTRCT b) {                                               \
         DU product = DU(a) * DU(b);                                            \

@@ -13,6 +13,8 @@ namespace bigint {
 template <class LIMB_T, size_t LIMB_N>
 class Array {
   public:
+    using LimbT = LIMB_T;
+    const static size_t LimbN = LIMB_N;
     LIMB_T arr[LIMB_N];
 
     __host__ __device__ GEC_INLINE Array() {
@@ -47,8 +49,8 @@ class Array {
         return *this;
     }
 
-    __host__ __device__ GEC_INLINE const LIMB_T *get_arr() const { return arr; }
-    __host__ __device__ GEC_INLINE LIMB_T *get_arr() { return arr; }
+    __host__ __device__ GEC_INLINE const LIMB_T *array() const { return arr; }
+    __host__ __device__ GEC_INLINE LIMB_T *array() { return arr; }
 };
 
 } // namespace bigint

@@ -13,30 +13,32 @@ namespace bigint {
 /** @brief mixin that enables bit operations
  */
 template <class Core, class LIMB_T, size_t LIMB_N>
-class BitOpsMixin : public CRTP<Core, BitOpsMixin<Core, LIMB_T, LIMB_N>> {
+class BitOps : protected CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>> {
+    friend CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>>;
+
   public:
     __host__ __device__ GEC_INLINE static void
     bit_and(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
             const Core &GEC_RSTRCT c) {
         utils::SeqBinOp<LIMB_N, LIMB_T, utils::ops::BitAnd<LIMB_T>>::call(
-            a.get_arr(), b.get_arr(), c.get_arr());
+            a.array(), b.array(), c.array());
     }
     __host__ __device__ GEC_INLINE static void
     bit_or(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
            const Core &GEC_RSTRCT c) {
         utils::SeqBinOp<LIMB_N, LIMB_T, utils::ops::BitOr<LIMB_T>>::call(
-            a.get_arr(), b.get_arr(), c.get_arr());
+            a.array(), b.array(), c.array());
     }
     __host__ __device__ GEC_INLINE static void
     bit_not(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         utils::SeqUnaryOp<LIMB_N, LIMB_T, utils::ops::BitNot<LIMB_T>>::call(
-            a.get_arr(), b.get_arr());
+            a.array(), b.array());
     }
     __host__ __device__ GEC_INLINE static void
     bit_xor(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
             const Core &GEC_RSTRCT c) {
         utils::SeqBinOp<LIMB_N, LIMB_T, utils::ops::BitXor<LIMB_T>>::call(
-            a.get_arr(), b.get_arr(), c.get_arr());
+            a.array(), b.array(), c.array());
     }
 
     __host__ __device__ GEC_INLINE Core &bit_and(const Core &GEC_RSTRCT a,
@@ -66,10 +68,10 @@ class BitOpsMixin : public CRTP<Core, BitOpsMixin<Core, LIMB_T, LIMB_N>> {
      */
     template <size_t B>
     __host__ __device__ GEC_INLINE void shift_right() {
-        utils::seq_shift_right<LIMB_N, B>(this->core().get_arr());
+        utils::seq_shift_right<LIMB_N, B>(this->core().array());
     }
 
-    // TODO: shift_right
+    // TODO: runtime shift_right
     // void shift_right(size_t n) {}
 
     /** @brief shift element by `B` bit
@@ -82,10 +84,10 @@ class BitOpsMixin : public CRTP<Core, BitOpsMixin<Core, LIMB_T, LIMB_N>> {
      */
     template <size_t B>
     __host__ __device__ GEC_INLINE void shift_left() {
-        utils::seq_shift_left<LIMB_N, B>(this->core().get_arr());
+        utils::seq_shift_left<LIMB_N, B>(this->core().array());
     }
 
-    // TODO: shift_right
+    // TODO: runtime shift_right
     // void shift_left(size_t n) {}
 };
 
