@@ -11,10 +11,11 @@ using namespace gec;
 using namespace bigint;
 using namespace curve;
 
-TEST_CASE("point2", "[curve]") {
+TEST_CASE("point", "[curve]") {
     using F = Field160;
     Point<F, 2> p(F(0x0u, 0x0u, 0x0u, 0x0u, 0x1u),
                   F(0x1u, 0x0u, 0x0u, 0x0u, 0x0u));
+    CAPTURE(p.x(), p.y());
     REQUIRE(p.x().array()[0] == 1);
     REQUIRE(p.y().array()[F::LimbN - 1] == 1);
 }

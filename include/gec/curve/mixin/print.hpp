@@ -11,7 +11,7 @@ namespace curve {
 
 template <typename Point, size_t I, size_t N>
 struct PointPrintHelper {
-    static void call(const Point &point) {
+    __host__ __device__ GEC_INLINE static void call(const Point &point) {
         printf(",\n ");
         point.template get<I>().print();
         PointPrintHelper<Point, I + 1, N>::call(point);
@@ -19,18 +19,18 @@ struct PointPrintHelper {
 };
 template <typename Point, size_t N>
 struct PointPrintHelper<Point, 0, N> {
-    static void call(const Point &point) {
+    __host__ __device__ GEC_INLINE static void call(const Point &point) {
         point.template get<0>().print();
         PointPrintHelper<Point, 1, N>::call(point);
     }
 };
 template <typename Point, size_t N>
 struct PointPrintHelper<Point, N, N> {
-    static void call(const Point &point) {}
+    __host__ __device__ GEC_INLINE static void call(const Point &point) {}
 };
 template <typename Point>
 struct PointPrintHelper<Point, 0, 0> {
-    static void call(const Point &point) {}
+    __host__ __device__ GEC_INLINE static void call(const Point &point) {}
 };
 
 /** @brief mixin that enables output x() and y() with stdio
