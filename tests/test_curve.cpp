@@ -12,10 +12,11 @@ using namespace bigint;
 using namespace curve;
 
 TEST_CASE("point2", "[curve]") {
-    Point2<Field160> p{{0x0u, 0x0u, 0x0u, 0x0u, 0x1u},
-                       {0x1u, 0x0u, 0x0u, 0x0u, 0x0u}};
-    INFO(p.x());
-    INFO(p.y());
+    using F = Field160;
+    Point<F, 2> p(F(0x0u, 0x0u, 0x0u, 0x0u, 0x1u),
+                  F(0x1u, 0x0u, 0x0u, 0x0u, 0x0u));
+    REQUIRE(p.x().array()[0] == 1);
+    REQUIRE(p.y().array()[F::LimbN - 1] == 1);
 }
 
 TEST_CASE("affine", "[curve][affine]") {
@@ -33,6 +34,7 @@ TEST_CASE("affine", "[curve][affine]") {
     F::mul(p1.y(),
            {0xa43c088fu, 0xa471d05cu, 0x3d1bed80u, 0xb89428beu, 0x84e54faeu},
            RR);
+    CAPTURE(p1);
     REQUIRE(C::on_curve(p1, ctx));
 
     C p2;
@@ -42,10 +44,12 @@ TEST_CASE("affine", "[curve][affine]") {
     F::mul(p2.y(),
            {0x99056d94u, 0xe6864afau, 0xa034f181u, 0xd8b4192fu, 0x1cbedd98u},
            RR);
+    CAPTURE(p2);
     REQUIRE(C::on_curve(p2, ctx));
 
     C sum;
     C::add(sum, p1, p2, ctx);
+    CAPTURE(sum);
     REQUIRE(C::on_curve(sum, ctx));
 
     C expected;
@@ -55,9 +59,9 @@ TEST_CASE("affine", "[curve][affine]") {
     F::mul(expected.y(),
            {0x8fc3cd04u, 0x2e78553eu, 0xb84d4c96u, 0x196151feu, 0xe3bd209bu},
            RR);
+    CAPTURE(expected);
     REQUIRE(C::on_curve(expected, ctx));
 
-    CAPTURE(expected, sum);
     CHECK(C::eq(expected, sum));
 }
 
@@ -101,6 +105,7 @@ TEST_CASE("projective", "[curve][projective]") {
            {0xa43c088fu, 0xa471d05cu, 0x3d1bed80u, 0xb89428beu, 0x84e54faeu},
            RR);
     C::from_affine(p1);
+    CAPTURE(p1);
     REQUIRE(C::on_curve(p1, ctx));
 
     C p2;
@@ -111,10 +116,12 @@ TEST_CASE("projective", "[curve][projective]") {
            {0x99056d94u, 0xe6864afau, 0xa034f181u, 0xd8b4192fu, 0x1cbedd98u},
            RR);
     C::from_affine(p2);
+    CAPTURE(p2);
     REQUIRE(C::on_curve(p2, ctx));
 
     C sum;
     C::add(sum, p1, p2, ctx);
+    CAPTURE(sum);
     REQUIRE(C::on_curve(sum, ctx));
 
     C expected;
@@ -125,9 +132,9 @@ TEST_CASE("projective", "[curve][projective]") {
            {0x8fc3cd04u, 0x2e78553eu, 0xb84d4c96u, 0x196151feu, 0xe3bd209bu},
            RR);
     C::from_affine(expected);
+    CAPTURE(expected);
     REQUIRE(C::on_curve(expected, ctx));
 
-    CAPTURE(expected, sum);
     CHECK(C::eq(expected, sum, ctx));
 }
 

@@ -14,10 +14,9 @@ namespace bigint {
  *
  * require `Core::set_mul_id`, `Core::mul` methods
  */
-template <class Core, typename LIMB_T, size_t LIMB_N>
-class Exponentiation
-    : protected CRTP<Core, Exponentiation<Core, LIMB_T, LIMB_N>> {
-    friend CRTP<Core, Exponentiation<Core, LIMB_T, LIMB_N>>;
+template <class Core>
+class Exponentiation : protected CRTP<Core, Exponentiation<Core>> {
+    friend CRTP<Core, Exponentiation<Core>>;
 
   public:
     template <typename CTX, size_t N = 1, typename IntT = uint32_t,

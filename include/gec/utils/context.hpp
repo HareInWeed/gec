@@ -17,13 +17,15 @@ class Context : public Context<T, N - 1> {
 
     T data;
 
-    Context() = default;
-    Context(const Context &) = default;
+    __host__ __device__ GEC_INLINE Context() = default;
+    __host__ __device__ GEC_INLINE Context(const Context &) = default;
+
     template <typename U, typename... Args>
-    Context(const U &data, const Args &...args)
+    __host__ __device__ GEC_INLINE Context(const U &data, const Args &...args)
         : data(data), Context<T, N - 1>(args...) {}
     template <typename U, typename... Args>
-    Context(U &data, Args &...args) : data(data), Context<T, N - 1>(args...) {}
+    __host__ __device__ GEC_INLINE Context(U &data, Args &...args)
+        : data(data), Context<T, N - 1>(args...) {}
 
     /** @brief get the `I`th element in the context
      */

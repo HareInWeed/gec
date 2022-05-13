@@ -7,14 +7,14 @@
 using namespace gec;
 using namespace bigint;
 
-class Field160 : public Array<LIMB_T, LN_160>,
+class Field160 : public ArrayBE<LIMB_T, LN_160>,
                  public Constants<Field160, LIMB_T, LN_160>,
                  public VtCompare<Field160, LIMB_T, LN_160>,
                  public BitOps<Field160, LIMB_T, LN_160>,
                  public AddSubMixin<Field160, LIMB_T, LN_160>,
                  public ArrayOstream<Field160, LIMB_T, LN_160> {
   public:
-    using Array::Array;
+    using ArrayBE::ArrayBE;
 };
 
 TEST_CASE("bigint constructor", "[bigint]") {

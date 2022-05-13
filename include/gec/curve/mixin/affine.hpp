@@ -18,6 +18,8 @@ template <typename Core, typename FIELD_T, const FIELD_T &A, const FIELD_T &B>
 class Affine : protected CRTP<Core, Affine<Core, FIELD_T, A, B>> {
     friend CRTP<Core, Affine<Core, FIELD_T, A, B>>;
 
+    using F = FIELD_T;
+
   public:
     __host__ __device__ GEC_INLINE bool is_inf() const {
         return this->core().x().is_zero() && this->core().y().is_zero();
@@ -41,15 +43,15 @@ class Affine : protected CRTP<Core, Affine<Core, FIELD_T, A, B>> {
         if (a.is_inf()) {
             return true;
         }
-        FIELD_T &l = ctx.template get<0>();
-        FIELD_T &r = ctx.template get<1>();
-        FIELD_T &t = ctx.template get<2>();
-        FIELD_T::mul(l, a.y(), a.y()); // left = y^2
-        FIELD_T::mul(t, a.x(), a.x()); // x^2
-        FIELD_T::mul(r, t, a.x());     // x^3
-        FIELD_T::mul(t, A, a.x());     // A x
-        FIELD_T::add(r, t);            // x^3 + A x
-        FIELD_T::add(r, B);            // right x^3 + A x + B
+        F &l = ctx.template get<0>();
+        F &r = ctx.template get<1>();
+        F &t = ctx.template get<2>();
+        F::mul(l, a.y(), a.y()); // left = y^2
+        F::mul(t, a.x(), a.x()); // x^2
+        F::mul(r, t, a.x());     // x^3
+        F::mul(t, A, a.x());     // A x
+        F::add(r, t);            // x^3 + A x
+        F::add(r, B);            // right x^3 + A x + B
         return l == r;
     }
 
@@ -59,20 +61,20 @@ class Affine : protected CRTP<Core, Affine<Core, FIELD_T, A, B>> {
                  const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
         GEC_CTX_CAP(F_CTX, 2);
 
-        FIELD_T &d = ctx.template get<0>();
-        FIELD_T &l = ctx.template get<1>();
-        utils::Context<FIELD_T &, 3> inv_ctx(l, a.x(), a.y());
+        F &d = ctx.template get<0>();
+        F &l = ctx.template get<1>();
+        utils::Context<F &, 3> inv_ctx(l, a.x(), a.y());
 
-        FIELD_T::sub(d, b.x(), c.x());     // x1 - x2
-        FIELD_T::inv(d, inv_ctx);          // 1 / (x1 - x2)
-        FIELD_T::sub(a.y(), b.y(), c.y()); // y1 - y2
-        FIELD_T::mul(l, a.y(), d);         // l = (y1 - y2) / (x1 - x2)
-        FIELD_T::mul(a.y(), l, l);         // l^2
-        FIELD_T::sub(a.y(), b.x());        // l^2 - x1
-        FIELD_T::sub(a.x(), a.y(), c.x()); // x = l^2 - x1 - x2
-        FIELD_T::sub(d, b.x(), a.x());     // x1 - x
-        FIELD_T::mul(a.y(), l, d);         // l (x1 - x)
-        FIELD_T::sub(a.y(), b.y());        // y = l (x1 - x) - y1
+        F::sub(d, b.x(), c.x());     // x1 - x2
+        F::inv(d, inv_ctx);          // 1 / (x1 - x2)
+        F::sub(a.y(), b.y(), c.y()); // y1 - y2
+        F::mul(l, a.y(), d);         // l = (y1 - y2) / (x1 - x2)
+        F::mul(a.y(), l, l);         // l^2
+        F::sub(a.y(), b.x());        // l^2 - x1
+        F::sub(a.x(), a.y(), c.x()); // x = l^2 - x1 - x2
+        F::sub(d, b.x(), a.x());     // x1 - x
+        F::mul(a.y(), l, d);         // l (x1 - x)
+        F::sub(a.y(), b.y());        // y = l (x1 - x) - y1
     }
 
     template <typename F_CTX>
@@ -81,23 +83,23 @@ class Affine : protected CRTP<Core, Affine<Core, FIELD_T, A, B>> {
                                              F_CTX &GEC_RSTRCT ctx) {
         GEC_CTX_CAP(F_CTX, 2);
 
-        FIELD_T &d = ctx.template get<0>();
-        FIELD_T &l = ctx.template get<1>();
-        utils::Context<FIELD_T &, 3> inv_ctx(l, a.x(), a.y());
+        F &d = ctx.template get<0>();
+        F &l = ctx.template get<1>();
+        utils::Context<F &, 3> inv_ctx(l, a.x(), a.y());
 
-        FIELD_T::add(d, b.y(), b.y());     // 2 y1
-        FIELD_T::inv(d, inv_ctx);          // (2 y1)^-1
-        FIELD_T::mul(a.y(), b.x(), b.x()); // x1^2
-        FIELD_T::add(a.x(), a.y(), a.y()); // 2 x1^2
-        FIELD_T::add(a.x(), a.y());        // 3 x1^2
-        FIELD_T::add(a.x(), B);            // 3 x1^2 + B
-        FIELD_T::mul(l, a.x(), d);         // l = (3 x1^2 + B) / (2 y1)
-        FIELD_T::mul(a.x(), l, l);         // l^2
-        FIELD_T::add(a.y(), b.x(), b.x()); // 2 x1
-        FIELD_T::sub(a.x(), a.y());        // x = l^2 - 2 x1
-        FIELD_T::sub(a.y(), b.x(), a.x()); // x1 - x
-        FIELD_T::mul(d, l, a.y());         // l (x1 - x)
-        FIELD_T::sub(a.y(), d, b.y());     // y = l (x1 - x) - y1
+        F::add(d, b.y(), b.y());     // 2 y1
+        F::inv(d, inv_ctx);          // (2 y1)^-1
+        F::mul(a.y(), b.x(), b.x()); // x1^2
+        F::add(a.x(), a.y(), a.y()); // 2 x1^2
+        F::add(a.x(), a.y());        // 3 x1^2
+        F::add(a.x(), B);            // 3 x1^2 + B
+        F::mul(l, a.x(), d);         // l = (3 x1^2 + B) / (2 y1)
+        F::mul(a.x(), l, l);         // l^2
+        F::add(a.y(), b.x(), b.x()); // 2 x1
+        F::sub(a.x(), a.y());        // x = l^2 - 2 x1
+        F::sub(a.y(), b.x(), a.x()); // x1 - x
+        F::mul(d, l, a.y());         // l (x1 - x)
+        F::sub(a.y(), d, b.y());     // y = l (x1 - x) - y1
     }
 
     template <typename F_CTX>
@@ -120,7 +122,7 @@ class Affine : protected CRTP<Core, Affine<Core, FIELD_T, A, B>> {
     __host__ __device__ GEC_INLINE static void neg(Core &GEC_RSTRCT a,
                                                    const Core &GEC_RSTRCT b) {
         a.x() = b.x();
-        FIELD_T::neg(a.y(), b.y());
+        F::neg(a.y(), b.y());
     }
 };
 
