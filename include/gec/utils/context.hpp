@@ -17,8 +17,15 @@ class Context : public Context<T, N - 1> {
 
     T data;
 
-    __host__ __device__ GEC_INLINE Context() = default;
-    __host__ __device__ GEC_INLINE Context(const Context &) = default;
+    __host__ __device__ GEC_INLINE Context() : data(), Context<T, N - 1>() {}
+    __host__ __device__ GEC_INLINE Context(const Context &other)
+        : data(other.data), Context<T, N - 1>(
+                                static_cast<const Context<T, N - 1> &>(other)) {
+    }
+
+    template <size_t M, std::enable_if_t<(M < N)> * = nullptr>
+    __host__ __device__ GEC_INLINE Context(const Context<T, M> &other)
+        : Context<T, N - 1>(other) {}
 
     template <typename U, typename... Args>
     __host__ __device__ GEC_INLINE Context(const U &data, const Args &...args)

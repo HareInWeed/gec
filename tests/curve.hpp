@@ -15,6 +15,7 @@ extern const Field160_2 BR2_160;
 
 class CurveA : public gec::curve::Point<Field160, 2>,
                public gec::curve::Affine<CurveA, Field160, AR_160, BR_160>,
+               public gec::curve::WithPointContext<CurveA>,
                public gec::curve::PointOstream<CurveA>,
                public gec::curve::PointPrint<CurveA> {
     using Point::Point;
@@ -23,6 +24,7 @@ class CurveA : public gec::curve::Point<Field160, 2>,
 class CurveA2
     : public gec::curve::Point<Field160_2, 2>,
       public gec::curve::Affine<CurveA2, Field160_2, AR2_160, BR2_160>,
+      public gec::curve::WithPointContext<CurveA2>,
       public gec::curve::PointOstream<CurveA2>,
       public gec::curve::PointPrint<CurveA2> {
     using Point::Point;
@@ -30,6 +32,7 @@ class CurveA2
 
 class CurveP : public gec::curve::Point<Field160, 3>,
                public gec::curve::Jacobain<CurveP, Field160, AR_160, BR_160>,
+               public gec::curve::WithPointContext<CurveP>,
                public gec::curve::PointOstream<CurveP>,
                public gec::curve::PointPrint<CurveP> {
     using Point::Point;
@@ -38,6 +41,7 @@ class CurveP : public gec::curve::Point<Field160, 3>,
 class CurveP2
     : public gec::curve::Point<Field160_2, 3>,
       public gec::curve::Jacobain<CurveP2, Field160_2, AR2_160, BR2_160>,
+      public gec::curve::WithPointContext<CurveP2>,
       public gec::curve::PointOstream<CurveP2>,
       public gec::curve::PointPrint<CurveP2> {
     using Point::Point;
@@ -45,6 +49,7 @@ class CurveP2
 
 class CurveJ : public gec::curve::Point<Field160, 3>,
                public gec::curve::Jacobain<CurveJ, Field160, AR_160, BR_160>,
+               public gec::curve::WithPointContext<CurveJ>,
                public gec::curve::PointOstream<CurveJ>,
                public gec::curve::PointPrint<CurveJ> {
     using Point::Point;
@@ -53,6 +58,7 @@ class CurveJ : public gec::curve::Point<Field160, 3>,
 class CurveJ2
     : public gec::curve::Point<Field160_2, 3>,
       public gec::curve::Jacobain<CurveJ2, Field160_2, AR2_160, BR2_160>,
+      public gec::curve::WithPointContext<CurveJ2>,
       public gec::curve::PointOstream<CurveJ2>,
       public gec::curve::PointPrint<CurveJ2> {
     using Point::Point;

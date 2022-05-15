@@ -26,7 +26,7 @@ TEST_CASE("affine", "[curve][affine]") {
     const auto &RR = reinterpret_cast<const F &>(RR_160);
     const F One(1);
 
-    F::Context ctx;
+    C::Context<> ctx;
 
     C p1;
     F::mul(p1.x(),
@@ -73,7 +73,7 @@ TEST_CASE("affine bench", "[curve][affine][bench]") {
     const auto &RR = reinterpret_cast<const F &>(RR2_160);
     const F One(1);
 
-    F::Context ctx;
+    C::Context<> ctx;
 
     C p1;
     F::mul(p1.x(), {0x0ee27967u, 0x5de1bde5faf553e9u, 0x2185fec743e7dd56u}, RR);
@@ -96,7 +96,7 @@ TEST_CASE("projective", "[curve][projective]") {
     const auto &RR = reinterpret_cast<const F &>(RR_160);
     const F One(1);
 
-    F::Context ctx;
+    C::Context<> ctx;
 
     C p1;
     F::mul(p1.x(),
@@ -146,7 +146,7 @@ TEST_CASE("projective bench", "[curve][projective][bench]") {
     const auto &RR = reinterpret_cast<const F &>(RR2_160);
     const F One(1);
 
-    F::Context ctx;
+    C::Context<> ctx;
 
     C p1;
     F::mul(p1.x(), {0x0ee27967u, 0x5de1bde5faf553e9u, 0x2185fec743e7dd56u}, RR);
@@ -171,7 +171,7 @@ TEST_CASE("jacobian", "[curve][jacobian]") {
     const auto &RR = reinterpret_cast<const F &>(RR_160);
     const F One(1);
 
-    F::Context ctx;
+    C::Context<> ctx;
 
     C p1;
     F::mul(p1.x(),
@@ -218,7 +218,7 @@ TEST_CASE("jacobian bench", "[curve][jacobian][bench]") {
     const auto &RR = reinterpret_cast<const F &>(RR2_160);
     const F One(1);
 
-    F::Context ctx;
+    C::Context<> ctx;
 
     C p1;
     F::mul(p1.x(), {0x0ee27967u, 0x5de1bde5faf553e9u, 0x2185fec743e7dd56u}, RR);

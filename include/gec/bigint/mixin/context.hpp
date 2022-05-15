@@ -22,8 +22,8 @@ constexpr size_t MIN_CONTEXT_SIZE = 5;
  * size if only a subset of function in GEC is used.
  */
 template <typename Core, size_t N = MIN_CONTEXT_SIZE>
-class BigintContext : protected CRTP<Core, BigintContext<Core, N>> {
-    friend CRTP<Core, BigintContext<Core, N>>;
+class WithBigintContext : protected CRTP<Core, WithBigintContext<Core, N>> {
+    friend CRTP<Core, WithBigintContext<Core, N>>;
 
   public:
     using Context = utils::Context<Core, N>;
