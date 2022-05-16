@@ -214,6 +214,7 @@ class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
         F_CTX &GEC_RSTRCT ctx) {
         GEC_CTX_CAP(F_CTX, 5);
 
+        // checking for infinity here is not necessary
         if (b.is_inf()) {
             a = c;
         } else if (c.is_inf()) {

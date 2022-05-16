@@ -12,6 +12,8 @@
 #include "mixin/jacobain.hpp"
 #include "mixin/projective.hpp"
 
+#include "mixin/scaler_mul.hpp"
+
 #include "mixin/ostream.hpp"
 #include "mixin/print.hpp"
 

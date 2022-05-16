@@ -1,6 +1,6 @@
 #pragma once
-#ifndef GEC_UTILS_MISC_HPP
-#define GEC_UTILS_MISC_HPP
+#ifndef GEC_UTILS_OPERATOR_HPP
+#define GEC_UTILS_OPERATOR_HPP
 
 #include "basic.hpp"
 
@@ -109,4 +109,4 @@ struct BitXorInplace {
 
 } // namespace gec
 
-#endif // !GEC_UTILS_MISC_HPP
+#endif // !GEC_UTILS_OPERATOR_HPP

@@ -140,6 +140,47 @@ TEST_CASE("mul_pow2", "[add_group][field]") {
     REQUIRE(a8 == res);
 }
 
+static LIMB_T SmallMod[3] = {0x7, 0xb, 0x0};
+
+TEST_CASE("random sampling", "[add_group][field][random]") {
+    using F1 = Field160;
+    const auto &Mod1 = reinterpret_cast<const F1 &>(MOD_160);
+    using F2 = Field160_2;
+    const auto &Mod2 = reinterpret_cast<const F2 &>(MOD2_160);
+    using G = AddGroup<LIMB_T, 3, SmallMod>;
+    const auto &Mod3 = reinterpret_cast<const G &>(SmallMod);
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    F1 x;
+    for (int k = 0; k < 100; ++k) {
+        F1::sample(x, gen);
+        REQUIRE(x < Mod1);
+        F1::sample_non_zero(x, gen);
+        REQUIRE(!x.is_zero());
+        REQUIRE(x < Mod1);
+    }
+
+    F2 y;
+    for (int k = 0; k < 100; ++k) {
+        F2::sample(y, gen);
+        REQUIRE(y < Mod2);
+        F2::sample_non_zero(y, gen);
+        REQUIRE(!y.is_zero());
+        REQUIRE(y < Mod2);
+    }
+
+    G z;
+    for (int k = 0; k < 100; ++k) {
+        G::sample(z, gen);
+        REQUIRE(z < Mod3);
+        G::sample_non_zero(z, gen);
+        REQUIRE(!z.is_zero());
+        REQUIRE(z < Mod3);
+    }
+}
+
 TEST_CASE("mul_pow2 bench", "[add_group][bench]") {
     const Field160 &Mod = reinterpret_cast<const Field160 &>(MOD_160);
     const Field160 &RR = reinterpret_cast<const Field160 &>(RR_160);

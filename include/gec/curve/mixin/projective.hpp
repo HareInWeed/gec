@@ -190,6 +190,7 @@ class Projective : protected CRTP<Core, Projective<Core, FIELD_T, A, B>> {
                                         const Core &GEC_RSTRCT c, F_CTX &ctx) {
         GEC_CTX_CAP(F_CTX, 4);
 
+        // checking for infinity here is not necessary
         if (b.is_inf()) {
             a = c;
         } else if (c.is_inf()) {

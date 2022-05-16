@@ -6,6 +6,7 @@
 #include "utils/basic.hpp"
 #include "utils/context.hpp"
 #include "utils/crtp.hpp"
+#include "utils/misc.hpp"
 #include "utils/operators.hpp"
 #include "utils/sequence.hpp"
 

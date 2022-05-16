@@ -8,6 +8,9 @@ namespace gec {
 
 namespace curve {
 
+// TODO: Maybe `PointContext` is useless once operations for heterogeneous data
+// structures are implemented?
+
 template <size_t CompN, size_t TN, size_t PN, size_t TI, size_t PI>
 struct PointContextChecker {
     const static bool value =
@@ -18,6 +21,8 @@ template <typename P, size_t TN, size_t PN, size_t TI = 0, size_t PI = 0,
           std::enable_if_t<PointContextChecker<P::CompN, TN, PN, TI, PI>::value>
               * = nullptr>
 class PointContext {
+    // TODO: methods to create a reference point context? Or rather, methods to
+    // create a reference point?
     using T = typename P::CompT;
     template <size_t N>
     using P_CTX = utils::Context<P, N>;
@@ -118,6 +123,9 @@ class PointContext {
 
 template <typename P, size_t TN, size_t TI = 0, size_t PI = 0>
 using CompoundContext = PointContext<P, TN % P::CompN, TN / P::CompN, TI, PI>;
+
+// TODO: a better `CompoundContext` that capture the minmum bound of elements
+// and points?
 
 } // namespace curve
 

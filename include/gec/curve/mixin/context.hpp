@@ -10,7 +10,7 @@ namespace gec {
 namespace curve {
 
 /// @brief Minimum context size for any function in GEC to work
-constexpr size_t MIN_COMPOUND_CONTEXT_SIZE = 5;
+constexpr size_t MIN_COMPOUND_CONTEXT_SIZE = 8;
 
 /** @brief mixin that add context type
  *

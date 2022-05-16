@@ -1,54 +1,55 @@
 #pragma once
-#ifndef GEC_BIGINT_MIXIN_EXPONENTIATION_HPP
-#define GEC_BIGINT_MIXIN_EXPONENTIATION_HPP
+#ifndef GEC_CURVE_MIXIN_SCALER_MUL_HPP
+#define GEC_CURVE_MIXIN_SCALER_MUL_HPP
 
 #include <gec/utils/context_check.hpp>
 #include <gec/utils/crtp.hpp>
+#include <gec/utils/sequence.hpp>
 #include <utility>
 
 namespace gec {
 
-namespace bigint {
+namespace curve {
 
 /** @brief mixin that enables exponentiation
  *
  * require `Core::set_mul_id`, `Core::mul` methods
  */
 template <class Core>
-class Exponentiation : protected CRTP<Core, Exponentiation<Core>> {
-    friend CRTP<Core, Exponentiation<Core>>;
+class ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
+    friend CRTP<Core, ScalerMul<Core>>;
 
   public:
     template <typename CTX, size_t N = 1, typename IntT = uint32_t,
               std::enable_if_t<std::is_integral<IntT>::value> * = nullptr>
     __host__ __device__ static void
-    pow(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT *GEC_RSTRCT e,
+    mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT *GEC_RSTRCT e,
         CTX &GEC_RSTRCT ctx) {
         GEC_CTX_CAP(CTX, 1);
 
-        Core &ap = ctx.template get<0>();
+        Core &ap = ctx.template get_p<0>();
         constexpr bool need_copy_init =
             !((std::numeric_limits<IntT>::digits * N) & 0x1);
         bool need_copy = false;
         Core *p1 = &a, *p2 = &ap;
-        p1->set_mul_id();
+        p1->set_inf();
         constexpr size_t Bits = std::numeric_limits<IntT>::digits;
         int i = N - 1, j;
         for (; i >= 0; --i) {
             for (j = Bits - 1; j >= 0; --j) {
                 if ((1 << j) & e[i]) {
-                    goto exp;
+                    goto mul;
                 }
             }
         }
-    exp:
+    mul:
         for (; i >= 0; --i) {
             for (; j >= 0; --j) {
-                Core::mul(*p2, *p1, *p1);
+                Core::add(*p2, *p1, *p1, ctx.template rest<0, 1>());
                 std::swap(p1, p2);
                 need_copy = !need_copy;
                 if ((1 << j) & e[i]) {
-                    Core::mul(*p2, *p1, b);
+                    Core::add(*p2, *p1, b, ctx.template rest<0, 1>());
                     std::swap(p1, p2);
                     need_copy = !need_copy;
                 }
@@ -63,22 +64,22 @@ class Exponentiation : protected CRTP<Core, Exponentiation<Core>> {
     template <typename CTX, typename IntT,
               std::enable_if_t<std::is_integral<IntT>::value> * = nullptr>
     __host__ __device__ GEC_INLINE static void
-    pow(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT &GEC_RSTRCT e,
+    mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT &GEC_RSTRCT e,
         CTX &GEC_RSTRCT ctx) {
-        pow(a, b, &e, ctx);
+        mul(a, b, &e, ctx);
     }
 
     template <typename CTX, typename IntT,
               std::enable_if_t<!std::is_integral<IntT>::value> * = nullptr>
     __host__ __device__ GEC_INLINE static void
-    pow(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT &GEC_RSTRCT e,
+    mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT &GEC_RSTRCT e,
         CTX &GEC_RSTRCT ctx) {
-        pow<CTX, IntT::LimbN>(a, b, e.array(), ctx);
+        mul<CTX, IntT::LimbN>(a, b, e.array(), ctx);
     }
 };
 
-} // namespace bigint
+} // namespace curve
 
 } // namespace gec
 
-#endif // !GEC_BIGINT_MIXIN_EXPONENTIATION_HPP
+#endif // !GEC_CURVE_MIXIN_SCALER_MUL_HPP

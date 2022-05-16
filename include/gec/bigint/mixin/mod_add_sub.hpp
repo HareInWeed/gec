@@ -10,17 +10,10 @@ namespace gec {
 
 namespace bigint {
 
-/** @brief mixin that enables addition and substrcation operation
- *
- * require `Core::is_zero`, `Core::set_zero` methods
- */
-template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD>
-class ModAddSub : protected CRTP<Core, ModAddSub<Core, LIMB_T, LIMB_N, MOD>> {
-    friend CRTP<Core, ModAddSub<Core, LIMB_T, LIMB_N, MOD>>;
-
-    template <size_t K>
-    __host__ __device__ GEC_INLINE static void
-    mul_pow2_helper(Core &GEC_RSTRCT a) {
+template <class Core, size_t K, typename LIMB_T, size_t LIMB_N,
+          const LIMB_T *MOD>
+struct MulPow2Helper {
+    __host__ __device__ GEC_INLINE static void call(Core &GEC_RSTRCT a) {
         constexpr size_t Idx = LIMB_N - 1;
         constexpr LIMB_T Mask = LIMB_T(1)
                                 << (std::numeric_limits<LIMB_T>::digits - 1);
@@ -31,12 +24,22 @@ class ModAddSub : protected CRTP<Core, ModAddSub<Core, LIMB_T, LIMB_N, MOD>> {
                          utils::CmpEnum::Lt) {
             utils::seq_sub<LIMB_N>(a.array(), MOD);
         }
-        mul_pow2_helper<K - 1>(a);
+        MulPow2Helper<Core, K - 1, LIMB_T, LIMB_N, MOD>::call(a);
     }
+};
 
-    template <>
-    __host__ __device__ GEC_INLINE static void
-    mul_pow2_helper<0>(Core &GEC_RSTRCT a) {}
+template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD>
+struct MulPow2Helper<Core, 0, LIMB_T, LIMB_N, MOD> {
+    __host__ __device__ GEC_INLINE static void call(Core &GEC_RSTRCT a) {}
+};
+
+/** @brief mixin that enables addition and substrcation operation
+ *
+ * require `Core::is_zero`, `Core::set_zero` methods
+ */
+template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD>
+class ModAddSub : protected CRTP<Core, ModAddSub<Core, LIMB_T, LIMB_N, MOD>> {
+    friend CRTP<Core, ModAddSub<Core, LIMB_T, LIMB_N, MOD>>;
 
   public:
     /** @brief a = b + c (mod MOD)
@@ -93,14 +96,32 @@ class ModAddSub : protected CRTP<Core, ModAddSub<Core, LIMB_T, LIMB_N, MOD>> {
      */
     template <size_t K>
     __host__ __device__ static void mul_pow2(Core &GEC_RSTRCT a) {
-        mul_pow2_helper<K>(a);
+        MulPow2Helper<Core, K, LIMB_T, LIMB_N, MOD>::call(a);
     }
 
     /** @brief a = 2 * a (mod MOD)
      */
     __host__ __device__ static void add_self(Core &GEC_RSTRCT a) {
-        mul_pow2_helper<1>(a);
+        MulPow2Helper<Core, 1, LIMB_T, LIMB_N, MOD>::call(a);
     }
+};
+
+template <class Core, size_t K, typename LIMB_T, size_t LIMB_N,
+          const LIMB_T *MOD>
+struct CarryFreeMulPow2Helper {
+    __host__ __device__ GEC_INLINE static void call(Core &GEC_RSTRCT a) {
+        utils::seq_shift_left<LIMB_N, K>(a.array());
+        if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), MOD) !=
+            utils::CmpEnum::Lt) {
+            utils::seq_sub<LIMB_N>(a.array(), MOD);
+        }
+        CarryFreeMulPow2Helper<Core, K - 1, LIMB_T, LIMB_N, MOD>::call(a);
+    }
+};
+
+template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD>
+struct CarryFreeMulPow2Helper<Core, 0, LIMB_T, LIMB_N, MOD> {
+    __host__ __device__ GEC_INLINE static void call(Core &GEC_RSTRCT a) {}
 };
 
 /** @brief Mixin that enables addition and substrcation operation without
@@ -118,21 +139,6 @@ template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD>
 class ModAddSubMixinCarryFree
     : protected CRTP<Core, ModAddSubMixinCarryFree<Core, LIMB_T, LIMB_N, MOD>> {
     friend CRTP<Core, ModAddSubMixinCarryFree<Core, LIMB_T, LIMB_N, MOD>>;
-
-    template <size_t K>
-    __host__ __device__ GEC_INLINE static void
-    mul_pow2_helper(Core &GEC_RSTRCT a) {
-        utils::seq_shift_left<LIMB_N, K>(a.array());
-        if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), MOD) !=
-            utils::CmpEnum::Lt) {
-            utils::seq_sub<LIMB_N>(a.array(), MOD);
-        }
-        mul_pow2_helper<K - 1>(a);
-    }
-
-    template <>
-    __host__ __device__ GEC_INLINE static void
-    mul_pow2_helper<0>(Core &GEC_RSTRCT a) {}
 
   public:
     /** @brief a = b + c (mod MOD)
@@ -189,13 +195,13 @@ class ModAddSubMixinCarryFree
      */
     template <size_t K>
     __host__ __device__ static void mul_pow2(Core &GEC_RSTRCT a) {
-        mul_pow2_helper<K>(a);
+        CarryFreeMulPow2Helper<Core, K, LIMB_T, LIMB_N, MOD>::call(a);
     }
 
     /** @brief a = 2 * a (mod MOD)
      */
     __host__ __device__ static void add_self(Core &GEC_RSTRCT a) {
-        mul_pow2_helper<1>(a);
+        CarryFreeMulPow2Helper<Core, 1, LIMB_T, LIMB_N, MOD>::call(a);
     }
 };
 

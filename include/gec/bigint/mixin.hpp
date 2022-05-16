@@ -11,6 +11,7 @@
 #include "mixin/montgomery.hpp"
 #include "mixin/ostream.hpp"
 #include "mixin/print.hpp"
+#include "mixin/random.hpp"
 #include "mixin/vt_compare.hpp"
 
 #endif // !GEC_BIGINT_MIXIN_HPP

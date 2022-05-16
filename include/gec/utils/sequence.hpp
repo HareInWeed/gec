@@ -11,6 +11,8 @@ namespace gec {
 
 namespace utils {
 
+template <typename T>
+__host__ __device__ GEC_INLINE void fill_le(T *dst) {}
 /** @brief fill `dst` with the rest of arguments, from lower to higher (big
  * endian)
  */
@@ -18,10 +20,6 @@ template <typename T, typename... S>
 __host__ __device__ GEC_INLINE void fill_le(T *dst, T elem, S... seq) {
     *dst = elem;
     fill_le<T>(dst + 1, seq...);
-}
-template <typename T>
-__host__ __device__ GEC_INLINE void fill_le(T *dst, T elem) {
-    *dst = elem;
 }
 
 /** @brief fill `dst` with the rest of arguments, from higher to lower (big

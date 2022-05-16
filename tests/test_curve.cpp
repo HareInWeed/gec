@@ -236,3 +236,66 @@ TEST_CASE("jacobian bench", "[curve][jacobian][bench]") {
         return &sum;
     };
 }
+
+TEST_CASE("jacobian scaler_mul", "[curve][jacobian][scaler_mul]") {
+    using C = DlpCurveJ;
+    using F = DlpField;
+    using S = DlpScaler;
+    const auto &RR = reinterpret_cast<const F &>(DlpP_RR);
+    S sOne(1);
+
+    std::random_device rd;
+    std::mt19937 rng(rd());
+
+    C::Context<> ctx;
+
+    C p;
+    F::mul(p.x(),
+           {0x1e3b0742u, 0xebf7d73fu, 0xf1a78116u, 0x4c46739au, 0x153663f3u},
+           RR);
+    F::mul(p.y(),
+           {0x16a8c9aau, 0xc4ad5fdfu, 0x58163ef3u, 0x9de531f5u, 0xe9cb1575u},
+           RR);
+    C::from_affine(p);
+    REQUIRE(C::on_curve(p, ctx));
+    CAPTURE(p);
+
+    C prod1, prod2, sum;
+
+    C::mul(prod1, p, 0, ctx);
+    CAPTURE(prod1);
+    REQUIRE(prod1.is_inf());
+
+    C::mul(prod1, p, 1, ctx);
+    CAPTURE(prod1);
+    REQUIRE(prod1.x() == p.x());
+    REQUIRE(prod1.y() == p.y());
+    REQUIRE(prod1.z() == p.z());
+
+    S s0 = reinterpret_cast<const S &>(DlpCard);
+    C::mul(prod1, p, s0, ctx);
+    CAPTURE(prod1);
+    REQUIRE(prod1.is_inf());
+
+    S s1, s2;
+    S &tmp = reinterpret_cast<S &>(ctx.get<0>());
+    for (int k = 0; k < 100; ++k) {
+        S::sample(s1, rng);
+        S::neg(s2, s1);
+
+        C::mul(prod1, p, s1, ctx);
+        CAPTURE(prod1);
+        C::mul(prod2, p, s2, ctx);
+        CAPTURE(prod2);
+        C::add(sum, prod1, prod2, ctx);
+        CAPTURE(sum);
+        REQUIRE(sum.is_inf());
+
+        S::add(s1, s2, sOne);
+        C::mul(prod2, p, s1, ctx);
+        CAPTURE(prod2);
+        C::add(sum, prod1, prod2, ctx);
+        CAPTURE(sum);
+        REQUIRE(C::eq(sum, p, ctx));
+    }
+}
