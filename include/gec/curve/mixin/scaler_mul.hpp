@@ -23,9 +23,9 @@ class ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
     template <typename CTX, size_t N = 1, typename IntT = uint32_t,
               std::enable_if_t<std::is_integral<IntT>::value> * = nullptr>
     __host__ __device__ static void
-    mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT *GEC_RSTRCT e,
+    mul(Core &GEC_RSTRCT a, const IntT *GEC_RSTRCT e, const Core &GEC_RSTRCT b,
         CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(CTX, 1);
+        // TODO: check context capacity
 
         Core &ap = ctx.template get_p<0>();
         constexpr bool need_copy_init =
@@ -64,17 +64,17 @@ class ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
     template <typename CTX, typename IntT,
               std::enable_if_t<std::is_integral<IntT>::value> * = nullptr>
     __host__ __device__ GEC_INLINE static void
-    mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT &GEC_RSTRCT e,
+    mul(Core &GEC_RSTRCT a, const IntT &GEC_RSTRCT e, const Core &GEC_RSTRCT b,
         CTX &GEC_RSTRCT ctx) {
-        mul(a, b, &e, ctx);
+        mul(a, &e, b, ctx);
     }
 
     template <typename CTX, typename IntT,
               std::enable_if_t<!std::is_integral<IntT>::value> * = nullptr>
     __host__ __device__ GEC_INLINE static void
-    mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT &GEC_RSTRCT e,
+    mul(Core &GEC_RSTRCT a, const IntT &GEC_RSTRCT e, const Core &GEC_RSTRCT b,
         CTX &GEC_RSTRCT ctx) {
-        mul<CTX, IntT::LimbN>(a, b, e.array(), ctx);
+        mul<CTX, IntT::LimbN>(a, e.array(), b, ctx);
     }
 };
 

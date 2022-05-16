@@ -262,18 +262,18 @@ TEST_CASE("jacobian scaler_mul", "[curve][jacobian][scaler_mul]") {
 
     C prod1, prod2, sum;
 
-    C::mul(prod1, p, 0, ctx);
+    C::mul(prod1, 0, p, ctx);
     CAPTURE(prod1);
     REQUIRE(prod1.is_inf());
 
-    C::mul(prod1, p, 1, ctx);
+    C::mul(prod1, 1, p, ctx);
     CAPTURE(prod1);
     REQUIRE(prod1.x() == p.x());
     REQUIRE(prod1.y() == p.y());
     REQUIRE(prod1.z() == p.z());
 
     S s0 = reinterpret_cast<const S &>(DlpCard);
-    C::mul(prod1, p, s0, ctx);
+    C::mul(prod1, s0, p, ctx);
     CAPTURE(prod1);
     REQUIRE(prod1.is_inf());
 
@@ -283,16 +283,16 @@ TEST_CASE("jacobian scaler_mul", "[curve][jacobian][scaler_mul]") {
         S::sample(s1, rng);
         S::neg(s2, s1);
 
-        C::mul(prod1, p, s1, ctx);
+        C::mul(prod1, s1, p, ctx);
         CAPTURE(prod1);
-        C::mul(prod2, p, s2, ctx);
+        C::mul(prod2, s2, p, ctx);
         CAPTURE(prod2);
         C::add(sum, prod1, prod2, ctx);
         CAPTURE(sum);
         REQUIRE(sum.is_inf());
 
         S::add(s1, s2, sOne);
-        C::mul(prod2, p, s1, ctx);
+        C::mul(prod2, s1, p, ctx);
         CAPTURE(prod2);
         C::add(sum, prod1, prod2, ctx);
         CAPTURE(sum);
