@@ -42,6 +42,10 @@ class ModAddSub : protected CRTP<Core, ModAddSub<Core, LIMB_T, LIMB_N, MOD>> {
     friend CRTP<Core, ModAddSub<Core, LIMB_T, LIMB_N, MOD>>;
 
   public:
+    __host__ __device__ GEC_INLINE static const Core &mod() {
+        return *reinterpret_cast<const Core *>(MOD);
+    }
+
     /** @brief a = b + c (mod MOD)
      */
     static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
@@ -141,6 +145,10 @@ class ModAddSubMixinCarryFree
     friend CRTP<Core, ModAddSubMixinCarryFree<Core, LIMB_T, LIMB_N, MOD>>;
 
   public:
+    __host__ __device__ GEC_INLINE static const Core &mod() {
+        return *reinterpret_cast<const Core *>(MOD);
+    }
+
     /** @brief a = b + c (mod MOD)
      */
     static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,

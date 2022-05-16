@@ -121,9 +121,6 @@ class PointContext {
     }
 };
 
-template <typename P, size_t TN, size_t TI = 0, size_t PI = 0>
-using CompoundContext = PointContext<P, TN % P::CompN, TN / P::CompN, TI, PI>;
-
 // TODO: a better `CompoundContext` that capture the minmum bound of elements
 // and points?
 

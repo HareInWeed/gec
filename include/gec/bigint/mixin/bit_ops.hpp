@@ -89,6 +89,10 @@ class BitOps : protected CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>> {
 
     // TODO: runtime shift_right
     // void shift_left(size_t n) {}
+
+    __host__ __device__ GEC_INLINE size_t trailing_zeros() {
+        // TODO
+    }
 };
 
 } // namespace bigint

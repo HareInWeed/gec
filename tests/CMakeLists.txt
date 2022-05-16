@@ -9,11 +9,13 @@ target_sources(
     PRIVATE "test_main.cpp"
             "common.cpp"
             "curve.cpp"
+            "test_misc.cpp"
             "test_arithmetic.cpp"
             "test_bigint.cpp"
             "test_field.cpp"
             "test_context.cpp"
-            "test_curve.cpp")
+            "test_curve.cpp"
+            "test_dlp.cpp")
 
 target_compile_features(unit_test PRIVATE cxx_std_14)
 target_link_libraries(unit_test PRIVATE gec)

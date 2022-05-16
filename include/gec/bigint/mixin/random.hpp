@@ -32,7 +32,7 @@ class ModRandom : protected CRTP<Core, ModRandom<Core, LIMB_T, LIMB_N, MOD>> {
 
                 LIMB_T mask = ~LIMB_T(0);
                 if (leading_zero) {
-                    mask = utils::lower_bit_mask(MOD[k]);
+                    mask = utils::significant_mask(MOD[k]);
                     leading_zero = mask == 0;
                 }
 

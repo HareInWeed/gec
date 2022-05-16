@@ -21,6 +21,13 @@ class Montgomery
     : public CRTP<Core,
                   Montgomery<Core, LIMB_T, LIMB_N, MOD, MOD_P, RR, OneR>> {
   public:
+    __host__ __device__ GEC_INLINE static const Core &r_sqr() {
+        return *reinterpret_cast<const Core *>(RR);
+    }
+    __host__ __device__ GEC_INLINE static const Core &one_r() {
+        return *reinterpret_cast<const Core *>(OneR);
+    }
+
     bool is_mul_id() const {
         return utils::VtSeqAll<LIMB_N, LIMB_T, utils::ops::Eq<LIMB_T>>::call(
             this->core().array(), OneR);
