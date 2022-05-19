@@ -50,7 +50,7 @@ alignas(32) extern const LIMB_T OneR_256[LN_256];
 /// @brief number of limbs for 256 bits bigint with 64-bit limb
 constexpr size_t LN2_256 = 4;
 /// @brief -MOD^{-1} (mod 2^64)
-constexpr LIMB2_T MOD_P2_256 = 0xd838091dd2253531u;
+constexpr LIMB2_T MOD2_P_256 = 0xd838091dd2253531u;
 /// @brief the modulus with 256 bits
 alignas(32) extern const LIMB2_T MOD2_256[LN2_256];
 /// @brief R^2 (mod MOD)

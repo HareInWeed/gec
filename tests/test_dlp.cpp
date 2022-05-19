@@ -55,7 +55,50 @@ TEST_CASE("pollard_rho", "[dlp][pollard_rho]") {
     REQUIRE(C::eq(xg, h));
 }
 
-TEST_CASE("multithread_pollard_rho", "[dlp][pollard_rho]") {
+TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
+    using C = Dlp3CurveA;
+    const C &g = Dlp3Gen1;
+    using S = Dlp3G1Scaler;
+
+    std::random_device rd;
+    std::mt19937 rng(rd());
+
+    C::Context<> ctx;
+    S::Context s_ctx;
+
+    C h;
+    REQUIRE(C::on_curve(g, ctx));
+
+    C::mul(h, S::mod(), g, ctx);
+    CAPTURE(h);
+    REQUIRE(h.is_inf());
+
+    S x;
+    S::sample_non_zero(x, rng);
+
+    C::mul(h, x, g, ctx);
+    REQUIRE(C::on_curve(h, ctx));
+
+    constexpr size_t l = 32;
+    S al[l], bl[l];
+    C pl[l];
+
+    S c, d, mon_c, mon_d;
+
+    BENCHMARK("pollard rho") {
+        pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx, s_ctx);
+        S::to_montgomery(mon_c, c);
+        S::to_montgomery(mon_d, d);
+        S::inv(mon_d, s_ctx);
+        S::mul(d, mon_c, mon_d);
+        S::from_montgomery(c, d);
+        return c.array()[0];
+    };
+}
+
+#ifdef GEC_ENABLE_PTHREAD
+
+TEST_CASE("multithread_pollard_rho", "[dlp][multithread_pollard_rho]") {
     using C = Dlp3CurveA;
     const C &g = Dlp3Gen1;
     using S = Dlp3G1Scaler;
@@ -99,48 +142,8 @@ TEST_CASE("multithread_pollard_rho", "[dlp][pollard_rho]") {
     REQUIRE(C::eq(xg, h));
 }
 
-TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
-    using C = Dlp3CurveA;
-    const C &g = Dlp3Gen1;
-    using S = Dlp3G1Scaler;
-
-    std::random_device rd;
-    std::mt19937 rng(rd());
-
-    C::Context<> ctx;
-    S::Context s_ctx;
-
-    C h;
-    REQUIRE(C::on_curve(g, ctx));
-
-    C::mul(h, S::mod(), g, ctx);
-    CAPTURE(h);
-    REQUIRE(h.is_inf());
-
-    S x;
-    S::sample_non_zero(x, rng);
-
-    C::mul(h, x, g, ctx);
-    REQUIRE(C::on_curve(h, ctx));
-
-    constexpr size_t l = 32;
-    S al[l], bl[l];
-    C pl[l];
-
-    S c, d, mon_c, mon_d;
-
-    BENCHMARK("pollard rho") {
-        pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx, s_ctx);
-        S::to_montgomery(mon_c, c);
-        S::to_montgomery(mon_d, d);
-        S::inv(mon_d, s_ctx);
-        S::mul(d, mon_c, mon_d);
-        S::from_montgomery(c, d);
-        return c.array()[0];
-    };
-}
-
-TEST_CASE("multithread_pollard_rho bench", "[dlp][pollard_rho][bench]") {
+TEST_CASE("multithread_pollard_rho bench",
+          "[dlp][multithread_pollard_rho][bench]") {
     using C = Dlp3CurveA;
     const C &g = Dlp3Gen1;
     using S = Dlp3G1Scaler;
@@ -190,3 +193,5 @@ TEST_CASE("multithread_pollard_rho bench", "[dlp][pollard_rho][bench]") {
         };
     }
 }
+
+#endif // GEC_ENABLE_PTHREAD

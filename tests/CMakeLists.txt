@@ -17,18 +17,15 @@ target_sources(
             "test_curve.cpp"
             "test_dlp.cpp")
 
+if(GEC_ENABLE_AVX2)
+    target_sources(unit_test PRIVATE "test_avx_montgomery.cpp")
+endif()
+
 target_compile_features(unit_test PRIVATE cxx_std_14)
 target_link_libraries(unit_test PRIVATE gec)
 target_link_libraries(unit_test PRIVATE Catch2::Catch2)
 
 add_test(NAME gec_test COMMAND unit_test ~[bench])
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(unit_test PRIVATE -march=native)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(unit_test PRIVATE -march=native)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(unit_test PRIVATE /arch:AVX2)
-endif()
 
 if(GEC_ENABLE_CUDA)
     add_executable(cu_unit_test)
