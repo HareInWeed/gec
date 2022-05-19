@@ -34,6 +34,34 @@ class Montgomery
     }
     void set_mul_id() { utils::fill_seq<LIMB_N>(this->core().array(), OneR); }
 
+    __host__ __device__ GEC_INLINE static void
+    to_montgomery(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+        a.set_zero();
+        add_mul(a, b, r_sqr());
+    }
+    __host__ __device__ GEC_INLINE static void
+    from_montgomery(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+        a.set_zero();
+        using namespace utils;
+
+        LIMB_T *a_arr = a.array();
+        const LIMB_T *b_arr = b.array();
+
+        fill_seq<LIMB_N>(a_arr, b_arr);
+
+        for (int i = 0; i < LIMB_N; ++i) {
+            LIMB_T m = a_arr[0] * MOD_P;
+            LIMB_T last = seq_add_mul_limb<LIMB_N>(a_arr, MOD, m);
+
+            seq_shift_right<LIMB_N, std::numeric_limits<LIMB_T>::digits>(a_arr);
+            a_arr[LIMB_N - 1] = last;
+        }
+
+        if (VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, MOD) != CmpEnum::Lt) {
+            seq_sub<LIMB_N>(a_arr, MOD);
+        }
+    }
+
     __host__ __device__ static void add_mul(Core &GEC_RSTRCT a,
                                             const Core &GEC_RSTRCT b,
                                             const Core &GEC_RSTRCT c) {
@@ -163,11 +191,46 @@ class MontgomeryCarryFree
     : public CRTP<Core, MontgomeryCarryFree<Core, LIMB_T, LIMB_N, MOD, MOD_P,
                                             RR, OneR>> {
   public:
+    __host__ __device__ GEC_INLINE static const Core &r_sqr() {
+        return *reinterpret_cast<const Core *>(RR);
+    }
+    __host__ __device__ GEC_INLINE static const Core &one_r() {
+        return *reinterpret_cast<const Core *>(OneR);
+    }
+
     bool is_mul_id() const {
         return utils::VtSeqAll<LIMB_N, LIMB_T, utils::ops::Eq<LIMB_T>>::call(
             this->core().array(), OneR);
     }
     void set_mul_id() { utils::fill_seq<LIMB_N>(this->core().array(), OneR); }
+
+    __host__ __device__ GEC_INLINE static void
+    to_montgomery(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+        a.set_zero();
+        add_mul(a, b, r_sqr());
+    }
+    __host__ __device__ GEC_INLINE static void
+    from_montgomery(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+        a.set_zero();
+        using namespace utils;
+
+        LIMB_T *a_arr = a.array();
+        const LIMB_T *b_arr = b.array();
+
+        fill_seq<LIMB_N>(a_arr, b_arr);
+
+        for (int i = 0; i < LIMB_N; ++i) {
+            LIMB_T m = a_arr[0] * MOD_P;
+            LIMB_T last = seq_add_mul_limb<LIMB_N>(a_arr, MOD, m);
+
+            seq_shift_right<LIMB_N, std::numeric_limits<LIMB_T>::digits>(a_arr);
+            a_arr[LIMB_N - 1] = last;
+        }
+
+        if (VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, MOD) != CmpEnum::Lt) {
+            seq_sub<LIMB_N>(a_arr, MOD);
+        }
+    }
 
     __host__ __device__ static void add_mul(Core &GEC_RSTRCT a,
                                             const Core &GEC_RSTRCT b,

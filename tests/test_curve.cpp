@@ -246,7 +246,7 @@ TEST_CASE("jacobian bench", "[curve][jacobian][bench]") {
 TEST_CASE("jacobian scaler_mul", "[curve][jacobian][scaler_mul]") {
     using C = Dlp1CurveJ;
     using F = Dlp1Field;
-    using S = DlpScaler;
+    using S = Dlp1Scaler;
     S sOne(1);
 
     std::random_device rd;
@@ -277,13 +277,11 @@ TEST_CASE("jacobian scaler_mul", "[curve][jacobian][scaler_mul]") {
     REQUIRE(prod1.y() == p.y());
     REQUIRE(prod1.z() == p.z());
 
-    S s0 = S::mod();
-    C::mul(prod1, s0, p, ctx);
+    C::mul(prod1, S::mod(), p, ctx);
     CAPTURE(prod1);
     REQUIRE(prod1.is_inf());
 
     S s1, s2;
-    S &tmp = reinterpret_cast<S &>(ctx.get<0>());
     for (int k = 0; k < 100; ++k) {
         S::sample(s1, rng);
         S::neg(s2, s1);

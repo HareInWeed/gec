@@ -6,36 +6,187 @@
 #include "configured_catch.hpp"
 #include "curve.hpp"
 
+#include <iomanip>
+#include <sstream>
+
 using namespace gec;
 using namespace dlp;
 
 TEST_CASE("pollard_rho", "[dlp][pollard_rho]") {
-    using C = Dlp2CurveJ;
-    using F = Dlp2Field;
-    using S = Dlp2Scaler;
+    using C = Dlp3CurveA;
+    const C &g = Dlp3Gen1;
+    using S = Dlp3G1Scaler;
 
     std::random_device rd;
     std::mt19937 rng(rd());
 
     C::Context<> ctx;
-
-    C g;
-    F::mul(g.x(), {4023}, F::r_sqr());
-    F::mul(g.y(), {6036}, F::r_sqr());
-    C::from_affine(g);
+    S::Context s_ctx;
 
     C h;
-    F::mul(h.x(), {4135}, F::r_sqr());
-    F::mul(h.y(), {3169}, F::r_sqr());
-    C::from_affine(h);
+    REQUIRE(C::on_curve(g, ctx));
+
+    C::mul(h, S::mod(), g, ctx);
+    CAPTURE(h);
+    REQUIRE(h.is_inf());
+
+    S x;
+    S::sample_non_zero(x, rng);
+
+    C::mul(h, x, g, ctx);
+    REQUIRE(C::on_curve(h, ctx));
 
     constexpr size_t l = 32;
     S al[l], bl[l];
     C pl[l];
 
-    S c, d;
+    S c, d, mon_c, mon_d;
 
-    pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx);
+    pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx, s_ctx);
+    S::to_montgomery(mon_c, c);
+    S::to_montgomery(mon_d, d);
+    S::inv(mon_d, s_ctx);
+    S::mul(d, mon_c, mon_d);
+    S::from_montgomery(c, d);
 
-    cout << c << "/" << d << endl;
+    C xg;
+    C::mul(xg, c, g, ctx);
+    CAPTURE(c, xg, h);
+    REQUIRE(C::eq(xg, h));
+}
+
+TEST_CASE("multithread_pollard_rho", "[dlp][pollard_rho]") {
+    using C = Dlp3CurveA;
+    const C &g = Dlp3Gen1;
+    using S = Dlp3G1Scaler;
+    using F = C::Field;
+
+    std::random_device rd;
+    std::mt19937 rng(rd());
+
+    C::Context<> ctx;
+    S::Context s_ctx;
+
+    C h;
+    REQUIRE(C::on_curve(g, ctx));
+
+    C::mul(h, S::mod(), g, ctx);
+    CAPTURE(h);
+    REQUIRE(h.is_inf());
+
+    S x;
+    S::sample_non_zero(x, rng);
+
+    C::mul(h, x, g, ctx);
+    REQUIRE(C::on_curve(h, ctx));
+
+    size_t l = 32;
+    size_t worker_n = 8;
+    S c, d, mon_c, mon_d;
+
+    F mask(0x80000000, 0, 0, 0, 0, 0, 0, 0);
+
+    multithread_pollard_rho(c, d, l, worker_n, mask, g, h);
+    S::to_montgomery(mon_c, c);
+    S::to_montgomery(mon_d, d);
+    S::inv(mon_d, s_ctx);
+    S::mul(d, mon_c, mon_d);
+    S::from_montgomery(c, d);
+
+    C xg;
+    C::mul(xg, c, g, ctx);
+    CAPTURE(c, xg, h);
+    REQUIRE(C::eq(xg, h));
+}
+
+TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
+    using C = Dlp3CurveA;
+    const C &g = Dlp3Gen1;
+    using S = Dlp3G1Scaler;
+
+    std::random_device rd;
+    std::mt19937 rng(rd());
+
+    C::Context<> ctx;
+    S::Context s_ctx;
+
+    C h;
+    REQUIRE(C::on_curve(g, ctx));
+
+    C::mul(h, S::mod(), g, ctx);
+    CAPTURE(h);
+    REQUIRE(h.is_inf());
+
+    S x;
+    S::sample_non_zero(x, rng);
+
+    C::mul(h, x, g, ctx);
+    REQUIRE(C::on_curve(h, ctx));
+
+    constexpr size_t l = 32;
+    S al[l], bl[l];
+    C pl[l];
+
+    S c, d, mon_c, mon_d;
+
+    BENCHMARK("pollard rho") {
+        pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx, s_ctx);
+        S::to_montgomery(mon_c, c);
+        S::to_montgomery(mon_d, d);
+        S::inv(mon_d, s_ctx);
+        S::mul(d, mon_c, mon_d);
+        S::from_montgomery(c, d);
+        return c.array()[0];
+    };
+}
+
+TEST_CASE("multithread_pollard_rho bench", "[dlp][pollard_rho][bench]") {
+    using C = Dlp3CurveA;
+    const C &g = Dlp3Gen1;
+    using S = Dlp3G1Scaler;
+    using F = C::Field;
+
+    std::random_device rd;
+    std::mt19937 rng(rd());
+
+    C::Context<> ctx;
+    S::Context s_ctx;
+
+    C h;
+    REQUIRE(C::on_curve(g, ctx));
+
+    C::mul(h, S::mod(), g, ctx);
+    CAPTURE(h);
+    REQUIRE(h.is_inf());
+
+    S x;
+    S::sample_non_zero(x, rng);
+
+    C::mul(h, x, g, ctx);
+    REQUIRE(C::on_curve(h, ctx));
+
+    size_t l = 32;
+    size_t worker_n = 8;
+    S c, d, mon_c, mon_d;
+
+    std::basic_stringstream<char> bench_name;
+    bench_name << "multithread pollard rho, mask 0x";
+
+    for (int k = 0; k < 12; ++k) {
+        F::LimbT m = F::LimbT(std::make_signed_t<F::LimbT>(0x80000000) >> k);
+
+        bench_name.seekp(32);
+        bench_name << std::hex << setw(8) << setfill('0') << m;
+
+        BENCHMARK(bench_name.str()) {
+            F mask(m, 0, 0, 0, 0, 0, 0, 0);
+            multithread_pollard_rho(c, d, l, worker_n, mask, g, h);
+            S::to_montgomery(mon_c, c);
+            S::to_montgomery(mon_d, d);
+            S::inv(mon_d, s_ctx);
+            S::mul(d, mon_c, mon_d);
+            S::from_montgomery(c, d);
+            return c.array()[0];
+        };
+    }
 }

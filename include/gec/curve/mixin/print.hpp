@@ -40,14 +40,14 @@ class PointPrint : protected CRTP<Core, PointPrint<Core>> {
     friend CRTP<Core, PointPrint<Core>>;
 
   public:
-    __host__ __device__ void print() {
+    __host__ __device__ void print() const {
         using namespace std;
         printf("{");
         PointPrintHelper<Core, 0, Core::CompN>::call(this->core());
         printf("}\n");
     }
     __host__ __device__ void println() const {
-        print();
+        this->print();
         printf("\n");
     }
 };

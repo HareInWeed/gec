@@ -4,6 +4,7 @@
 
 #include "basic.hpp"
 
+#include <functional>
 #include <type_traits>
 
 namespace gec {
@@ -44,6 +45,13 @@ struct LowerKMask<T, K, std::enable_if_t<!std::is_unsigned_v<T>>> {
     const static T value = T(LowerKMask<T, K, std::make_unsigned<T>>::value);
 };
 
+template <typename T, size_t K = 0>
+struct HigherKMask {
+    const static T value =
+        T(~LowerKMask<T, std::numeric_limits<std::make_unsigned<T>>::digits - K,
+                      std::make_unsigned<T>>::value);
+};
+
 template <typename T, size_t I = std::numeric_limits<T>::digits / 2,
           typename Enable = void>
 struct TrailingZeros {
@@ -57,7 +65,7 @@ struct TrailingZeros {
 };
 template <typename T>
 struct TrailingZeros<T, 0> {
-    __host__ __device__ GEC_INLINE static void call(T x, size_t &b) {}
+    __host__ __device__ GEC_INLINE static void call(T, size_t &) {}
 };
 template <typename T, size_t I>
 struct TrailingZeros<T, I, typename std::enable_if_t<!std::is_unsigned_v<T>>> {
@@ -72,6 +80,24 @@ __host__ __device__ GEC_INLINE size_t trailing_zeros(T x) {
     TrailingZeros<T>::call(x, b);
     return b;
 }
+
+__host__ __device__ GEC_INLINE void hash_combine(size_t &seed, size_t h) {
+    seed ^= h + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+template <typename LIMB_T, size_t LIMB_N, typename Hasher>
+struct SeqHasher {
+    __host__ __device__ GEC_INLINE static void
+    call(size_t &seed, const LIMB_T *arr, const Hasher &hasher) {
+        utils::hash_combine(seed, hasher(*arr));
+        SeqHasher<LIMB_T, LIMB_N - 1, Hasher>::call(seed, arr + 1, hasher);
+    }
+};
+template <typename LIMB_T, typename Hasher>
+struct SeqHasher<LIMB_T, 0, Hasher> {
+    __host__ __device__ GEC_INLINE static void call(size_t &, const LIMB_T *,
+                                                    const Hasher &) {}
+};
 
 } // namespace utils
 

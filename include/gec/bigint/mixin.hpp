@@ -7,6 +7,7 @@
 #include "mixin/constants.hpp"
 #include "mixin/context.hpp"
 #include "mixin/exp.hpp"
+#include "mixin/hasher.hpp"
 #include "mixin/mod_add_sub.hpp"
 #include "mixin/montgomery.hpp"
 #include "mixin/ostream.hpp"

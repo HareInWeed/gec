@@ -94,7 +94,6 @@ TEST_CASE("add group sub", "[add_group][field]") {
 
 TEST_CASE("mul_pow2", "[add_group][field]") {
     using F = Field160;
-    const F One(1);
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -104,7 +103,7 @@ TEST_CASE("mul_pow2", "[add_group][field]") {
 
     F a, a2, a4, a8, res;
     do {
-        for (int i = 0; i < LN_160; ++i) {
+        for (size_t i = 0; i < LN_160; ++i) {
             a.array()[i] = dis_u32(gen);
         }
     } while (a >= F::mod());
@@ -136,7 +135,6 @@ TEST_CASE("random sampling", "[add_group][field][random]") {
     using F1 = Field160;
     using F2 = Field160_2;
     using G = AddGroup<LIMB_T, 3, SmallMod>;
-    const auto &Mod3 = reinterpret_cast<const G &>(SmallMod);
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -171,7 +169,6 @@ TEST_CASE("random sampling", "[add_group][field][random]") {
 
 TEST_CASE("mul_pow2 bench", "[add_group][bench]") {
     using F = Field160;
-    const F One(1);
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -181,7 +178,7 @@ TEST_CASE("mul_pow2 bench", "[add_group][bench]") {
 
     F a;
     do {
-        for (int i = 0; i < LN_160; ++i) {
+        for (size_t i = 0; i < LN_160; ++i) {
             a.array()[i] = dis_u32(gen);
         }
     } while (a >= F::mod());
@@ -245,7 +242,6 @@ TEST_CASE("mul_pow2 bench", "[add_group][bench]") {
 
 TEST_CASE("montgomery mul", "[ring][field]") {
     using F = Field160;
-    const F One(1);
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -255,29 +251,29 @@ TEST_CASE("montgomery mul", "[ring][field]") {
 
     F a, b;
 
-    F::mul(a, F(), F::r_sqr());
+    F::to_montgomery(a, F());
     REQUIRE(F(0) == a);
 
-    F::mul(b, a, One);
+    F::from_montgomery(b, a);
     REQUIRE(F(0) == b);
 
-    F::mul(a, F(0xffffffffu), F::r_sqr());
+    F::to_montgomery(a, F(0xffffffffu));
     REQUIRE(F(0xad37b410u, 0x255c6eb2u, 0x7601a883u, 0x659883e8u,
               0x070707fcu) == a);
 
-    F::mul(b, a, One);
+    F::from_montgomery(b, a);
     REQUIRE(F(0xffffffffu) == b);
 
     F c, d, e;
     do {
-        for (int i = 0; i < LN_160; ++i) {
+        for (size_t i = 0; i < LN_160; ++i) {
             c.array()[i] = dis_u32(gen);
         }
     } while (c >= F::mod());
 
     d = c;
-    F::mul(e, d, F::r_sqr());
-    F::mul(d, e, One);
+    F::to_montgomery(e, d);
+    F::from_montgomery(d, e);
     REQUIRE(c == d);
 
     LIMB_T l, h, x, y;
@@ -286,30 +282,30 @@ TEST_CASE("montgomery mul", "[ring][field]") {
     x = 0xd8b2f21eu;
     y = 0xabf7c642u;
     utils::uint_mul_lh(l, h, x, y);
-    F::mul(mon_x, F(x), F::r_sqr());
-    F::mul(mon_y, F(y), F::r_sqr());
+    F::to_montgomery(mon_x, F(x));
+    F::to_montgomery(mon_y, F(y));
     F::mul(mon_xy, mon_x, mon_y);
-    F::mul(xy, mon_xy, One);
+    F::from_montgomery(xy, mon_xy);
     REQUIRE(l == xy.array()[0]);
     REQUIRE(h == xy.array()[1]);
 
     x = dis_u32(gen);
     y = dis_u32(gen);
     utils::uint_mul_lh(l, h, x, y);
-    F::mul(mon_x, F(x), F::r_sqr());
-    F::mul(mon_y, F(y), F::r_sqr());
+    F::to_montgomery(mon_x, F(x));
+    F::to_montgomery(mon_y, F(y));
     F::mul(mon_xy, mon_x, mon_y);
-    F::mul(xy, mon_xy, One);
+    F::from_montgomery(xy, mon_xy);
     REQUIRE(l == xy.array()[0]);
     REQUIRE(h == xy.array()[1]);
 
     x = dis_u32(gen);
     y = dis_u32(gen);
     utils::uint_mul_lh(l, h, x, y);
-    F::mul(mon_x, F::r_sqr(), F(x));
-    F::mul(mon_y, F::r_sqr(), F(y));
+    F::to_montgomery(mon_x, F(x));
+    F::to_montgomery(mon_y, F(y));
     F::mul(mon_xy, mon_x, mon_y);
-    F::mul(xy, One, mon_xy);
+    F::from_montgomery(xy, mon_xy);
     REQUIRE(l == xy.array()[0]);
     REQUIRE(h == xy.array()[1]);
 
@@ -323,7 +319,6 @@ TEST_CASE("montgomery mul", "[ring][field]") {
 TEST_CASE("montgomery inv", "[field]") {
     using F = Field160;
     F::Context ctx;
-    const F One(1);
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -334,23 +329,24 @@ TEST_CASE("montgomery inv", "[field]") {
     F a, mon_a, inv_a, mon_prod, prod;
     for (int k = 0; k < 10000; ++k) {
         do {
-            for (int k = 0; k < LN_160; ++k) {
+            for (size_t k = 0; k < LN_160; ++k) {
                 a.array()[k] = dis_u32(gen);
             }
-        } while (a >= F::r_sqr());
+        } while (a >= F::mod());
         // a = Field(0x31a50ad6u, 0x93f524b7u, 0xa6ea2efeu, 0xed31237au,
         //           0x2d2731f7u);
-        F::mul(mon_a, a, F::r_sqr());
+        F::to_montgomery(mon_a, a);
         F::inv(inv_a, mon_a, ctx);
         F::mul(mon_prod, mon_a, inv_a);
-        F::mul(prod, mon_prod, One);
-        REQUIRE(One == prod);
+        F::from_montgomery(prod, mon_prod);
+        CAPTURE(prod);
+        REQUIRE(prod.is_one());
     }
 }
 
 TEST_CASE("montgomery exp", "[field]") {
     using F = Field160;
-    const F Zero, One(1);
+    const F One(1);
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -364,33 +360,31 @@ TEST_CASE("montgomery exp", "[field]") {
 
     for (int k = 0; k < 10000; ++k) {
         do {
-            for (int k = 0; k < LN_160; ++k) {
+            for (size_t k = 0; k < LN_160; ++k) {
                 a.array()[k] = dis_u32(gen);
             }
-        } while (a >= F::r_sqr() && !a.is_zero());
+        } while (a >= F::mod() && !a.is_zero());
         // a = Field(0x31a50ad6u, 0x93f524b7u, 0xa6ea2efeu, 0xed31237au,
         //           0x2d2731f7u);
-        F::mul(mon_a, a, F::r_sqr());
+        F::to_montgomery(mon_a, a);
 
         F::pow(mon_exp_a, mon_a, 1u, ctx);
         REQUIRE(mon_exp_a == mon_a);
 
         F::pow(mon_exp_a, mon_a, 0u, ctx);
-        F::mul(exp_a, mon_exp_a, One);
+        F::from_montgomery(exp_a, mon_exp_a);
         REQUIRE(One == exp_a);
 
         F::pow(mon_exp_a, mon_a, F::mod(), ctx);
         REQUIRE(mon_exp_a == mon_a); // Fermat's Little Theorem
 
         F::pow(mon_exp_a, mon_a, mod_m, ctx);
-        F::mul(exp_a, mon_exp_a, One);
+        F::from_montgomery(exp_a, mon_exp_a);
         REQUIRE(One == exp_a); // Fermat's Little Theorem
     }
 }
 
 TEST_CASE("montgomery mul bench", "[ring][field][bench]") {
-    const Field160_2 One(1);
-
     std::random_device rd;
     std::mt19937 gen(rd());
 
@@ -410,26 +404,24 @@ TEST_CASE("montgomery mul bench", "[ring][field][bench]") {
         y0.array()[1] = dis_u64(gen);
         y0.array()[2] = dis_u32(gen);
     } while (y0 >= Field160_2::mod());
-    Field160_2::mul(mon_x0, x0, Field160_2::r_sqr());
-    Field160_2::mul(mon_y0, y0, Field160_2::r_sqr());
+    Field160_2::to_montgomery(mon_x0, x0);
+    Field160_2::to_montgomery(mon_y0, y0);
 
     {
         using F = Field160;
-        const F One(1);
         const F &x = reinterpret_cast<const F &>(x0);
-        const F &y = reinterpret_cast<const F &>(y0);
         const F &mon_x = reinterpret_cast<const F &>(mon_x0);
         const F &mon_y = reinterpret_cast<const F &>(mon_y0);
 
         BENCHMARK("32-bits into montgomery form") {
             F res;
-            F::mul(res, x, F::r_sqr());
+            F::to_montgomery(res, x);
             return res;
         };
 
         BENCHMARK("32-bits from montgomery form") {
             F res;
-            F::mul(res, mon_x, One);
+            F::from_montgomery(res, mon_x);
             return res;
         };
 
@@ -442,21 +434,19 @@ TEST_CASE("montgomery mul bench", "[ring][field][bench]") {
 
     {
         using F = Field160_2;
-        const F One(1);
         const F &x = reinterpret_cast<const F &>(x0);
-        const F &y = reinterpret_cast<const F &>(y0);
         const F &mon_x = reinterpret_cast<const F &>(mon_x0);
         const F &mon_y = reinterpret_cast<const F &>(mon_y0);
 
         BENCHMARK("64-bits into montgomery form") {
             F res;
-            F::mul(res, x, F::r_sqr());
+            F::to_montgomery(res, x);
             return res;
         };
 
         BENCHMARK("64-bits from montgomery form") {
             F res;
-            F::mul(res, mon_x, One);
+            F::from_montgomery(res, mon_x);
             return res;
         };
 
@@ -469,8 +459,6 @@ TEST_CASE("montgomery mul bench", "[ring][field][bench]") {
 }
 
 TEST_CASE("montgomery inv bench", "[field][bench]") {
-    const Field160_2 One(1);
-
     std::random_device rd;
     std::mt19937 gen(rd());
 
@@ -508,4 +496,13 @@ TEST_CASE("montgomery inv bench", "[field][bench]") {
             return inv_x;
         };
     }
+}
+
+TEST_CASE("bigint hash", "[field][hash]") {
+    using F = Field160;
+    F::Hasher h;
+
+    F Zero(0), One(1);
+
+    REQUIRE(h(Zero) != h(One));
 }

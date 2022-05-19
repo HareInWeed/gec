@@ -27,8 +27,6 @@ class Exponentiation : protected CRTP<Core, Exponentiation<Core>> {
         GEC_CTX_CAP(CTX, 1);
 
         Core &ap = ctx.template get<0>();
-        constexpr bool need_copy_init =
-            !((std::numeric_limits<IntT>::digits * N) & 0x1);
         bool need_copy = false;
         Core *p1 = &a, *p2 = &ap;
         p1->set_mul_id();
@@ -36,7 +34,7 @@ class Exponentiation : protected CRTP<Core, Exponentiation<Core>> {
         int i = N - 1, j;
         for (; i >= 0; --i) {
             for (j = Bits - 1; j >= 0; --j) {
-                if ((1 << j) & e[i]) {
+                if ((IntT(1) << j) & e[i]) {
                     goto exp;
                 }
             }
@@ -47,7 +45,7 @@ class Exponentiation : protected CRTP<Core, Exponentiation<Core>> {
                 Core::mul(*p2, *p1, *p1);
                 std::swap(p1, p2);
                 need_copy = !need_copy;
-                if ((1 << j) & e[i]) {
+                if ((IntT(1) << j) & e[i]) {
                     Core::mul(*p2, *p1, b);
                     std::swap(p1, p2);
                     need_copy = !need_copy;

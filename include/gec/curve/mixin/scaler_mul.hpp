@@ -28,8 +28,6 @@ class ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
         // TODO: check context capacity
 
         Core &ap = ctx.template get_p<0>();
-        constexpr bool need_copy_init =
-            !((std::numeric_limits<IntT>::digits * N) & 0x1);
         bool need_copy = false;
         Core *p1 = &a, *p2 = &ap;
         p1->set_inf();
@@ -37,7 +35,7 @@ class ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
         int i = N - 1, j;
         for (; i >= 0; --i) {
             for (j = Bits - 1; j >= 0; --j) {
-                if ((1 << j) & e[i]) {
+                if ((IntT(1) << j) & e[i]) {
                     goto mul;
                 }
             }
@@ -48,7 +46,7 @@ class ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
                 Core::add(*p2, *p1, *p1, ctx.template rest<0, 1>());
                 std::swap(p1, p2);
                 need_copy = !need_copy;
-                if ((1 << j) & e[i]) {
+                if ((IntT(1) << j) & e[i]) {
                     Core::add(*p2, *p1, b, ctx.template rest<0, 1>());
                     std::swap(p1, p2);
                     need_copy = !need_copy;

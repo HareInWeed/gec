@@ -21,6 +21,8 @@ class Affine : protected CRTP<Core, Affine<Core, FIELD_T, A, B>> {
     using F = FIELD_T;
 
   public:
+    using Field = FIELD_T;
+
     __host__ __device__ GEC_INLINE bool is_inf() const {
         return this->core().x().is_zero() && this->core().y().is_zero();
     }
@@ -28,6 +30,12 @@ class Affine : protected CRTP<Core, Affine<Core, FIELD_T, A, B>> {
     __host__ __device__ GEC_INLINE void set_inf() {
         this->core().x().set_zero();
         this->core().y().set_zero();
+    }
+
+    template <typename F_CTX>
+    __host__ __device__ GEC_INLINE static bool
+    eq(const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, F_CTX &) {
+        return eq(a, b);
     }
 
     __host__ __device__ GEC_INLINE static bool eq(const Core &GEC_RSTRCT a,
@@ -92,7 +100,7 @@ class Affine : protected CRTP<Core, Affine<Core, FIELD_T, A, B>> {
         F::mul(a.y(), b.x(), b.x()); // x1^2
         F::add(a.x(), a.y(), a.y()); // 2 x1^2
         F::add(a.x(), a.y());        // 3 x1^2
-        F::add(a.x(), B);            // 3 x1^2 + B
+        F::add(a.x(), A);            // 3 x1^2 + B
         F::mul(l, a.x(), d);         // l = (3 x1^2 + B) / (2 y1)
         F::mul(a.x(), l, l);         // l^2
         F::add(a.y(), b.x(), b.x()); // 2 x1

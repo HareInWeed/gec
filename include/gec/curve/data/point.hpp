@@ -13,13 +13,10 @@ namespace curve {
 /** @brief N-dimensional point
  */
 template <typename COMP_T, size_t N>
-class Point : bigint::ArrayLE<COMP_T, N>,
+class Point : public bigint::ArrayLE<COMP_T, N>,
               public ArrGetCompLE<Point<COMP_T, N>>,
               public NamedComp<Point<COMP_T, N>> {
     using Base = bigint::ArrayLE<COMP_T, N>;
-    using Self = Point<COMP_T, N>;
-
-    friend ArrGetCompLE<Self>;
 
   public:
     using CompT = COMP_T;

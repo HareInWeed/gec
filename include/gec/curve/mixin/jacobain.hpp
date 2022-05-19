@@ -18,6 +18,8 @@ class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
     using F = FIELD_T;
 
   public:
+    using Field = FIELD_T;
+
     __host__ __device__ GEC_INLINE bool is_inf() const {
         return this->core().z().is_zero();
     }
@@ -56,25 +58,33 @@ class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
                                               F_CTX &GEC_RSTRCT ctx) {
         GEC_CTX_CAP(F_CTX, 2);
 
-        if (a.is_inf() || a.z().is_mul_id())
+        if (a.z().is_mul_id()) {
             return;
+        } else if (a.is_inf()) {
+            a.x().set_zero();
+            a.y().set_zero();
+        } else {
+            F &t1 = ctx.template get<0>();
+            F &t2 = ctx.template get<1>();
 
-        F &t1 = ctx.template get<0>();
-        F &t2 = ctx.template get<1>();
-
-        F::inv(a.z(), ctx);       // z^-1
-        F::mul(t1, a.z(), a.z()); // z^-2
-        F::mul(t2, a.x(), t1);    // x z^-2
-        a.x() = t2;               //
-        F::mul(t2, t1, a.z());    // z^-3
-        F::mul(t1, a.y(), t2);    // y z^-3
-        a.y() = t1;               //
-        // we don't assign z = 1 here, so `to_affine` and `from_affine` should
-        // be paired
+            F::inv(a.z(), ctx);       // z^-1
+            F::mul(t1, a.z(), a.z()); // z^-2
+            F::mul(t2, a.x(), t1);    // x z^-2
+            a.x() = t2;               //
+            F::mul(t2, t1, a.z());    // z^-3
+            F::mul(t1, a.y(), t2);    // y z^-3
+            a.y() = t1;               //
+            // we don't assign z = 1 here, so `to_affine` and `from_affine`
+            // should be paired
+        }
     }
 
     __host__ __device__ static void from_affine(Core &GEC_RSTRCT a) {
-        a.z().set_mul_id();
+        if (a.x().is_zero() && a.y().is_zero()) {
+            a.z().set_zero();
+        } else {
+            a.z().set_mul_id();
+        }
     }
 
     template <typename F_CTX>

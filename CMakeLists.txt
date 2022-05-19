@@ -29,6 +29,23 @@ add_library(gec INTERFACE)
 target_include_directories(gec INTERFACE "./include")
 target_compile_features(gec INTERFACE cxx_std_14)
 
+option(GEC_ENABLE_PTHREAD "use pthread" OFF)
+if(GEC_ENABLE_PTHREAD)
+    target_compile_definitions(gec INTERFACE GEC_ENABLE_PTHREAD)
+    if(WIN32)
+        find_package(pthreads CONFIG REQUIRED)
+        target_link_libraries(
+            gec
+            INTERFACE PThreads4W::PThreads4W PThreads4W::PThreads4W_CXXEXC
+                      PThreads4W::PThreads4W_STRUCTEXC
+                      PThreads_windows::PThreads_windows)
+    else()
+        set(THREADS_PREFER_PTHREAD_FLAG ON)
+        find_package(Threads REQUIRED)
+        target_link_libraries(gec INTERFACE Threads::Threads)
+    endif()
+endif()
+
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()

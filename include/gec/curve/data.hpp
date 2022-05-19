@@ -2,6 +2,7 @@
 #ifndef GEC_CURVE_DATA_HPP
 #define GEC_CURVE_DATA_HPP
 
+#include "data/hasher.hpp"
 #include "data/point.hpp"
 #include "data/point_context.hpp"
 

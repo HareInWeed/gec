@@ -12,7 +12,7 @@ namespace gec {
 namespace utils {
 
 template <typename T>
-__host__ __device__ GEC_INLINE void fill_le(T *dst) {}
+__host__ __device__ GEC_INLINE void fill_le(T *) {}
 /** @brief fill `dst` with the rest of arguments, from lower to higher (big
  * endian)
  */
@@ -54,8 +54,8 @@ struct FillSeqLimb<1, T> {
 };
 template <typename T>
 struct FillSeqLimb<0, T> {
-    __host__ __device__ GEC_INLINE static void call(T *GEC_RSTRCT dst,
-                                                    const T &GEC_RSTRCT elem) {
+    __host__ __device__ GEC_INLINE static void call(T *GEC_RSTRCT,
+                                                    const T &GEC_RSTRCT) {
         // don't do anything
     }
 };
@@ -153,8 +153,8 @@ struct VtSeqCmp {
 };
 template <typename T>
 struct VtSeqCmp<0, T> {
-    __host__ __device__ GEC_INLINE static CmpEnum call(const T *GEC_RSTRCT a,
-                                                       const T *GEC_RSTRCT b) {
+    __host__ __device__ GEC_INLINE static CmpEnum call(const T *GEC_RSTRCT,
+                                                       const T *GEC_RSTRCT) {
         return CmpEnum::Eq;
     }
 };
@@ -206,13 +206,13 @@ struct SeqShiftRightInplace<1, LS, 0, T> {
 };
 template <size_t LS, size_t BS, typename T>
 struct SeqShiftRightInplace<0, LS, BS, T> {
-    __host__ __device__ GEC_INLINE static void call(T *a) {
+    __host__ __device__ GEC_INLINE static void call(T *) {
         // do nothing
     }
 };
 template <size_t LS, typename T>
 struct SeqShiftRightInplace<0, LS, 0, T> {
-    __host__ __device__ GEC_INLINE static void call(T *a) {
+    __host__ __device__ GEC_INLINE static void call(T *) {
         // do nothing
     }
 };
@@ -263,13 +263,13 @@ struct SeqShiftLeftInplace<1, LS, 0, T> {
 };
 template <size_t LS, size_t BS, typename T>
 struct SeqShiftLeftInplace<0, LS, BS, T> {
-    __host__ __device__ GEC_INLINE static void call(T *a) {
+    __host__ __device__ GEC_INLINE static void call(T *) {
         // do nothing
     }
 };
 template <size_t LS, typename T>
 struct SeqShiftLeftInplace<0, LS, 0, T> {
-    __host__ __device__ GEC_INLINE static void call(T *a) {
+    __host__ __device__ GEC_INLINE static void call(T *) {
         // do nothing
     }
 };
