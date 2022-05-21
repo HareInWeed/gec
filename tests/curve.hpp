@@ -7,68 +7,47 @@
 
 #include <gec/curve.hpp>
 
+template <typename Core>
+class CurveMixin : public gec::curve::ScalerMul<Core>,
+                   public gec::curve::WithPointContext<Core>,
+                   public gec::curve::PointOstream<Core>,
+                   public gec::curve::PointPrint<Core> {};
+
+template <typename FT, const FT &A, const FT &B>
+struct AffineC : public gec::curve::Point<FT, 2>,
+                 public gec::curve::Affine<AffineC<FT, A, B>, FT, A, B>,
+                 public gec::curve::CompWiseEq<AffineC<FT, A, B>>,
+                 public gec::curve::WithPointHasher<AffineC<FT, A, B>>,
+                 public CurveMixin<AffineC<FT, A, B>> {
+    using gec::curve::Point<FT, 2>::Point;
+};
+
+template <typename FT, const FT &A, const FT &B>
+struct JacobianC : public gec::curve::Point<FT, 3>,
+                   public gec::curve::Jacobain<JacobianC<FT, A, B>, FT, A, B>,
+                   public CurveMixin<JacobianC<FT, A, B>> {
+    using gec::curve::Point<FT, 3>::Point;
+};
+
+template <typename FT, const FT &A, const FT &B>
+struct ProjectiveC
+    : public gec::curve::Point<FT, 3>,
+      public gec::curve::Projective<ProjectiveC<FT, A, B>, FT, A, B>,
+      public CurveMixin<ProjectiveC<FT, A, B>> {
+    using gec::curve::Point<FT, 3>::Point;
+};
+
 extern const Field160 AR_160;
 extern const Field160 BR_160;
+using CurveA = AffineC<Field160, AR_160, BR_160>;
+using CurveP = ProjectiveC<Field160, AR_160, BR_160>;
+using CurveJ = JacobianC<Field160, AR_160, BR_160>;
 
 extern const Field160_2 AR2_160;
 extern const Field160_2 BR2_160;
-
-class CurveA : public gec::curve::Point<Field160, 2>,
-               public gec::curve::Affine<CurveA, Field160, AR_160, BR_160>,
-               public gec::curve::ScalerMul<CurveA>,
-               public gec::curve::WithPointContext<CurveA>,
-               public gec::curve::PointOstream<CurveA>,
-               public gec::curve::PointPrint<CurveA> {
-    using Point::Point;
-};
-
-class CurveA2
-    : public gec::curve::Point<Field160_2, 2>,
-      public gec::curve::Affine<CurveA2, Field160_2, AR2_160, BR2_160>,
-      public gec::curve::ScalerMul<CurveA2>,
-      public gec::curve::WithPointContext<CurveA2>,
-      public gec::curve::PointOstream<CurveA2>,
-      public gec::curve::PointPrint<CurveA2> {
-    using Point::Point;
-};
-
-class CurveP : public gec::curve::Point<Field160, 3>,
-               public gec::curve::Jacobain<CurveP, Field160, AR_160, BR_160>,
-               public gec::curve::ScalerMul<CurveP>,
-               public gec::curve::WithPointContext<CurveP>,
-               public gec::curve::PointOstream<CurveP>,
-               public gec::curve::PointPrint<CurveP> {
-    using Point::Point;
-};
-
-class CurveP2
-    : public gec::curve::Point<Field160_2, 3>,
-      public gec::curve::Jacobain<CurveP2, Field160_2, AR2_160, BR2_160>,
-      public gec::curve::ScalerMul<CurveP2>,
-      public gec::curve::WithPointContext<CurveP2>,
-      public gec::curve::PointOstream<CurveP2>,
-      public gec::curve::PointPrint<CurveP2> {
-    using Point::Point;
-};
-
-class CurveJ : public gec::curve::Point<Field160, 3>,
-               public gec::curve::Jacobain<CurveJ, Field160, AR_160, BR_160>,
-               public gec::curve::ScalerMul<CurveJ>,
-               public gec::curve::WithPointContext<CurveJ>,
-               public gec::curve::PointOstream<CurveJ>,
-               public gec::curve::PointPrint<CurveJ> {
-    using Point::Point;
-};
-
-class CurveJ2
-    : public gec::curve::Point<Field160_2, 3>,
-      public gec::curve::Jacobain<CurveJ2, Field160_2, AR2_160, BR2_160>,
-      public gec::curve::ScalerMul<CurveJ2>,
-      public gec::curve::WithPointContext<CurveJ2>,
-      public gec::curve::PointOstream<CurveJ2>,
-      public gec::curve::PointPrint<CurveJ2> {
-    using Point::Point;
-};
+using CurveA2 = AffineC<Field160_2, AR2_160, BR2_160>;
+using CurveP2 = ProjectiveC<Field160_2, AR2_160, BR2_160>;
+using CurveJ2 = JacobianC<Field160_2, AR2_160, BR2_160>;
 
 extern const LIMB_T Dlp1P[LN_160];
 constexpr LIMB_T Dlp1P_P = 0x5afdc9d5u;
@@ -82,15 +61,7 @@ extern const Dlp1Field Dlp1B;
 extern const LIMB_T Dlp1Card[LN_160];
 using Dlp1Scaler = AddGroup<LIMB_T, LN_160, Dlp1Card>;
 
-class Dlp1CurveJ
-    : public gec::curve::Point<Dlp1Field, 3>,
-      public gec::curve::Jacobain<Dlp1CurveJ, Dlp1Field, Dlp1A, Dlp1B>,
-      public gec::curve::ScalerMul<Dlp1CurveJ>,
-      public gec::curve::WithPointContext<Dlp1CurveJ>,
-      public gec::curve::PointOstream<Dlp1CurveJ>,
-      public gec::curve::PointPrint<Dlp1CurveJ> {
-    using Point::Point;
-};
+using Dlp1CurveJ = JacobianC<Dlp1Field, Dlp1A, Dlp1B>;
 
 alignas(32) extern const LIMB2_T Dlp1P2[LN2_160];
 constexpr LIMB2_T Dlp1P2_P = 0xdb83306e5afdc9d5llu;
@@ -105,15 +76,7 @@ extern const Dlp1Field2 Dlp1B2;
 extern const LIMB2_T Dlp1Card2[LN2_160];
 using Dlp1Scaler2 = AddGroup<LIMB2_T, LN2_160, Dlp1Card2>;
 
-class Dlp1CurveJ2
-    : public gec::curve::Point<Dlp1Field2, 3>,
-      public gec::curve::Jacobain<Dlp1CurveJ2, Dlp1Field2, Dlp1A2, Dlp1B2>,
-      public gec::curve::ScalerMul<Dlp1CurveJ2>,
-      public gec::curve::WithPointContext<Dlp1CurveJ2>,
-      public gec::curve::PointOstream<Dlp1CurveJ2>,
-      public gec::curve::PointPrint<Dlp1CurveJ2> {
-    using Point::Point;
-};
+using Dlp1CurveJ2 = JacobianC<Dlp1Field2, Dlp1A2, Dlp1B2>;
 
 extern const LIMB_T Dlp2P[1];
 constexpr LIMB_T Dlp2P_P = 3105566705u;
@@ -131,15 +94,7 @@ extern const LIMB_T Dlp2Card_OneR[1];
 using Dlp2Scaler =
     Field<LIMB_T, 1, Dlp2Card, Dlp2Card_P, Dlp2Card_RR, Dlp2Card_OneR>;
 
-class Dlp2CurveJ
-    : public gec::curve::Point<Dlp2Field, 3>,
-      public gec::curve::Jacobain<Dlp2CurveJ, Dlp2Field, Dlp2A, Dlp2B>,
-      public gec::curve::ScalerMul<Dlp2CurveJ>,
-      public gec::curve::WithPointContext<Dlp2CurveJ>,
-      public gec::curve::PointOstream<Dlp2CurveJ>,
-      public gec::curve::PointPrint<Dlp2CurveJ> {
-    using Point::Point;
-};
+using Dlp2CurveJ = JacobianC<Dlp2Field, Dlp2A, Dlp2B>;
 
 constexpr size_t Dlp3N = 8;
 alignas(32) extern const LIMB_T Dlp3P[Dlp3N];
@@ -149,30 +104,23 @@ alignas(32) extern const LIMB_T Dlp3P_OneR[Dlp3N];
 using Dlp3Field =
     Field<LIMB_T, Dlp3N, Dlp3P, Dlp3P_P, Dlp3P_RR, Dlp3P_OneR, 32>;
 
+#ifdef GEC_ENABLE_AVX2
+using AVX2Dlp3Field =
+    AVX2Field<LIMB_T, Dlp3N, Dlp3P, Dlp3P_P, Dlp3P_RR, Dlp3P_OneR, 32>;
+#endif // GEC_ENABLE_AVX2
+
 extern const Dlp3Field Dlp3A;
 extern const Dlp3Field Dlp3B;
 
-class Dlp3CurveJ
-    : public gec::curve::Point<Dlp3Field, 3>,
-      public gec::curve::Jacobain<Dlp3CurveJ, Dlp3Field, Dlp3A, Dlp3B>,
-      public gec::curve::ScalerMul<Dlp3CurveJ>,
-      public gec::curve::WithPointContext<Dlp3CurveJ>,
-      public gec::curve::PointOstream<Dlp3CurveJ>,
-      public gec::curve::PointPrint<Dlp3CurveJ> {
-    using Point::Point;
-};
+using Dlp3CurveJ = JacobianC<Dlp3Field, Dlp3A, Dlp3B>;
 
-class Dlp3CurveA
-    : public gec::curve::Point<Dlp3Field, 2>,
-      public gec::curve::Affine<Dlp3CurveA, Dlp3Field, Dlp3A, Dlp3B>,
-      public gec::curve::ScalerMul<Dlp3CurveA>,
-      public gec::curve::CompWiseEq<Dlp3CurveA>,
-      public gec::curve::WithPointHasher<Dlp3CurveA>,
-      public gec::curve::WithPointContext<Dlp3CurveA>,
-      public gec::curve::PointOstream<Dlp3CurveA>,
-      public gec::curve::PointPrint<Dlp3CurveA> {
-    using Point::Point;
-};
+using Dlp3CurveA = AffineC<Dlp3Field, Dlp3A, Dlp3B>;
+
+#ifdef GEC_ENABLE_AVX2
+using AVX2Dlp3CurveA =
+    AffineC<AVX2Dlp3Field, reinterpret_cast<const AVX2Dlp3Field &>(Dlp3A),
+            reinterpret_cast<const AVX2Dlp3Field &>(Dlp3B)>;
+#endif // GEC_ENABLE_AVX2
 
 extern const Dlp3CurveA Dlp3Gen1;
 constexpr size_t Dlp3G1SN = 2;
@@ -211,14 +159,6 @@ alignas(8) extern const LIMB2_T Dlp3Card2_OneR[Dlp3SN2];
 using Dlp3Scaler2 = Field<LIMB2_T, Dlp3SN2, Dlp3Card2, Dlp3Card2_P,
                           Dlp3Card2_RR, Dlp3Card2_OneR, 8>;
 
-class Dlp3CurveJ2
-    : public gec::curve::Point<Dlp3Field2, 3>,
-      public gec::curve::Jacobain<Dlp3CurveJ2, Dlp3Field2, Dlp3A2, Dlp3B2>,
-      public gec::curve::ScalerMul<Dlp3CurveJ2>,
-      public gec::curve::WithPointContext<Dlp3CurveJ2>,
-      public gec::curve::PointOstream<Dlp3CurveJ2>,
-      public gec::curve::PointPrint<Dlp3CurveJ2> {
-    using Point::Point;
-};
+using Dlp3CurveJ2 = JacobianC<Dlp3Field2, Dlp3A2, Dlp3B2>;
 
 #endif // !GEC_TEST_CURVE_HPP

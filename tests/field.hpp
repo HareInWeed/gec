@@ -8,19 +8,22 @@
 
 #include <type_traits>
 
+template <typename Core, typename T, size_t N, const T *MOD>
+class AddGroupMixin : public gec::bigint::Constants<Core, T, N>,
+                      public gec::bigint::VtCompare<Core, T, N>,
+                      public gec::bigint::BitOps<Core, T, N>,
+                      public gec::bigint::ModAddSub<Core, T, N, MOD>,
+                      public gec::bigint::ModRandom<Core, T, N, MOD>,
+                      public gec::bigint::WithBigintContext<Core>,
+                      public gec::bigint::WithArrayHasher<Core>,
+                      public gec::bigint::ArrayOstream<Core, T, N>,
+                      public gec::bigint::ArrayPrint<Core, T, N> {};
+
 template <typename T, size_t N, const T *MOD,
           size_t align = std::alignment_of_v<T>>
 class alignas(align) AddGroup
     : public gec::bigint::ArrayBE<T, N>,
-      public gec::bigint::Constants<AddGroup<T, N, MOD, align>, T, N>,
-      public gec::bigint::VtCompare<AddGroup<T, N, MOD, align>, T, N>,
-      public gec::bigint::BitOps<AddGroup<T, N, MOD, align>, T, N>,
-      public gec::bigint::ModAddSub<AddGroup<T, N, MOD, align>, T, N, MOD>,
-      public gec::bigint::ModRandom<AddGroup<T, N, MOD, align>, T, N, MOD>,
-      public gec::bigint::WithBigintContext<AddGroup<T, N, MOD, align>>,
-      public gec::bigint::WithArrayHasher<AddGroup<T, N, MOD, align>>,
-      public gec::bigint::ArrayOstream<AddGroup<T, N, MOD, align>, T, N>,
-      public gec::bigint::ArrayPrint<AddGroup<T, N, MOD, align>, T, N> {
+      public AddGroupMixin<AddGroup<T, N, MOD, align>, T, N, MOD> {
     using gec::bigint::ArrayBE<T, N>::ArrayBE;
 };
 
@@ -28,30 +31,32 @@ template <typename T, size_t N, const T *MOD, T MOD_P, const T *RR,
           const T *ONE_R, size_t align = std::alignment_of_v<T>>
 class alignas(align) Field
     : public gec::bigint::ArrayBE<T, N>,
-      public gec::bigint::Constants<Field<T, N, MOD, MOD_P, RR, ONE_R, align>,
-                                    T, N>,
-      public gec::bigint::VtCompare<Field<T, N, MOD, MOD_P, RR, ONE_R, align>,
-                                    T, N>,
-      public gec::bigint::BitOps<Field<T, N, MOD, MOD_P, RR, ONE_R, align>, T,
-                                 N>,
-      public gec::bigint::ModAddSub<Field<T, N, MOD, MOD_P, RR, ONE_R, align>,
-                                    T, N, MOD>,
-      public gec::bigint::ModRandom<Field<T, N, MOD, MOD_P, RR, ONE_R, align>,
-                                    T, N, MOD>,
+      public AddGroupMixin<Field<T, N, MOD, MOD_P, RR, ONE_R, align>, T, N,
+                           MOD>,
       public gec::bigint::Montgomery<Field<T, N, MOD, MOD_P, RR, ONE_R, align>,
                                      T, N, MOD, MOD_P, RR, ONE_R>,
       public gec::bigint::Exponentiation<
-          Field<T, N, MOD, MOD_P, RR, ONE_R, align>>,
-      public gec::bigint::WithBigintContext<
-          Field<T, N, MOD, MOD_P, RR, ONE_R, align>>,
-      public gec::bigint::WithArrayHasher<
-          Field<T, N, MOD, MOD_P, RR, ONE_R, align>>,
-      public gec::bigint::ArrayOstream<
-          Field<T, N, MOD, MOD_P, RR, ONE_R, align>, T, N>,
-      public gec::bigint::ArrayPrint<Field<T, N, MOD, MOD_P, RR, ONE_R, align>,
-                                     T, N> {
+          Field<T, N, MOD, MOD_P, RR, ONE_R, align>> {
     using gec::bigint::ArrayBE<T, N>::ArrayBE;
 };
+
+#ifdef GEC_ENABLE_AVX2
+
+template <typename T, size_t N, const T *MOD, T MOD_P, const T *RR,
+          const T *ONE_R, size_t align = std::alignment_of_v<T>>
+class alignas(align) AVX2Field
+    : public gec::bigint::ArrayBE<T, N>,
+      public AddGroupMixin<AVX2Field<T, N, MOD, MOD_P, RR, ONE_R, align>, T, N,
+                           MOD>,
+      public gec::bigint::AVX2Montgomery<
+          AVX2Field<T, N, MOD, MOD_P, RR, ONE_R, align>, T, N, MOD, MOD_P, RR,
+          ONE_R>,
+      public gec::bigint::Exponentiation<
+          AVX2Field<T, N, MOD, MOD_P, RR, ONE_R, align>> {
+    using gec::bigint::ArrayBE<T, N>::ArrayBE;
+};
+
+#endif // GEC_ENABLE_AVX2
 
 using Field160 = Field<LIMB_T, LN_160, MOD_160, MOD_P_160, RR_160, OneR_160>;
 

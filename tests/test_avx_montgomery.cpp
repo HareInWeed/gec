@@ -37,7 +37,7 @@ class alignas(32) AVX2Field
     using Array::Array;
 };
 
-TEST_CASE("avx montgomery", "[ring][field]") {
+TEST_CASE("avx2 montgomery", "[ring][field]") {
     using gec::utils::CmpEnum;
     using gec::utils::VtSeqCmp;
 
@@ -51,7 +51,7 @@ TEST_CASE("avx montgomery", "[ring][field]") {
     AddGroup mon_x_arr, mon_y_arr, mon_xy_arr, xy_arr;
     AddGroup one_arr(1);
 
-    for (int k = 0; k < 100000; ++k) {
+    for (int k = 0; k < 10000; ++k) {
         AddGroup::sample(x_arr, rng);
         AddGroup::sample(y_arr, rng);
         CAPTURE(AddGroup::mod(), x_arr, y_arr);
@@ -152,19 +152,19 @@ TEST_CASE("256 montgomery bench", "[ring][field][bench]") {
         const auto &mon_x = reinterpret_cast<const F &>(mon_x_arr);
         const auto &mon_y = reinterpret_cast<const F &>(mon_y_arr);
 
-        BENCHMARK("avx into montgomery form") {
+        BENCHMARK("avx2 into montgomery form") {
             F res;
             F::to_montgomery(res, x);
             return res;
         };
 
-        BENCHMARK("avx from montgomery form") {
+        BENCHMARK("avx2 from montgomery form") {
             F res;
             F::from_montgomery(res, mon_x);
             return res;
         };
 
-        BENCHMARK("avx montgomery mul") {
+        BENCHMARK("avx2 montgomery mul") {
             F mon_xy;
             F::mul(mon_xy, mon_x, mon_y);
             return mon_xy;

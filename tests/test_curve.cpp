@@ -27,6 +27,9 @@ TEST_CASE("affine", "[curve][affine]") {
 
     C::Context<> ctx;
 
+    C test(F(1), F(1));
+    REQUIRE(!C::on_curve(test, ctx));
+
     C p1;
     F::mul(p1.x(),
            {0x0ee27967u, 0x5de1bde5u, 0xfaf553e9u, 0x2185fec7u, 0x43e7dd56u},

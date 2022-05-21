@@ -22,6 +22,11 @@ class Point : public bigint::ArrayLE<COMP_T, N>,
     using CompT = COMP_T;
     const static size_t CompN = N;
     using Base::Base;
+    __host__ __device__ GEC_INLINE Point() : bigint::ArrayLE<COMP_T, N>() {
+        // for some mysterious reason, without defining the custom default
+        // constructor, MSVC will complain the default constructor are ambiguous
+        // due to multiple candidates from different base classes.
+    }
 };
 
 } // namespace curve

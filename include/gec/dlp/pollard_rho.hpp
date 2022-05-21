@@ -107,7 +107,6 @@ struct PollardRhoData {
     std::unordered_multimap<P, Coefficient<S>, typename P::Hasher> &candidates;
     const typename P::Field &mask;
     pthread_mutex_t *candidates_mutex;
-    pthread_barrier_t *done_barrier;
     volatile bool &done;
     S &c;
     S &d2;
@@ -196,17 +195,14 @@ void multithread_pollard_rho(S &c,
         P::add(pl[k], ag, bh, ctx);
     }
 
-    pthread_barrier_t done_barrier;
-    pthread_barrier_init(&done_barrier, nullptr, worker_n);
     bool done = false;
 
     std::vector<pthread_t> workers(worker_n);
     pthread_mutex_t candidates_mutex = PTHREAD_MUTEX_INITIALIZER;
     std::unordered_multimap<P, Coefficient<S>, typename P::Hasher> candidates;
     std::vector<Payload> workers_data(
-        worker_n,
-        {g, h, al, bl, pl, candidates, mask, &candidates_mutex, &done_barrier,
-         done, c, d2, /* seed */ 0, worker_n, /* id */ 0});
+        worker_n, {g, h, al, bl, pl, candidates, mask, &candidates_mutex, done,
+                   c, d2, /* seed */ 0, worker_n, /* id */ 0});
 
     for (size_t k = 0; k < worker_n; ++k) {
         auto &data = workers_data[k];
