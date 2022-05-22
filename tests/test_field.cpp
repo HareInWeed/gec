@@ -137,34 +137,41 @@ TEST_CASE("random sampling", "[add_group][field][random]") {
     using G = AddGroup<LIMB_T, 3, SmallMod>;
 
     std::random_device rd;
-    std::mt19937 gen(rd());
+    std::mt19937 rng(rd());
 
-    F1 x;
-    for (int k = 0; k < 100; ++k) {
-        F1::sample(x, gen);
-        REQUIRE(x < F1::mod());
-        F1::sample_non_zero(x, gen);
-        REQUIRE(!x.is_zero());
-        REQUIRE(x < F1::mod());
-    }
+#define test(Int)                                                              \
+    do {                                                                       \
+        Int x, y, z;                                                           \
+        Int::Context<> ctx;                                                    \
+        for (int k = 0; k < 10000; ++k) {                                      \
+            Int::sample(x, rng);                                               \
+            REQUIRE(x < Int::mod());                                           \
+                                                                               \
+            Int::sample_non_zero(x, rng);                                      \
+            REQUIRE(!x.is_zero());                                             \
+            REQUIRE(x < Int::mod());                                           \
+                                                                               \
+            Int::sample(y, x, rng);                                            \
+            REQUIRE(y < x);                                                    \
+                                                                               \
+            Int::sample(z, y, x, rng, ctx);                                    \
+            REQUIRE(z < x);                                                    \
+            REQUIRE(y <= z);                                                   \
+                                                                               \
+            Int::sample_inclusive(z, x, rng);                                  \
+            REQUIRE(y <= x);                                                   \
+                                                                               \
+            Int::sample_inclusive(z, y, x, rng, ctx);                          \
+            REQUIRE(z <= x);                                                   \
+            REQUIRE(y <= z);                                                   \
+        }                                                                      \
+    } while (false)
 
-    F2 y;
-    for (int k = 0; k < 100; ++k) {
-        F2::sample(y, gen);
-        REQUIRE(y < F2::mod());
-        F2::sample_non_zero(y, gen);
-        REQUIRE(!y.is_zero());
-        REQUIRE(y < F2::mod());
-    }
+    test(F1);
+    test(F2);
+    test(G);
 
-    G z;
-    for (int k = 0; k < 100; ++k) {
-        G::sample(z, gen);
-        REQUIRE(z < G::mod());
-        G::sample_non_zero(z, gen);
-        REQUIRE(!z.is_zero());
-        REQUIRE(z < G::mod());
-    }
+#undef test
 }
 
 TEST_CASE("mul_pow2 bench", "[add_group][bench]") {
