@@ -61,6 +61,10 @@ alignas(32) const LIMB_T Dlp3P_OneR[Dlp3N] = {
 
 const Dlp3Field Dlp3A(0, 0, 0, 0, 0, 0, 0, 0);
 const Dlp3Field Dlp3B(0, 0, 0, 0, 0, 0, 0x0000000du, 0x0000319du);
+#ifdef GEC_ENABLE_AVX2
+const AVX2Dlp3Field AVX2Dlp3A(0, 0, 0, 0, 0, 0, 0, 0);
+const AVX2Dlp3Field AVX2Dlp3B(0, 0, 0, 0, 0, 0, 0x0000000du, 0x0000319du);
+#endif // GEC_ENABLE_AVX2
 
 const Dlp3CurveA
     Dlp3Gen1(Dlp3Field(0x6e06edecu, 0xefa32aa4u, 0xacf634cbu, 0x55003db1u,

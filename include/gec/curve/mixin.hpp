@@ -10,8 +10,9 @@
 #include "mixin/named_comp.hpp"
 
 #include "mixin/affine.hpp"
-#include "mixin/chudnovsky.hpp"
+// #include "mixin/chudnovsky.hpp" // TODO
 #include "mixin/jacobain.hpp"
+// #include "mixin/modified_jacobain.hpp" // TODO
 #include "mixin/projective.hpp"
 
 #include "mixin/scaler_mul.hpp"

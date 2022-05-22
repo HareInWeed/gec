@@ -7,7 +7,6 @@
 #endif // GEC_ENABLE_AVX2
 
 #include <gec/utils/arithmetic.hpp>
-#include <gec/utils/context_check.hpp>
 #include <gec/utils/crtp.hpp>
 #include <gec/utils/sequence.hpp>
 
@@ -109,7 +108,7 @@ class Montgomery
     template <typename CTX>
     __host__ __device__ static void inv(Core &GEC_RSTRCT a,
                                         CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(CTX, 3);
+        auto &ctx_view = ctx.template view_as<Core, Core, Core>();
 
         using utils::CmpEnum;
         const auto &rr = *reinterpret_cast<const Core *>(RR);
@@ -117,9 +116,9 @@ class Montgomery
         constexpr size_t Bits = LimbBit * LIMB_N;
         constexpr LIMB_T mask = LIMB_T(1) << (LimbBit - 1);
 
-        Core &r = ctx.template get<0>();
-        Core &s = ctx.template get<1>();
-        Core &t = ctx.template get<2>();
+        auto &r = ctx_view.template get<0>();
+        auto &s = ctx_view.template get<1>();
+        auto &t = ctx_view.template get<2>();
 
         LIMB_T *a_arr = a.array();
         LIMB_T *r_arr = r.array();
@@ -279,7 +278,7 @@ class MontgomeryCarryFree
     template <typename CTX>
     __host__ __device__ static void inv(Core &GEC_RSTRCT a,
                                         CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(CTX, 3);
+        auto &ctx_view = ctx.template view_as<Core, Core, Core>();
 
         using utils::CmpEnum;
         const auto &rr = *reinterpret_cast<const Core *>(RR);
@@ -287,9 +286,9 @@ class MontgomeryCarryFree
         constexpr size_t Bits = LimbBit * LIMB_N;
         constexpr LIMB_T mask = LIMB_T(1) << (LimbBit - 1);
 
-        Core &r = ctx.template get<0>();
-        Core &s = ctx.template get<1>();
-        Core &t = ctx.template get<2>();
+        auto &r = ctx_view.template get<0>();
+        auto &s = ctx_view.template get<1>();
+        auto &t = ctx_view.template get<2>();
 
         LIMB_T *a_arr = a.array();
         LIMB_T *r_arr = r.array();
@@ -533,7 +532,7 @@ class AVX2Montgomery<Core, uint32_t, 8, MOD, MOD_P, RR, OneR>
 
     template <typename CTX>
     __host__ static void inv(Core &GEC_RSTRCT a, CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(CTX, 3);
+        auto &ctx_view = ctx.template view_as<Core, Core, Core>();
 
         using utils::CmpEnum;
         const auto &rr = *reinterpret_cast<const Core *>(RR);
@@ -541,9 +540,9 @@ class AVX2Montgomery<Core, uint32_t, 8, MOD, MOD_P, RR, OneR>
         constexpr size_t Bits = LimbBit * LIMB_N;
         constexpr LIMB_T mask = LIMB_T(1) << (LimbBit - 1);
 
-        Core &r = ctx.template get<0>();
-        Core &s = ctx.template get<1>();
-        Core &t = ctx.template get<2>();
+        auto &r = ctx_view.template get<0>();
+        auto &s = ctx_view.template get<1>();
+        auto &t = ctx_view.template get<2>();
 
         LIMB_T *a_arr = a.array();
         LIMB_T *r_arr = r.array();

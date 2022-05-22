@@ -3,7 +3,6 @@
 #define GEC_CURVE_MIXIN_AFFINE_HPP
 
 #include <gec/utils/context.hpp>
-#include <gec/utils/context_check.hpp>
 #include <gec/utils/crtp.hpp>
 
 namespace gec {
@@ -46,14 +45,15 @@ class Affine : protected CRTP<Core, Affine<Core, FIELD_T, A, B>> {
     template <typename F_CTX>
     __host__ __device__ static bool on_curve(const Core &GEC_RSTRCT a,
                                              F_CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(F_CTX, 3);
+        auto &ctx_view = ctx.template view_as<F, F, F>();
 
         if (a.is_inf()) {
             return true;
         }
-        F &l = ctx.template get<0>();
-        F &r = ctx.template get<1>();
-        F &t = ctx.template get<2>();
+        auto &l = ctx_view.template get<0>();
+        auto &r = ctx_view.template get<1>();
+        auto &t = ctx_view.template get<2>();
+
         F::mul(l, a.y(), a.y()); // left = y^2
         F::mul(t, a.x(), a.x()); // x^2
         F::mul(r, t, a.x());     // x^3
@@ -67,11 +67,11 @@ class Affine : protected CRTP<Core, Affine<Core, FIELD_T, A, B>> {
     __host__ __device__ static void
     add_distinct(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
                  const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(F_CTX, 2);
+        auto &ctx_view = ctx.template view_as<F, F, F, F>();
+        auto &inv_ctx = ctx.template view_as<F>().rest();
 
-        F &d = ctx.template get<0>();
-        F &l = ctx.template get<1>();
-        utils::Context<F &, 3> inv_ctx(l, a.x(), a.y());
+        auto &d = ctx_view.template get<0>();
+        auto &l = ctx_view.template get<1>();
 
         F::sub(d, b.x(), c.x());     // x1 - x2
         F::inv(d, inv_ctx);          // 1 / (x1 - x2)
@@ -89,11 +89,11 @@ class Affine : protected CRTP<Core, Affine<Core, FIELD_T, A, B>> {
     __host__ __device__ static void add_self(Core &GEC_RSTRCT a,
                                              const Core &GEC_RSTRCT b,
                                              F_CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(F_CTX, 2);
+        auto &ctx_view = ctx.template view_as<F, F, F, F>();
+        auto &inv_ctx = ctx.template view_as<F>().rest();
 
-        F &d = ctx.template get<0>();
-        F &l = ctx.template get<1>();
-        utils::Context<F &, 3> inv_ctx(l, a.x(), a.y());
+        auto &d = ctx_view.template get<0>();
+        auto &l = ctx_view.template get<1>();
 
         F::add(d, b.y(), b.y());     // 2 y1
         F::inv(d, inv_ctx);          // (2 y1)^-1

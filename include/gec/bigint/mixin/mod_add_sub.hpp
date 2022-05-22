@@ -30,7 +30,7 @@ struct MulPow2Helper {
 
 template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD>
 struct MulPow2Helper<Core, 0, LIMB_T, LIMB_N, MOD> {
-    __host__ __device__ GEC_INLINE static void call(Core &GEC_RSTRCT a) {}
+    __host__ __device__ GEC_INLINE static void call(Core &GEC_RSTRCT) {}
 };
 
 /** @brief mixin that enables addition and substrcation operation
@@ -125,7 +125,7 @@ struct CarryFreeMulPow2Helper {
 
 template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD>
 struct CarryFreeMulPow2Helper<Core, 0, LIMB_T, LIMB_N, MOD> {
-    __host__ __device__ GEC_INLINE static void call(Core &GEC_RSTRCT a) {}
+    __host__ __device__ GEC_INLINE static void call(Core &GEC_RSTRCT) {}
 };
 
 /** @brief Mixin that enables addition and substrcation operation without

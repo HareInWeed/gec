@@ -2,7 +2,6 @@
 #ifndef GEC_CURVE_MIXIN_PROJECTIVE_HPP
 #define GEC_CURVE_MIXIN_PROJECTIVE_HPP
 
-#include <gec/utils/context_check.hpp>
 #include <gec/utils/crtp.hpp>
 
 namespace gec {
@@ -20,37 +19,6 @@ class Projective : protected CRTP<Core, Projective<Core, FIELD_T, A, B>> {
   public:
     using Field = FIELD_T;
 
-    template <typename F_CTX>
-    __host__ __device__ static void
-    add_distinct_inner(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                       const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(F_CTX, 5);
-
-        F &x1z2 = ctx.template get<0>();
-        F &x2z1 = ctx.template get<1>();
-        F &y1z2 = ctx.template get<2>();
-        F &y2z1 = ctx.template get<3>();
-        F &t = ctx.template get<4>();
-
-        F::sub(y2z1, y1z2);          // a = y2 z1 - y1 z2
-        F::sub(x2z1, x1z2);          // b = x2 z1 - x1 z2
-        F::mul(a.y(), x2z1, x2z1);   // b^2
-        F::mul(t, a.y(), x1z2);      // b^2 x1 z2
-        F::mul(a.x(), a.y(), x2z1);  // b^3
-        F::mul(x1z2, a.x(), y1z2);   // b^3 y1 z2
-        F::mul(a.z(), y2z1, y2z1);   // a^2
-        F::mul(a.y(), b.z(), c.z()); // z1 z2
-        F::mul(y1z2, a.y(), a.z());  // a^2 z1 z2
-        F::mul(a.z(), a.x(), a.y()); // z = b^3 z1 z2
-        F::add(a.y(), t, t);         // 2 b^2 x1 z2
-        F::sub(y1z2, a.y());         // a^2 z1 z2 - 2 b^2 x1 z2
-        F::sub(y1z2, a.x());         // c = a^2 z1 z2 - 2 b^2 x1 z2 - b^3
-        F::sub(t, y1z2);             // b^2 x1 z2 - c
-        F::mul(a.y(), t, y2z1);      // a (b^2 x1 z2 - c)
-        F::sub(a.y(), x1z2);         // y = a (b^2 x1 z2 - c) - b^3 y1 z2
-        F::mul(a.x(), y1z2, x2z1);   // x = b c
-    }
-
     __host__ __device__ GEC_INLINE bool is_inf() const {
         return this->core().z().is_zero();
     }
@@ -63,7 +31,7 @@ class Projective : protected CRTP<Core, Projective<Core, FIELD_T, A, B>> {
     template <typename F_CTX>
     __host__ __device__ static void to_affine(Core &GEC_RSTRCT a,
                                               F_CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(F_CTX, 1);
+        auto &ctx_view = ctx.template view_as<F>();
 
         if (a.z().is_mul_id()) {
             return;
@@ -71,7 +39,7 @@ class Projective : protected CRTP<Core, Projective<Core, FIELD_T, A, B>> {
             a.x().set_zero();
             a.y().set_zero();
         } else {
-            F &t1 = ctx.template get<0>();
+            auto &t1 = ctx_view.template get<0>();
 
             F::inv(a.z(), ctx);
             F::mul(t1, a.x(), a.z());
@@ -90,12 +58,12 @@ class Projective : protected CRTP<Core, Projective<Core, FIELD_T, A, B>> {
     template <typename F_CTX>
     __host__ __device__ static bool on_curve(const Core &GEC_RSTRCT a,
                                              F_CTX &ctx) {
-        GEC_CTX_CAP(F_CTX, 4);
+        auto &ctx_view = ctx.template view_as<F, F, F, F>();
 
-        F &l = ctx.template get<0>();
-        F &r = ctx.template get<1>();
-        F &t1 = ctx.template get<2>();
-        F &t2 = ctx.template get<3>();
+        auto &l = ctx_view.template get<0>();
+        auto &r = ctx_view.template get<1>();
+        auto &t1 = ctx_view.template get<2>();
+        auto &t2 = ctx_view.template get<3>();
 
         F::mul(t2, a.z(), a.z()); // z^2
         F::mul(r, a.x(), t2);     // x z^2
@@ -115,7 +83,7 @@ class Projective : protected CRTP<Core, Projective<Core, FIELD_T, A, B>> {
     __host__ __device__ static bool eq(const Core &GEC_RSTRCT a,
                                        const Core &GEC_RSTRCT b,
                                        F_CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(F_CTX, 2);
+        auto &ctx_view = ctx.template view_as<F, F>();
 
         bool a_inf = a.is_inf();
         bool b_inf = b.is_inf();
@@ -126,8 +94,8 @@ class Projective : protected CRTP<Core, Projective<Core, FIELD_T, A, B>> {
         } else if (a.z() == b.z()) { // z1 == z2
             return a.x() == b.x() && a.y() == b.y();
         } else { // z1 != z2
-            F &p1 = ctx.template get<0>();
-            F &p2 = ctx.template get<1>();
+            auto &p1 = ctx_view.template get<0>();
+            auto &p2 = ctx_view.template get<1>();
             // check x1 z2 == x2 z1
             F::mul(p1, a.x(), b.z());
             F::mul(p2, b.x(), a.z());
@@ -148,23 +116,59 @@ class Projective : protected CRTP<Core, Projective<Core, FIELD_T, A, B>> {
     __host__ __device__ static void
     add_distinct(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
                  const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(F_CTX, 4);
+        auto &ctx_view = ctx.template view_as<F, F, F, F>();
 
-        F::mul(ctx.template get<0>(), b.x(), c.z()); // x1 z2
-        F::mul(ctx.template get<1>(), c.x(), b.z()); // x2 z1
-        F::mul(ctx.template get<2>(), b.y(), c.z()); // y1 z2
-        F::mul(ctx.template get<3>(), c.y(), b.z()); // y2 z1
+        auto &x1z2 = ctx_view.template get<0>();
+        auto &x2z1 = ctx_view.template get<1>();
+        auto &y1z2 = ctx_view.template get<2>();
+        auto &y2z1 = ctx_view.template get<3>();
+
+        F::mul(x1z2, b.x(), c.z()); // x1 z2
+        F::mul(x2z1, c.x(), b.z()); // x2 z1
+        F::mul(y1z2, b.y(), c.z()); // y1 z2
+        F::mul(y2z1, c.y(), b.z()); // y2 z1
         add_distinct_inner(a, b, c, ctx);
     }
 
     template <typename F_CTX>
     __host__ __device__ static void
-    add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, F_CTX &ctx) {
-        GEC_CTX_CAP(F_CTX, 3);
+    add_distinct_inner(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                       const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
+        auto &ctx_view = ctx.template view_as<F, F, F, F, F>();
 
-        F &t1 = ctx.template get<0>();
-        F &t2 = ctx.template get<1>();
-        F &t3 = ctx.template get<2>();
+        auto &x1z2 = ctx_view.template get<0>();
+        auto &x2z1 = ctx_view.template get<1>();
+        auto &y1z2 = ctx_view.template get<2>();
+        auto &y2z1 = ctx_view.template get<3>();
+        auto &t = ctx_view.template get<4>();
+
+        F::sub(y2z1, y1z2);          // a = y2 z1 - y1 z2
+        F::sub(x2z1, x1z2);          // b = x2 z1 - x1 z2
+        F::mul(a.y(), x2z1, x2z1);   // b^2
+        F::mul(t, a.y(), x1z2);      // b^2 x1 z2
+        F::mul(a.x(), a.y(), x2z1);  // b^3
+        F::mul(x1z2, a.x(), y1z2);   // b^3 y1 z2
+        F::mul(a.z(), y2z1, y2z1);   // a^2
+        F::mul(a.y(), b.z(), c.z()); // z1 z2
+        F::mul(y1z2, a.y(), a.z());  // a^2 z1 z2
+        F::mul(a.z(), a.x(), a.y()); // z = b^3 z1 z2
+        F::add(a.y(), t, t);         // 2 b^2 x1 z2
+        F::sub(y1z2, a.y());         // a^2 z1 z2 - 2 b^2 x1 z2
+        F::sub(y1z2, a.x());         // c = a^2 z1 z2 - 2 b^2 x1 z2 - b^3
+        F::sub(t, y1z2);             // b^2 x1 z2 - c
+        F::mul(a.y(), t, y2z1);      // a (b^2 x1 z2 - c)
+        F::sub(a.y(), x1z2);         // y = a (b^2 x1 z2 - c) - b^3 y1 z2
+        F::mul(a.x(), y1z2, x2z1);   // x = b c
+    }
+
+    template <typename F_CTX>
+    __host__ __device__ static void
+    add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, F_CTX &ctx) {
+        auto &ctx_view = ctx.template view_as<F, F, F>();
+
+        auto &t1 = ctx_view.template get<0>();
+        auto &t2 = ctx_view.template get<1>();
+        auto &t3 = ctx_view.template get<2>();
 
         F::mul(t3, b.z(), b.z());       // z1^2
         F::mul(t2, A, t3);              // A z1^2
@@ -195,7 +199,7 @@ class Projective : protected CRTP<Core, Projective<Core, FIELD_T, A, B>> {
     __host__ __device__ static void add(Core &GEC_RSTRCT a,
                                         const Core &GEC_RSTRCT b,
                                         const Core &GEC_RSTRCT c, F_CTX &ctx) {
-        GEC_CTX_CAP(F_CTX, 4);
+        auto &ctx_view = ctx.template view_as<F, F, F, F>();
 
         // checking for infinity here is not necessary
         if (b.is_inf()) {
@@ -203,10 +207,10 @@ class Projective : protected CRTP<Core, Projective<Core, FIELD_T, A, B>> {
         } else if (c.is_inf()) {
             a = b;
         } else {
-            F &x1z2 = ctx.template get<0>();
-            F &x2z1 = ctx.template get<1>();
-            F &y1z2 = ctx.template get<2>();
-            F &y2z1 = ctx.template get<3>();
+            auto &x1z2 = ctx_view.template get<0>();
+            auto &x2z1 = ctx_view.template get<1>();
+            auto &y1z2 = ctx_view.template get<2>();
+            auto &y2z1 = ctx_view.template get<3>();
 
             F::mul(x1z2, b.x(), c.z()); // x1 z2
             F::mul(x2z1, c.x(), b.z()); // x2 z1

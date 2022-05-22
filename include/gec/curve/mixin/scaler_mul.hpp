@@ -2,7 +2,6 @@
 #ifndef GEC_CURVE_MIXIN_SCALER_MUL_HPP
 #define GEC_CURVE_MIXIN_SCALER_MUL_HPP
 
-#include <gec/utils/context_check.hpp>
 #include <gec/utils/crtp.hpp>
 #include <gec/utils/sequence.hpp>
 #include <utility>
@@ -25,9 +24,9 @@ class ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
     __host__ __device__ static void
     mul(Core &GEC_RSTRCT a, const IntT *GEC_RSTRCT e, const Core &GEC_RSTRCT b,
         CTX &GEC_RSTRCT ctx) {
-        // TODO: check context capacity
+        auto &ctx_view = ctx.template view_as<Core>();
 
-        Core &ap = ctx.template get_p<0>();
+        auto &ap = ctx_view.template get<0>();
         bool need_copy = false;
         Core *p1 = &a, *p2 = &ap;
         p1->set_inf();
@@ -43,11 +42,11 @@ class ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
     mul:
         for (; i >= 0; --i) {
             for (; j >= 0; --j) {
-                Core::add(*p2, *p1, *p1, ctx.template rest<0, 1>());
+                Core::add(*p2, *p1, *p1, ctx_view.rest());
                 std::swap(p1, p2);
                 need_copy = !need_copy;
                 if ((IntT(1) << j) & e[i]) {
-                    Core::add(*p2, *p1, b, ctx.template rest<0, 1>());
+                    Core::add(*p2, *p1, b, ctx_view.rest());
                     std::swap(p1, p2);
                     need_copy = !need_copy;
                 }

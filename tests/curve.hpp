@@ -103,7 +103,6 @@ alignas(32) extern const LIMB_T Dlp3P_RR[Dlp3N];
 alignas(32) extern const LIMB_T Dlp3P_OneR[Dlp3N];
 using Dlp3Field =
     Field<LIMB_T, Dlp3N, Dlp3P, Dlp3P_P, Dlp3P_RR, Dlp3P_OneR, 32>;
-
 #ifdef GEC_ENABLE_AVX2
 using AVX2Dlp3Field =
     AVX2Field<LIMB_T, Dlp3N, Dlp3P, Dlp3P_P, Dlp3P_RR, Dlp3P_OneR, 32>;
@@ -111,15 +110,13 @@ using AVX2Dlp3Field =
 
 extern const Dlp3Field Dlp3A;
 extern const Dlp3Field Dlp3B;
-
 using Dlp3CurveJ = JacobianC<Dlp3Field, Dlp3A, Dlp3B>;
-
 using Dlp3CurveA = AffineC<Dlp3Field, Dlp3A, Dlp3B>;
 
 #ifdef GEC_ENABLE_AVX2
-using AVX2Dlp3CurveA =
-    AffineC<AVX2Dlp3Field, reinterpret_cast<const AVX2Dlp3Field &>(Dlp3A),
-            reinterpret_cast<const AVX2Dlp3Field &>(Dlp3B)>;
+extern const AVX2Dlp3Field AVX2Dlp3A;
+extern const AVX2Dlp3Field AVX2Dlp3B;
+using AVX2Dlp3CurveA = AffineC<AVX2Dlp3Field, AVX2Dlp3A, AVX2Dlp3B>;
 #endif // GEC_ENABLE_AVX2
 
 extern const Dlp3CurveA Dlp3Gen1;

@@ -2,7 +2,6 @@
 #ifndef GEC_CURVE_MIXIN_CHUDNOVSKY_HPP
 #define GEC_CURVE_MIXIN_CHUDNOVSKY_HPP
 
-#include <gec/utils/context_check.hpp>
 #include <gec/utils/crtp.hpp>
 
 namespace gec {

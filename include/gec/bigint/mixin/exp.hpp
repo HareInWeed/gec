@@ -2,7 +2,6 @@
 #ifndef GEC_BIGINT_MIXIN_EXPONENTIATION_HPP
 #define GEC_BIGINT_MIXIN_EXPONENTIATION_HPP
 
-#include <gec/utils/context_check.hpp>
 #include <gec/utils/crtp.hpp>
 #include <utility>
 
@@ -24,9 +23,10 @@ class Exponentiation : protected CRTP<Core, Exponentiation<Core>> {
     __host__ __device__ static void
     pow(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT *GEC_RSTRCT e,
         CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(CTX, 1);
+        auto ctx_view = ctx.template view_as<Core>();
 
-        Core &ap = ctx.template get<0>();
+        auto &ap = ctx_view.template get<0>();
+
         bool need_copy = false;
         Core *p1 = &a, *p2 = &ap;
         p1->set_mul_id();

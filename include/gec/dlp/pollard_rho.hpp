@@ -21,25 +21,27 @@ namespace gec {
 
 namespace dlp {
 
-template <typename S, typename P, typename Rng, typename P_CTX, typename S_CTX>
+template <typename S, typename P, typename Rng, typename Ctx>
 __host__ __device__ void pollard_rho(S &c,
                                      S &d2, // TODO: require general int inv
                                      size_t l, S *al, S *bl, P *pl, const P &g,
-                                     const P &h, Rng &rng, P_CTX &ctx,
-                                     S_CTX &s_ctx) {
+                                     const P &h, Rng &rng, Ctx &ctx) {
     using F = typename P::Field;
-    // TODO: a safe way to get a scaler from context P_CTX
-    S &c2 = s_ctx.template get<0>();
-    S &d = s_ctx.template get<1>();
-    F &f1 = ctx.template get<0>();
-    F &f2 = ctx.template get<1>();
-    P &ag = ctx.template get_p<0>();
-    P &bh = ctx.template get_p<1>();
-    P &temp = ctx.template get_p<2>();
-    P &x1 = ctx.template get_p<3>();
-    P &x2 = ctx.template get_p<4>();
+    auto &ctx_view = ctx.template view_as<P, P, P, P, P, F, F, S, S>();
+
+    auto &ag = ctx_view.template get<0>();
+    auto &bh = ctx_view.template get<1>();
+    auto &temp = ctx_view.template get<2>();
+    auto &x1 = ctx_view.template get<3>();
+    auto &x2 = ctx_view.template get<4>();
+
+    auto &f1 = ctx_view.template get<5>();
+    auto &f2 = ctx_view.template get<6>();
+
+    auto &c2 = ctx_view.template get<7>();
+    auto &d = ctx_view.template get<8>();
+    auto &rest_ctx = ctx_view.rest();
     P *tmp = &temp, *x = &x1;
-    auto &rest_ctx = ctx.template rest<2, 5>();
 
     do {
         for (size_t k = 0; k < l; ++k) {
@@ -124,16 +126,18 @@ void *multithread_pollard_rho_worker(void *data_ptr) {
     std::mt19937 rng(data.seed);
     typename P::template Context<> ctx;
     Coefficient<S> coeff;
-    P p1, p2;
+    auto &ctx_view = ctx.template view_as<P, P, P, P>();
+    auto &p1 = ctx_view.template get<0>();
+    auto &p2 = ctx_view.template get<1>();
+    auto &xg = ctx_view.template get<2>();
+    auto &yh = ctx_view.template get<3>();
     P *p = &p1, *tmp = &p2;
 
     S::sample(coeff.x, rng);
     S::sample(coeff.y, rng);
-    P &xg = ctx.template get_p<0>();
-    P &yh = ctx.template get_p<1>();
-    P::mul(xg, coeff.x, data.g, ctx.template rest<0, 2>());
-    P::mul(yh, coeff.y, data.h, ctx.template rest<0, 2>());
-    P::add(*p, xg, yh, ctx.template rest<0, 2>());
+    P::mul(xg, coeff.x, data.g, ctx_view.rest());
+    P::mul(yh, coeff.y, data.h, ctx_view.rest());
+    P::add(*p, xg, yh, ctx_view.rest());
 
     int l = data.pl.size();
     int i;
@@ -166,7 +170,7 @@ void *multithread_pollard_rho_worker(void *data_ptr) {
         i = p->x().array()[0] % l;
         S::add(coeff.x, data.al[i]);
         S::add(coeff.y, data.bl[i]);
-        P::add(*tmp, *p, data.pl[i], ctx);
+        P::add(*tmp, *p, data.pl[i], ctx.template view_as<P, P>().rest());
         std::swap(p, tmp);
     }
 }
@@ -185,7 +189,6 @@ void multithread_pollard_rho(S &c,
     std::vector<P> pl(l);
     typename P::template Context<> ctx;
 
-    // TODO: a safe way to get a scaler from context
     P ag, bh;
     for (size_t k = 0; k < l; ++k) {
         S::sample(al[k], rng);

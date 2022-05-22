@@ -2,7 +2,6 @@
 #ifndef GEC_CURVE_MIXIN_JACOBAIN_HPP
 #define GEC_CURVE_MIXIN_JACOBAIN_HPP
 
-#include <gec/utils/context_check.hpp>
 #include <gec/utils/crtp.hpp>
 
 namespace gec {
@@ -32,12 +31,12 @@ class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
     template <typename F_CTX>
     __host__ __device__ static bool on_curve(const Core &GEC_RSTRCT a,
                                              F_CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(F_CTX, 4);
+        auto &ctx_view = ctx.template view_as<F, F, F, F>();
 
-        F &l = ctx.template get<0>();
-        F &r = ctx.template get<1>();
-        F &t1 = ctx.template get<2>();
-        F &t2 = ctx.template get<3>();
+        auto &l = ctx_view.template get<0>();
+        auto &r = ctx_view.template get<1>();
+        auto &t1 = ctx_view.template get<2>();
+        auto &t2 = ctx_view.template get<3>();
 
         F::mul(t1, a.z(), a.z()); // z^2
         F::mul(t2, t1, t1);       // z^4
@@ -56,7 +55,7 @@ class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
     template <typename F_CTX>
     __host__ __device__ static void to_affine(Core &GEC_RSTRCT a,
                                               F_CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(F_CTX, 2);
+        auto &ctx_view = ctx.template view_as<F, F>();
 
         if (a.z().is_mul_id()) {
             return;
@@ -64,8 +63,8 @@ class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
             a.x().set_zero();
             a.y().set_zero();
         } else {
-            F &t1 = ctx.template get<0>();
-            F &t2 = ctx.template get<1>();
+            auto &t1 = ctx_view.template get<0>();
+            auto &t2 = ctx_view.template get<1>();
 
             F::inv(a.z(), ctx);       // z^-1
             F::mul(t1, a.z(), a.z()); // z^-2
@@ -91,7 +90,7 @@ class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
     __host__ __device__ static bool eq(const Core &GEC_RSTRCT a,
                                        const Core &GEC_RSTRCT b,
                                        F_CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(F_CTX, 4);
+        auto &ctx_view = ctx.template view_as<F, F, F, F>();
 
         bool a_inf = a.is_inf();
         bool b_inf = b.is_inf();
@@ -102,10 +101,10 @@ class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
         } else if (a.z() == b.z()) { // z1 == z2
             return a.x() == b.x() && a.y() == b.y();
         } else { // z1 != z2
-            F &ta = ctx.template get<0>();
-            F &tb = ctx.template get<1>();
-            F &tc = ctx.template get<2>();
-            F &td = ctx.template get<3>();
+            auto &ta = ctx_view.template get<0>();
+            auto &tb = ctx_view.template get<1>();
+            auto &tc = ctx_view.template get<2>();
+            auto &td = ctx_view.template get<3>();
 
             F::mul(tc, a.z(), a.z()); // z1^2
             F::mul(td, b.z(), b.z()); // z2^2
@@ -138,12 +137,12 @@ class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
     __host__ __device__ static void
     add_distinct_inner(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
                        const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(F_CTX, 4);
+        auto &ctx_view = ctx.template view_as<F, F, F, F>();
 
-        F &t1 = ctx.template get<0>();
-        F &t2 = ctx.template get<1>();
-        F &t3 = ctx.template get<2>();
-        F &t4 = ctx.template get<3>();
+        auto &t1 = ctx_view.template get<0>();
+        auto &t2 = ctx_view.template get<1>();
+        auto &t3 = ctx_view.template get<2>();
+        auto &t4 = ctx_view.template get<3>();
 
         F::sub(t2, t1);           // e = b - a
         F::sub(t4, t3);           // f = d - c
@@ -166,13 +165,13 @@ class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
     __host__ __device__ static void
     add_distinct(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
                  const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(F_CTX, 5);
+        auto &ctx_view = ctx.template view_as<F, F, F, F, F>();
 
-        F &ta = ctx.template get<0>();
-        F &tb = ctx.template get<1>();
-        F &tc = ctx.template get<2>();
-        F &td = ctx.template get<3>();
-        F &t = ctx.template get<4>();
+        auto &ta = ctx_view.template get<0>();
+        auto &tb = ctx_view.template get<1>();
+        auto &tc = ctx_view.template get<2>();
+        auto &td = ctx_view.template get<3>();
+        auto &t = ctx_view.template get<4>();
 
         F::mul(tc, c.z(), c.z()); // z2^2
         F::mul(t, tc, c.z());     // z2^3
@@ -191,10 +190,10 @@ class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
     __host__ __device__ static void add_self(Core &GEC_RSTRCT a,
                                              const Core &GEC_RSTRCT b,
                                              F_CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(F_CTX, 2);
+        auto &ctx_view = ctx.template view_as<F, F, F>();
 
-        F &t4 = ctx.template get<0>();
-        F &t5 = ctx.template get<1>();
+        auto &t4 = ctx_view.template get<0>();
+        auto &t5 = ctx_view.template get<1>();
 
         F::mul(t5, b.z(), b.z());       // z1^2
         F::mul(t4, t5, t5);             // z1^4
@@ -222,7 +221,7 @@ class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
     __host__ __device__ static void
     add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const Core &GEC_RSTRCT c,
         F_CTX &GEC_RSTRCT ctx) {
-        GEC_CTX_CAP(F_CTX, 5);
+        auto &ctx_view = ctx.template view_as<F, F, F, F, F>();
 
         // checking for infinity here is not necessary
         if (b.is_inf()) {
@@ -230,11 +229,11 @@ class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
         } else if (c.is_inf()) {
             a = b;
         } else {
-            F &ta = ctx.template get<0>();
-            F &tb = ctx.template get<1>();
-            F &tc = ctx.template get<2>();
-            F &td = ctx.template get<3>();
-            F &t = ctx.template get<4>();
+            auto &ta = ctx_view.template get<0>();
+            auto &tb = ctx_view.template get<1>();
+            auto &tc = ctx_view.template get<2>();
+            auto &td = ctx_view.template get<3>();
+            auto &t = ctx_view.template get<4>();
 
             F::mul(tc, c.z(), c.z()); // z2^2
             F::mul(t, tc, c.z());     // z2^3

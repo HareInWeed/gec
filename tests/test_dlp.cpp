@@ -21,7 +21,6 @@ TEST_CASE("pollard_rho", "[dlp][pollard_rho]") {
     std::mt19937 rng(rd());
 
     C::Context<> ctx;
-    S::Context s_ctx;
 
     C h;
     REQUIRE(C::on_curve(g, ctx));
@@ -42,10 +41,10 @@ TEST_CASE("pollard_rho", "[dlp][pollard_rho]") {
 
     S c, d, mon_c, mon_d;
 
-    pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx, s_ctx);
+    pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx);
     S::to_montgomery(mon_c, c);
     S::to_montgomery(mon_d, d);
-    S::inv(mon_d, s_ctx);
+    S::inv(mon_d, ctx);
     S::mul(d, mon_c, mon_d);
     S::from_montgomery(c, d);
 
@@ -69,7 +68,6 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
         const C &g = Dlp3Gen1;
 
         C::Context<> ctx;
-        S::Context s_ctx;
 
         C h;
         REQUIRE(C::on_curve(g, ctx));
@@ -88,10 +86,10 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
         S c, d, mon_c, mon_d;
 
         BENCHMARK("pollard rho") {
-            pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx, s_ctx);
+            pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx);
             S::to_montgomery(mon_c, c);
             S::to_montgomery(mon_d, d);
-            S::inv(mon_d, s_ctx);
+            S::inv(mon_d, ctx);
             S::mul(d, mon_c, mon_d);
             S::from_montgomery(c, d);
             return c.array()[0];
@@ -104,7 +102,6 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
         const C &g = reinterpret_cast<const C &>(Dlp3Gen1);
 
         C::Context<> ctx;
-        S::Context s_ctx;
 
         C h;
         REQUIRE(C::on_curve(g, ctx));
@@ -123,10 +120,10 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
         S c, d, mon_c, mon_d;
 
         BENCHMARK("avx2 pollard rho") {
-            pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx, s_ctx);
+            pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx);
             S::to_montgomery(mon_c, c);
             S::to_montgomery(mon_d, d);
-            S::inv(mon_d, s_ctx);
+            S::inv(mon_d, ctx);
             S::mul(d, mon_c, mon_d);
             S::from_montgomery(c, d);
             return c.array()[0];
@@ -147,7 +144,6 @@ TEST_CASE("multithread_pollard_rho", "[dlp][pollard_rho][multithread]") {
     std::mt19937 rng(rd());
 
     C::Context<> ctx;
-    S::Context s_ctx;
 
     C h;
     REQUIRE(C::on_curve(g, ctx));
@@ -171,7 +167,7 @@ TEST_CASE("multithread_pollard_rho", "[dlp][pollard_rho][multithread]") {
     multithread_pollard_rho(c, d, l, worker_n, mask, g, h);
     S::to_montgomery(mon_c, c);
     S::to_montgomery(mon_d, d);
-    S::inv(mon_d, s_ctx);
+    S::inv(mon_d, ctx);
     S::mul(d, mon_c, mon_d);
     S::from_montgomery(c, d);
 
@@ -196,7 +192,6 @@ TEST_CASE("multithread_pollard_rho bench",
         using F = C::Field;
 
         C::Context<> ctx;
-        S::Context s_ctx;
 
         C h;
         REQUIRE(C::on_curve(g, ctx));
@@ -227,7 +222,7 @@ TEST_CASE("multithread_pollard_rho bench",
                 multithread_pollard_rho(c, d, l, worker_n, mask, g, h);
                 S::to_montgomery(mon_c, c);
                 S::to_montgomery(mon_d, d);
-                S::inv(mon_d, s_ctx);
+                S::inv(mon_d, ctx);
                 S::mul(d, mon_c, mon_d);
                 S::from_montgomery(c, d);
                 return c.array()[0];
@@ -242,7 +237,6 @@ TEST_CASE("multithread_pollard_rho bench",
         using F = C::Field;
 
         C::Context<> ctx;
-        S::Context s_ctx;
 
         C h;
         REQUIRE(C::on_curve(g, ctx));
@@ -273,7 +267,7 @@ TEST_CASE("multithread_pollard_rho bench",
                 multithread_pollard_rho(c, d, l, worker_n, mask, g, h);
                 S::to_montgomery(mon_c, c);
                 S::to_montgomery(mon_d, d);
-                S::inv(mon_d, s_ctx);
+                S::inv(mon_d, ctx);
                 S::mul(d, mon_c, mon_d);
                 S::from_montgomery(c, d);
                 return c.array()[0];

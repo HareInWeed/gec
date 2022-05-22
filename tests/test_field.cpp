@@ -318,7 +318,7 @@ TEST_CASE("montgomery mul", "[ring][field]") {
 
 TEST_CASE("montgomery inv", "[field]") {
     using F = Field160;
-    F::Context ctx;
+    F::Context<> ctx;
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -354,7 +354,7 @@ TEST_CASE("montgomery exp", "[field]") {
     std::uniform_int_distribution<LIMB_T> dis_u32(
         std::numeric_limits<LIMB_T>::min(), std::numeric_limits<LIMB_T>::max());
 
-    F::Context ctx;
+    F::Context<> ctx;
     F mod_m, a, mon_a, mon_exp_a, mon_prod, exp_a;
     F::sub(mod_m, F::mod(), One);
 
@@ -478,7 +478,7 @@ TEST_CASE("montgomery inv bench", "[field][bench]") {
     {
         using F = Field160;
         const F &mon_x = reinterpret_cast<const F &>(mon_x0);
-        F::Context ctx;
+        F::Context<> ctx;
         BENCHMARK("32-bits montgomery inv") {
             F inv_x;
             F::inv(inv_x, mon_x, ctx);
@@ -489,7 +489,7 @@ TEST_CASE("montgomery inv bench", "[field][bench]") {
     {
         using F = Field160_2;
         const F &mon_x = reinterpret_cast<const F &>(mon_x0);
-        F::Context ctx;
+        F::Context<> ctx;
         BENCHMARK("64-bits montgomery inv") {
             F inv_x;
             F::inv(inv_x, mon_x, ctx);

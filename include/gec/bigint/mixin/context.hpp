@@ -10,7 +10,7 @@ namespace gec {
 namespace bigint {
 
 /// @brief Minimum context size for any function in GEC to work
-constexpr size_t MIN_CONTEXT_SIZE = 5;
+constexpr size_t MIN_BIGINT_NUM = 5;
 
 /** @brief mixin that add context type
  *
@@ -21,12 +21,13 @@ constexpr size_t MIN_CONTEXT_SIZE = 5;
  * every function requires such a context size. You may want to choose a smaller
  * size if only a subset of function in GEC is used.
  */
-template <typename Core, size_t N = MIN_CONTEXT_SIZE>
+template <typename Core, size_t N = MIN_BIGINT_NUM>
 class WithBigintContext : protected CRTP<Core, WithBigintContext<Core, N>> {
     friend CRTP<Core, WithBigintContext<Core, N>>;
 
   public:
-    using Context = utils::Context<Core, N>;
+    template <typename P = Core>
+    using Context = utils::Context<N * sizeof(P), alignof(P), 0>;
 };
 
 } // namespace bigint
