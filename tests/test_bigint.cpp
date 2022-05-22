@@ -93,22 +93,30 @@ TEST_CASE("bigint comparsion", "[bigint]") {
 }
 
 TEST_CASE("bigint bit operations", "[bigint]") {
-    Field160 a(0x0ffff000u, 0x0000ffffu, 0xffffffffu, 0xffffffffu, 0x00000000u);
-    Field160 b(0x000ffff0u, 0xffff0000u, 0x00000000u, 0xffffffffu, 0x00000000u);
-    Field160 c;
+    using F = Field160;
+    F a(0x0ffff000u, 0x0000ffffu, 0xffffffffu, 0xffffffffu, 0x00000000u);
+    F b(0x000ffff0u, 0xffff0000u, 0x00000000u, 0xffffffffu, 0x00000000u);
+    F c;
 
     c.bit_and(a, b);
-    REQUIRE(Field160(0x000ff000u, 0x00000000u, 0x00000000u, 0xffffffffu,
-                     0x00000000u) == c);
+    REQUIRE(F(0x000ff000u, 0x00000000u, 0x00000000u, 0xffffffffu,
+              0x00000000u) == c);
     c.bit_or(a, b);
-    REQUIRE(Field160(0x0ffffff0u, 0xffffffffu, 0xffffffffu, 0xffffffffu,
-                     0x00000000u) == c);
+    REQUIRE(F(0x0ffffff0u, 0xffffffffu, 0xffffffffu, 0xffffffffu,
+              0x00000000u) == c);
     c.bit_not(a);
-    REQUIRE(Field160(0xf0000fffu, 0xffff0000u, 0x00000000u, 0x00000000u,
-                     0xffffffffu) == c);
+    REQUIRE(F(0xf0000fffu, 0xffff0000u, 0x00000000u, 0x00000000u,
+              0xffffffffu) == c);
     c.bit_xor(a, b);
-    REQUIRE(Field160(0x0ff00ff0u, 0xffffffffu, 0xffffffffu, 0x00000000u,
-                     0x00000000u) == c);
+    REQUIRE(F(0x0ff00ff0u, 0xffffffffu, 0xffffffffu, 0x00000000u,
+              0x00000000u) == c);
+
+    REQUIRE(156 == a.most_significant_bit());
+    REQUIRE(148 == b.most_significant_bit());
+    c.set_zero();
+    REQUIRE(0 == c.most_significant_bit());
+    c.set_one();
+    REQUIRE(1 == c.most_significant_bit());
 }
 
 TEST_CASE("bigint shift", "[bigint]") {

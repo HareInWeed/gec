@@ -61,12 +61,10 @@ class BitOps : protected CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>> {
         return this->core();
     }
 
-    /** @brief shift element by `B` bit
-     *
-     * Beware, `B` should be less then the bit length of the `data` field,
-     * otherwise the complier might hang forever during compilation.
-     */
-    template <size_t B>
+    /** @brief shift element by `B` bit */
+    template <size_t B, std::enable_if_t<
+                            (B <= LIMB_N * std::numeric_limits<LIMB_T>::digits)>
+                            * = nullptr>
     __host__ __device__ GEC_INLINE void shift_right() {
         utils::seq_shift_right<LIMB_N, B>(this->core().array());
     }
@@ -74,15 +72,10 @@ class BitOps : protected CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>> {
     // TODO: runtime shift_right
     // void shift_right(size_t n) {}
 
-    /** @brief shift element by `B` bit
-     *
-     * Beware, `B` should be less then the bit length of the `data` field,
-     * otherwise the complier might hang forever during compilation.
-     *
-     * This method does not check whether the shifted element is still in range.
-     * User should check the value of the element before left shifting
-     */
-    template <size_t B>
+    /** @brief shift element by `B` bit */
+    template <size_t B, std::enable_if_t<
+                            (B <= LIMB_N * std::numeric_limits<LIMB_T>::digits)>
+                            * = nullptr>
     __host__ __device__ GEC_INLINE void shift_left() {
         utils::seq_shift_left<LIMB_N, B>(this->core().array());
     }
@@ -90,8 +83,24 @@ class BitOps : protected CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>> {
     // TODO: runtime shift_right
     // void shift_left(size_t n) {}
 
-    __host__ __device__ GEC_INLINE size_t trailing_zeros() {
-        // TODO
+    __host__ __device__ size_t most_significant_bit() {
+        constexpr size_t limb_digits = std::numeric_limits<LIMB_T>::digits;
+
+        size_t i = LIMB_N;
+        do {
+            --i;
+            if (this->core().array()[i]) {
+                size_t j = limb_digits;
+                do {
+                    --j;
+                    if ((LIMB_T(1) << j) & this->core().array()[i]) {
+                        return i * limb_digits + j + 1;
+                    }
+                } while (j != 0);
+            }
+        } while (i != 0);
+
+        return 0;
     }
 };
 
