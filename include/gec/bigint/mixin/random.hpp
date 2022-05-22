@@ -36,10 +36,7 @@ class ModRandom : protected CRTP<Core, ModRandom<Core, LIMB_T, LIMB_N, MOD>> {
         auto &ctx_view = ctx.template view_as<Core>();
         auto &span = ctx_view.template get<0>();
         Core::sub(span, upper, lower);
-        do {
-            sample_inclusive(a, span, rng);
-        } while (utils::VtSeqAll<LIMB_N, LIMB_T, utils::ops::Eq<LIMB_T>>::call(
-            a.array(), span.array()));
+        sample_exclusive_raw(a, span.array(), rng);
         Core::add(a, lower);
     }
 

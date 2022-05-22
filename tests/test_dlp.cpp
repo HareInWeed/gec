@@ -132,6 +132,44 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
 #endif // GEC_ENABLE_AVX2
 }
 
+TEST_CASE("pollard_lambda", "[dlp][pollard_lambda]") {
+    using C = Dlp3CurveA;
+    const C &g = Dlp3Gen1;
+    using S = Dlp3G1Scaler;
+
+    std::random_device rd;
+    std::mt19937 rng(rd());
+
+    C::Context<> ctx;
+
+    C h;
+    REQUIRE(C::on_curve(g, ctx));
+
+    C::mul(h, S::mod(), g, ctx);
+    CAPTURE(h);
+    REQUIRE(h.is_inf());
+
+    S x0, lower(1 << 3), upper((1 << 3) + (1 << 15)), bound(1 << 8);
+    S::sample_inclusive(x0, lower, upper, rng, ctx);
+
+    C::mul(h, x0, g, ctx);
+    REQUIRE(C::on_curve(h, ctx));
+
+    size_t l = 15;
+    std::vector<S> sl(l);
+    std::vector<C> pl(l);
+
+    S x, d, mon_c, mon_d;
+
+    pollard_lambda(x, sl.data(), pl.data(), bound, lower, upper, g, h, rng,
+                   ctx);
+
+    C xg;
+    C::mul(xg, x, g, ctx);
+    CAPTURE(x, xg, h);
+    REQUIRE(C::eq(xg, h));
+}
+
 #ifdef GEC_ENABLE_PTHREAD
 
 TEST_CASE("multithread_pollard_rho", "[dlp][pollard_rho][multithread]") {
