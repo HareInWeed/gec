@@ -170,7 +170,7 @@ TEST_CASE("pollard_lambda", "[dlp][pollard_lambda]") {
     REQUIRE(C::eq(xg, h));
 }
 
-#ifdef GEC_ENABLE_PTHREAD
+#ifdef GEC_ENABLE_PTHREADS
 
 TEST_CASE("multithread_pollard_rho", "[dlp][pollard_rho][multithread]") {
     using C = Dlp3CurveA;
@@ -352,4 +352,4 @@ TEST_CASE("multithread_pollard_lambda", "[dlp][pollard_lambda][multithread]") {
     REQUIRE(C::eq(xg, h));
 }
 
-#endif // GEC_ENABLE_PTHREAD
+#endif // GEC_ENABLE_PTHREADS

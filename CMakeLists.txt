@@ -41,9 +41,9 @@ if(GEC_ENABLE_AVX2)
     endif()
 endif()
 
-option(GEC_ENABLE_PTHREAD "use pthread" OFF)
-if(GEC_ENABLE_PTHREAD)
-    target_compile_definitions(gec INTERFACE GEC_ENABLE_PTHREAD)
+option(GEC_ENABLE_PTHREADS "use pthread" OFF)
+if(GEC_ENABLE_PTHREADS)
+    target_compile_definitions(gec INTERFACE GEC_ENABLE_PTHREADS)
     if(WIN32)
         find_package(pthreads CONFIG REQUIRED)
         target_link_libraries(

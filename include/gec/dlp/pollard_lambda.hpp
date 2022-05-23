@@ -7,10 +7,10 @@
 #include <random>
 #include <utility>
 
-#ifdef GEC_ENABLE_PTHREAD
+#ifdef GEC_ENABLE_PTHREADS
 #include <pthread.h>
 #include <unordered_map>
-#endif // GEC_ENABLE_PTHREAD
+#endif // GEC_ENABLE_PTHREADS
 namespace gec {
 
 namespace dlp {
@@ -19,12 +19,12 @@ namespace dlp {
  *
  * `a` must be strictly less than `b`, otherwise the behaviour is undefined.
  */
-template <typename S, typename P, typename Rng, typename CTX>
+template <typename S, typename P, typename Rng, typename Ctx>
 void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl, P *GEC_RSTRCT pl,
                     const S &GEC_RSTRCT bound, const S &GEC_RSTRCT a,
                     const S &GEC_RSTRCT b, const P &GEC_RSTRCT g,
                     const P &GEC_RSTRCT h, Rng &GEC_RSTRCT rng,
-                    CTX &GEC_RSTRCT ctx) {
+                    Ctx &GEC_RSTRCT ctx) {
     using F = typename P::Field;
     auto &ctx_view = ctx.template view_as<P, P, P, S, S, S>();
     auto &p1 = ctx_view.template get<0>();
@@ -80,7 +80,7 @@ void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl, P *GEC_RSTRCT pl,
     }
 }
 
-#ifdef GEC_ENABLE_PTHREAD
+#ifdef GEC_ENABLE_PTHREADS
 
 namespace pollard_lambda_ {
 
@@ -240,7 +240,7 @@ void multithread_pollard_lambda(S &GEC_RSTRCT x, const S &GEC_RSTRCT bound,
 // NOLINTNEXTLINE(misc-unused-using-decls)
 using pollard_lambda_::multithread_pollard_lambda;
 
-#endif // GEC_ENABLE_PTHREAD
+#endif // GEC_ENABLE_PTHREADS
 
 } // namespace dlp
 

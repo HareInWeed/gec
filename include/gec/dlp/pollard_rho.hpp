@@ -4,18 +4,18 @@
 
 #include <gec/utils/basic.hpp>
 
+#include <random>
 #include <utility>
 
-#ifdef GEC_ENABLE_PTHREAD
+#ifdef GEC_ENABLE_PTHREADS
 #include <gec/utils/sequence.hpp>
 
 #include <pthread.h>
 
-#include <random>
 #include <unordered_map>
 #include <vector>
 
-#endif // GEC_ENABLE_PTHREAD
+#endif // GEC_ENABLE_PTHREADS
 
 namespace gec {
 
@@ -88,7 +88,7 @@ __host__ __device__ void pollard_rho(S &c,
     S::sub(d2, d);
 }
 
-#ifdef GEC_ENABLE_PTHREAD
+#ifdef GEC_ENABLE_PTHREADS
 
 namespace pollard_rho_ {
 
@@ -227,7 +227,7 @@ void multithread_pollard_rho(S &c,
 
 using pollard_rho_::multithread_pollard_rho; // NOLINT(misc-unused-using-decls)
 
-#endif // GEC_ENABLE_PTHREAD
+#endif // GEC_ENABLE_PTHREADS
 
 } // namespace dlp
 
