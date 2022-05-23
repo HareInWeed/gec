@@ -20,7 +20,7 @@ class AddGroupMixin : public gec::bigint::Constants<Core, T, N>,
                       public gec::bigint::ArrayPrint<Core, T, N> {};
 
 template <typename T, size_t N, const T *MOD,
-          size_t align = std::alignment_of_v<T>>
+          size_t align = alignof(T)>
 class alignas(align) AddGroup
     : public gec::bigint::ArrayBE<T, N>,
       public AddGroupMixin<AddGroup<T, N, MOD, align>, T, N, MOD> {
@@ -28,7 +28,7 @@ class alignas(align) AddGroup
 };
 
 template <typename T, size_t N, const T *MOD, T MOD_P, const T *RR,
-          const T *ONE_R, size_t align = std::alignment_of_v<T>>
+          const T *ONE_R, size_t align = alignof(T)>
 class alignas(align) Field
     : public gec::bigint::ArrayBE<T, N>,
       public AddGroupMixin<Field<T, N, MOD, MOD_P, RR, ONE_R, align>, T, N,
@@ -43,7 +43,7 @@ class alignas(align) Field
 #ifdef GEC_ENABLE_AVX2
 
 template <typename T, size_t N, const T *MOD, T MOD_P, const T *RR,
-          const T *ONE_R, size_t align = std::alignment_of_v<T>>
+          const T *ONE_R, size_t align = alignof(T)>
 class alignas(align) AVX2Field
     : public gec::bigint::ArrayBE<T, N>,
       public AddGroupMixin<AVX2Field<T, N, MOD, MOD_P, RR, ONE_R, align>, T, N,

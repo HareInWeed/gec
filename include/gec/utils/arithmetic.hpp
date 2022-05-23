@@ -65,7 +65,7 @@ __host__ GEC_INLINE bool
 uint_add_with_carry<uint64_t>(uint64_t &GEC_RSTRCT a,
                               const uint64_t &GEC_RSTRCT b,
                               const uint64_t &GEC_RSTRCT c, bool carry) {
-    return bool(_addcarry_u64((unsigned char)(carry), b, c, &a));
+    return bool(_addcarry_u64((unsigned char)(carry), b, c, reinterpret_cast<unsigned long long *>(&a)));
 }
 #endif
 

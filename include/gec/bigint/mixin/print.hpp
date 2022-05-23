@@ -3,6 +3,10 @@
 #define GEC_BIGINT_MIXIN_PRINT_HPP
 
 #include <gec/utils/crtp.hpp>
+#include <gec/utils/basic.hpp>
+
+#include <type_traits>
+#include <limits>
 
 #include <cstdio>
 
@@ -23,13 +27,24 @@ __host__ __device__ void print(const T &data) {
     printf("}");
 }
 
+template<size_t s>
+struct ulFormat;
+template<>
+struct ulFormat<8> {
+    __host__ __device__ GEC_INLINE static const char *call() { return "%016lx"; }
+};
+template<>
+struct ulFormat<4> {
+    __host__ __device__ GEC_INLINE static const char *call() { return "%08lx"; }
+};
+
 template <>
-inline __host__ __device__ void print<uint32_t>(const uint32_t &data) {
-    printf("%08x", data);
+inline __host__ __device__ void print<unsigned long>(const unsigned long &data) {
+    printf(ulFormat<sizeof(unsigned long)>::call(), data);
 }
 
 template <>
-inline __host__ __device__ void print<uint64_t>(const uint64_t &data) {
+inline __host__ __device__ void print<unsigned long long>(const unsigned long long &data) {
     printf("%016llx", data);
 }
 } // namespace print
