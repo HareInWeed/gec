@@ -21,11 +21,13 @@ namespace gec {
 
 namespace dlp {
 
-template <typename S, typename P, typename Rng, typename Ctx>
+template <typename S, typename P, typename Ctx, typename Rng = std::mt19937>
 __host__ __device__ void pollard_rho(S &c,
                                      S &d2, // TODO: require general int inv
                                      size_t l, S *al, S *bl, P *pl, const P &g,
-                                     const P &h, Rng &rng, Ctx &ctx) {
+                                     const P &h, size_t seed, Ctx &ctx) {
+    Rng rng(seed);
+
     using F = typename P::Field;
     auto &ctx_view = ctx.template view_as<P, P, P, P, P, F, F, S, S>();
 
@@ -88,6 +90,8 @@ __host__ __device__ void pollard_rho(S &c,
 
 #ifdef GEC_ENABLE_PTHREAD
 
+namespace pollard_rho_ {
+
 template <typename T>
 struct MaskZero {
     GEC_INLINE static bool call(const T &a, const T &b) { return !(a & b); }
@@ -100,7 +104,7 @@ struct Coefficient {
 };
 
 template <typename S, typename P>
-struct PollardRhoData {
+struct WorkerData {
     const P &g;
     const P &h;
     const std::vector<S> &al;
@@ -117,13 +121,13 @@ struct PollardRhoData {
     size_t id;
 };
 
-template <typename S, typename P>
-void *multithread_pollard_rho_worker(void *data_ptr) {
+template <typename S, typename P, typename Rng>
+void *worker(void *data_ptr) {
     using F = typename P::Field;
     using LT = typename F::LimbT;
 
-    PollardRhoData<S, P> &data = *static_cast<PollardRhoData<S, P> *>(data_ptr);
-    std::mt19937 rng(data.seed);
+    WorkerData<S, P> &data = *static_cast<WorkerData<S, P> *>(data_ptr);
+    Rng rng(data.seed);
     typename P::template Context<> ctx;
     Coefficient<S> coeff;
     auto &ctx_view = ctx.template view_as<P, P, P, P>();
@@ -175,15 +179,14 @@ void *multithread_pollard_rho_worker(void *data_ptr) {
     }
 }
 
-template <typename S, typename P>
+template <typename S, typename P, typename Rng = std::mt19937>
 void multithread_pollard_rho(S &c,
                              S &d2, // TODO: require general int inv
                              size_t l, size_t worker_n,
                              const typename P::Field &mask, const P &g,
-                             const P &h) {
-    using Payload = PollardRhoData<S, P>;
-    std::random_device rd;
-    std::mt19937 rng(rd());
+                             const P &h, size_t seed) {
+    using Data = WorkerData<S, P>;
+    std::mt19937 rng(seed);
 
     std::vector<S> al(l), bl(l);
     std::vector<P> pl(l);
@@ -203,16 +206,15 @@ void multithread_pollard_rho(S &c,
     std::vector<pthread_t> workers(worker_n);
     pthread_mutex_t candidates_mutex = PTHREAD_MUTEX_INITIALIZER;
     std::unordered_multimap<P, Coefficient<S>, typename P::Hasher> candidates;
-    std::vector<Payload> workers_data(
+    std::vector<Data> workers_data(
         worker_n, {g, h, al, bl, pl, candidates, mask, &candidates_mutex, done,
                    c, d2, /* seed */ 0, worker_n, /* id */ 0});
 
     for (size_t k = 0; k < worker_n; ++k) {
         auto &data = workers_data[k];
         data.id = k;
-        data.seed = rd();
-        pthread_create(&workers[k], nullptr,
-                       multithread_pollard_rho_worker<S, P>,
+        data.seed = rng();
+        pthread_create(&workers[k], nullptr, worker<S, P, Rng>,
                        static_cast<void *>(&data));
     }
 
@@ -220,6 +222,11 @@ void multithread_pollard_rho(S &c,
         pthread_join(workers[k], nullptr);
     }
 }
+
+} // namespace pollard_rho_
+
+using pollard_rho_::multithread_pollard_rho; // NOLINT(misc-unused-using-decls)
+
 #endif // GEC_ENABLE_PTHREAD
 
 } // namespace dlp
