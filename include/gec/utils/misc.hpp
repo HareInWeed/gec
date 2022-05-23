@@ -21,7 +21,7 @@ struct SignificantMask {
 };
 template <typename T, size_t I>
 struct SignificantMask<T, I,
-                       typename std::enable_if_t<!std::is_unsigned_v<T>>> {
+                       typename std::enable_if_t<!std::is_unsigned<T>::value>> {
     __host__ __device__ GEC_INLINE static T call(T x) {
         return SignificantMask<std::make_unsigned_t<T>, I>::call(x);
     }
@@ -41,7 +41,7 @@ struct LowerKMask {
         K == std::numeric_limits<T>::digits ? ~T(0) : (T(1) << K) - 1;
 };
 template <typename T, size_t K>
-struct LowerKMask<T, K, std::enable_if_t<!std::is_unsigned_v<T>>> {
+struct LowerKMask<T, K, std::enable_if_t<!std::is_unsigned<T>::value>> {
     const static T value = T(LowerKMask<T, K, std::make_unsigned<T>>::value);
 };
 
@@ -68,7 +68,8 @@ struct TrailingZeros<T, 0> {
     __host__ __device__ GEC_INLINE static void call(T, size_t &) {}
 };
 template <typename T, size_t I>
-struct TrailingZeros<T, I, typename std::enable_if_t<!std::is_unsigned_v<T>>> {
+struct TrailingZeros<T, I,
+                     typename std::enable_if_t<!std::is_unsigned<T>::value>> {
     __host__ __device__ GEC_INLINE static void call(T x, size_t &b) {
         using UT = std::make_unsigned_t<T>;
         TrailingZeros<UT, std::numeric_limits<UT>::digits / 2>::call(x, b);

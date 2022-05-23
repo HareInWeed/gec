@@ -4,8 +4,13 @@
 
 #include "basic.hpp"
 
-#if defined(GEC_CLANG) || defined(GEC_MSVC) || defined(GEC_GCC)
+#if defined(_WIN32) &&                                                         \
+    (defined(GEC_CLANG) || defined(GEC_MSVC) || defined(GEC_GCC))
 #include <intrin.h>
+#else
+#ifdef GEC_AMD64
+#include <x86intrin.h>
+#endif
 #endif
 
 namespace gec {
