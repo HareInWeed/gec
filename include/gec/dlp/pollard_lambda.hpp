@@ -3,6 +3,7 @@
 #define GEC_DLP_POLLARD_LAMBDA_HPP
 
 #include <gec/utils/basic.hpp>
+#include <gec/utils/misc.hpp>
 
 #include <random>
 #include <utility>
@@ -86,6 +87,7 @@ namespace pollard_lambda_ {
 
 template <typename S, typename P>
 struct WorkerData {
+    pthread_mutex_t *x_lock;
     S &x;
     const S &a;
     const S &b;
@@ -116,7 +118,7 @@ void *worker(void *data_ptr) {
     const size_t m = data.sl.size();
     P p1, p2;
     P *u = &p1, *tmp = &p2;
-    S x, i, one(1);
+    S x, j, one(1);
     typename P::template Context<> ctx;
     Rng rng(data.seed);
 
@@ -136,51 +138,79 @@ void *worker(void *data_ptr) {
                 data.sl[i].set_pow2(e);
                 P::mul(data.pl[i], data.sl[i], data.g, ctx);
             }
+#ifdef GEC_DEBUG
+            printf("[worker %03zu]: jump table generated\n", data.id);
+#endif // GEC_DEBUG
         }
 
         pthread_barrier_wait(data.barrier);
-        // setting traps
 
+        // setting traps
         S::sample_inclusive(x, data.a, data.b, rng, ctx);
         P::mul(*u, x, data.g, ctx);
-        for (i.set_zero(); i < data.bound; S::add(i, one)) {
+        for (j.set_zero(); j < data.bound; S::add(j, one)) {
             size_t i = u->x().array()[0] % m;
             S::add(x, data.sl[i]);
             P::add(*tmp, *u, data.pl[i], ctx);
             std::swap(u, tmp);
+#ifdef GEC_DEBUG
+            if (!(utils::LowerKMask<LimbT, 20>::value & j.array()[0])) {
+                printf("[worker %03zu]: calculating trap, step ", data.id);
+                j.println();
+            }
+#endif // GEC_DEBUG
         }
         pthread_mutex_lock(data.traps_lock);
         data.traps.insert(std::make_pair(*u, x));
         pthread_mutex_unlock(data.traps_lock);
 
+#ifdef GEC_DEBUG
+        printf("[worker %03zu]: trap set\n", data.id);
+#endif // GEC_DEBUG
         pthread_barrier_wait(data.barrier);
-        // start searching
 
+        // start searching
         S::sample_inclusive(x, data.a, data.b, rng, ctx);
         P::mul(*tmp, x, data.g, ctx);
         P::add(*u, data.h, *tmp, ctx);
-        for (i.set_zero(); i < data.bound; S::add(i, one)) {
+        for (j.set_zero(); j < data.bound; S::add(j, one)) {
             if (data.shutdown) {
                 break;
             }
             auto it = data.traps.find(*u);
             if (it != data.traps.end() && it->second != x) {
-                S::sub(data.x, it->second, x);
-                data.shutdown = true;
+                pthread_mutex_lock(data.x_lock);
+                if (!data.shutdown) {
+                    S::sub(data.x, it->second, x);
+                    data.shutdown = true;
+                }
+                pthread_mutex_unlock(data.x_lock);
                 break;
             }
             size_t i = u->x().array()[0] % m;
             S::add(x, data.sl[i]);
             P::add(*tmp, *u, data.pl[i], ctx);
             std::swap(u, tmp);
+#ifdef GEC_DEBUG
+            if (!(utils::LowerKMask<LimbT, 20>::value & j.array()[0])) {
+                printf("[worker %03zu]: searching, step ", data.id);
+                j.println();
+            }
+#endif // GEC_DEBUG
         }
 
         pthread_barrier_wait(data.barrier);
         // check success
 
         if (data.shutdown) {
+#ifdef GEC_DEBUG
+            printf("[worker %03zu]: collision found, shutting down\n", data.id);
+#endif // GEC_DEBUG
             return nullptr;
         }
+#ifdef GEC_DEBUG
+        printf("[worker %03zu]: collision not found, retry\n", data.id);
+#endif // GEC_DEBUG
     }
 }
 
@@ -208,6 +238,7 @@ void multithread_pollard_lambda(S &GEC_RSTRCT x, const S &GEC_RSTRCT bound,
     std::vector<S> sl(m);
     std::vector<P> pl(m);
 
+    pthread_mutex_t x_lock = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_t traps_lock = PTHREAD_MUTEX_INITIALIZER;
     std::unordered_map<P, S, typename P::Hasher> traps(worker_n);
 
@@ -217,8 +248,8 @@ void multithread_pollard_lambda(S &GEC_RSTRCT x, const S &GEC_RSTRCT bound,
     bool shutdown = false;
 
     std::vector<Data> params(worker_n,
-                             Data{x, a, b, g, h, sl, pl, bound, &barrier,
-                                  &traps_lock, traps, shutdown,
+                             Data{&x_lock, x, a, b, g, h, sl, pl, bound,
+                                  &barrier, &traps_lock, traps, shutdown,
                                   /* seed */ 0, worker_n,
                                   /* id */ 0});
 
