@@ -6,8 +6,7 @@
 #include <iostream>
 #include <limits>
 
-#define GEC_DEBUG
-#define GEC_IOSTREAM
+// #define GEC_DEBUG
 
 using namespace std;
 

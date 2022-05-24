@@ -2,11 +2,11 @@
 #ifndef GEC_BIGINT_MIXIN_PRINT_HPP
 #define GEC_BIGINT_MIXIN_PRINT_HPP
 
-#include <gec/utils/crtp.hpp>
 #include <gec/utils/basic.hpp>
+#include <gec/utils/crtp.hpp>
 
-#include <type_traits>
 #include <limits>
+#include <type_traits>
 
 #include <cstdio>
 
@@ -15,7 +15,7 @@ namespace gec {
 namespace print {
 template <typename T>
 __host__ __device__ void print(const T &data) {
-    char *it = reinterpret_cast<char *>(&data);
+    const char *it = reinterpret_cast<const char *>(&data);
     const char *end = it + sizeof(T);
     printf("Unknown {");
     if (it < end) {
@@ -27,26 +27,60 @@ __host__ __device__ void print(const T &data) {
     printf("}");
 }
 
-template<size_t s>
-struct ulFormat;
-template<>
-struct ulFormat<8> {
-    __host__ __device__ GEC_INLINE static const char *call() { return "%016lx"; }
+template <typename T, size_t s = sizeof(T)>
+struct FormatStr;
+
+template <>
+struct FormatStr<unsigned int, 2> {
+    __host__ __device__ GEC_INLINE static const char *call() { return "%04x"; }
 };
-template<>
-struct ulFormat<4> {
+template <>
+struct FormatStr<unsigned int, 4> {
+    __host__ __device__ GEC_INLINE static const char *call() { return "%08x"; }
+};
+template <>
+struct FormatStr<unsigned int, 8> {
+    __host__ __device__ GEC_INLINE static const char *call() { return "%016x"; }
+};
+template <>
+inline __host__ __device__ void print<unsigned int>(const unsigned int &data) {
+    printf(FormatStr<unsigned int>::call(), data);
+}
+
+template <>
+struct FormatStr<unsigned long, 4> {
     __host__ __device__ GEC_INLINE static const char *call() { return "%08lx"; }
 };
-
 template <>
-inline __host__ __device__ void print<unsigned long>(const unsigned long &data) {
-    printf(ulFormat<sizeof(unsigned long)>::call(), data);
+struct FormatStr<unsigned long, 8> {
+    __host__ __device__ GEC_INLINE static const char *call() {
+        return "%016lx";
+    }
+};
+template <>
+inline __host__ __device__ void
+print<unsigned long>(const unsigned long &data) {
+    printf(FormatStr<unsigned long>::call(), data);
 }
 
 template <>
-inline __host__ __device__ void print<unsigned long long>(const unsigned long long &data) {
-    printf("%016llx", data);
+struct FormatStr<unsigned long long, 4> {
+    __host__ __device__ GEC_INLINE static const char *call() {
+        return "%08llx";
+    }
+};
+template <>
+struct FormatStr<unsigned long long, 8> {
+    __host__ __device__ GEC_INLINE static const char *call() {
+        return "%016llx";
+    }
+};
+template <>
+inline __host__ __device__ void
+print<unsigned long long>(const unsigned long long &data) {
+    printf(FormatStr<unsigned long long>::call(), data);
 }
+
 } // namespace print
 
 namespace bigint {

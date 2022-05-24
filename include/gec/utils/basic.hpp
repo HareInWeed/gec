@@ -98,6 +98,7 @@
 #endif
 
 #include <cinttypes>
+#include <cstddef>
 #include <limits>
 
 namespace gec {
