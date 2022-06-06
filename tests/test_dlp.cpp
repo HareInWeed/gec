@@ -1,6 +1,7 @@
 #include "common.hpp"
 #include "utils.hpp"
 
+// #define GEC_DEBUG
 #include <gec/dlp.hpp>
 
 #include "configured_catch.hpp"
@@ -18,7 +19,7 @@ TEST_CASE("pollard_rho", "[dlp][pollard_rho]") {
     using S = Dlp3G1Scaler;
 
     std::random_device rd;
-    std::mt19937 rng(rd());
+    auto rng = make_gec_rng(std::mt19937(rd()));
 
     C::Context<> ctx;
 
@@ -41,7 +42,7 @@ TEST_CASE("pollard_rho", "[dlp][pollard_rho]") {
 
     S c, d, mon_c, mon_d;
 
-    pollard_rho(c, d, l, al, bl, pl, g, h, rng(), ctx);
+    pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx);
     S::to_montgomery(mon_c, c);
     S::to_montgomery(mon_d, d);
     S::inv(mon_d, ctx);
@@ -58,7 +59,7 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
     using S = Dlp3G1Scaler;
 
     std::random_device rd;
-    std::mt19937 rng(rd());
+    auto rng = make_gec_rng(std::mt19937(rd()));
 
     S x;
     S::sample_non_zero(x, rng);
@@ -86,7 +87,7 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
         S c, d, mon_c, mon_d;
 
         BENCHMARK("pollard rho") {
-            pollard_rho(c, d, l, al, bl, pl, g, h, rng(), ctx);
+            pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx);
             S::to_montgomery(mon_c, c);
             S::to_montgomery(mon_d, d);
             S::inv(mon_d, ctx);
@@ -120,7 +121,7 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
         S c, d, mon_c, mon_d;
 
         BENCHMARK("avx2 pollard rho") {
-            pollard_rho(c, d, l, al, bl, pl, g, h, rng(), ctx);
+            pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx);
             S::to_montgomery(mon_c, c);
             S::to_montgomery(mon_d, d);
             S::inv(mon_d, ctx);
@@ -138,7 +139,7 @@ TEST_CASE("pollard_lambda", "[dlp][pollard_lambda]") {
     using S = Dlp3G1Scaler;
 
     std::random_device rd;
-    std::mt19937 rng(rd());
+    auto rng = make_gec_rng(std::mt19937(rd()));
 
     C::Context<> ctx;
 
@@ -179,7 +180,7 @@ TEST_CASE("multithread_pollard_rho", "[dlp][pollard_rho][multithread]") {
     using F = C::Field;
 
     std::random_device rd;
-    std::mt19937 rng(rd());
+    auto rng = make_gec_rng(std::mt19937(rd()));
 
     C::Context<> ctx;
 
@@ -202,7 +203,7 @@ TEST_CASE("multithread_pollard_rho", "[dlp][pollard_rho][multithread]") {
 
     F mask(0x80000000, 0, 0, 0, 0, 0, 0, 0);
 
-    multithread_pollard_rho(c, d, l, worker_n, mask, g, h, rng());
+    multithread_pollard_rho(c, d, l, worker_n, mask, g, h, rng);
     S::to_montgomery(mon_c, c);
     S::to_montgomery(mon_d, d);
     S::inv(mon_d, ctx);
@@ -220,7 +221,7 @@ TEST_CASE("multithread_pollard_rho bench",
     using S = Dlp3G1Scaler;
 
     std::random_device rd;
-    std::mt19937 rng(rd());
+    auto rng = make_gec_rng(std::mt19937(rd()));
     S x;
     S::sample_non_zero(x, rng);
 
@@ -257,7 +258,7 @@ TEST_CASE("multithread_pollard_rho bench",
 
             BENCHMARK(bench_name.str()) {
                 F mask(m, 0, 0, 0, 0, 0, 0, 0);
-                multithread_pollard_rho(c, d, l, worker_n, mask, g, h, rng());
+                multithread_pollard_rho(c, d, l, worker_n, mask, g, h, rng);
                 S::to_montgomery(mon_c, c);
                 S::to_montgomery(mon_d, d);
                 S::inv(mon_d, ctx);
@@ -302,7 +303,7 @@ TEST_CASE("multithread_pollard_rho bench",
 
             BENCHMARK(bench_name.str()) {
                 F mask(m, 0, 0, 0, 0, 0, 0, 0);
-                multithread_pollard_rho(c, d, l, worker_n, mask, g, h, rng());
+                multithread_pollard_rho(c, d, l, worker_n, mask, g, h, rng);
                 S::to_montgomery(mon_c, c);
                 S::to_montgomery(mon_d, d);
                 S::inv(mon_d, ctx);
@@ -321,7 +322,7 @@ TEST_CASE("multithread_pollard_lambda", "[dlp][pollard_lambda][multithread]") {
     using S = Dlp3G1Scaler;
 
     std::random_device rd;
-    std::mt19937 rng(rd());
+    auto rng = make_gec_rng(std::mt19937(rd()));
 
     C::Context<> ctx;
 
@@ -332,7 +333,7 @@ TEST_CASE("multithread_pollard_lambda", "[dlp][pollard_lambda][multithread]") {
     CAPTURE(h);
     REQUIRE(h.is_inf());
 
-    S x0, lower(1 << 3), upper((1 << 3) + (1 << 15)), bound(1 << 8);
+    S x0, lower(1 << 3), upper((1 << 3) + (1 << 15)), bound(1 << 5);
     S::sample_inclusive(x0, lower, upper, rng, ctx);
 
     C::mul(h, x0, g, ctx);
@@ -344,12 +345,48 @@ TEST_CASE("multithread_pollard_lambda", "[dlp][pollard_lambda][multithread]") {
 
     S x, d, mon_c, mon_d;
 
-    multithread_pollard_lambda(x, bound, 8, lower, upper, g, h, rng());
+    multithread_pollard_lambda(x, bound, 8, lower, upper, g, h, rng);
 
     C xg;
     C::mul(xg, x, g, ctx);
     CAPTURE(x, xg, h);
     REQUIRE(C::eq(xg, h));
+}
+
+TEST_CASE("multithread_pollard_lambda bench",
+          "[dlp][pollard_lambda][multithread][bench]") {
+    using C = Dlp3CurveA;
+    const C &g = Dlp3Gen1;
+    using S = Dlp3G1Scaler;
+
+    std::random_device rd;
+    auto rng = make_gec_rng(std::mt19937(rd()));
+
+    C::Context<> ctx;
+
+    C h;
+    REQUIRE(C::on_curve(g, ctx));
+
+    C::mul(h, S::mod(), g, ctx);
+    CAPTURE(h);
+    REQUIRE(h.is_inf());
+
+    S x0, lower(1 << 3), upper((1 << 3) + (1 << 15)), bound(1 << 5);
+    S::sample_inclusive(x0, lower, upper, rng, ctx);
+
+    C::mul(h, x0, g, ctx);
+    REQUIRE(C::on_curve(h, ctx));
+
+    size_t l = 15;
+    std::vector<S> sl(l);
+    std::vector<C> pl(l);
+
+    S x, d, mon_c, mon_d;
+
+    BENCHMARK("multithread_pollard_lambda") {
+        multithread_pollard_lambda(x, bound, 8, lower, upper, g, h, rng);
+        return x;
+    };
 }
 
 #endif // GEC_ENABLE_PTHREADS

@@ -9,6 +9,9 @@ struct Eval {
     constexpr static T value = expr;
 };
 
+#define ALIGNED(x)                                                             \
+    reinterpret_cast<uintptr_t>(&(x)) % alignof(decltype((x))) == 0
+
 TEST_CASE("context", "[utils]") {
     using namespace gec::utils;
 
@@ -28,6 +31,11 @@ TEST_CASE("context", "[utils]") {
     REQUIRE(0x03u == ctx_view.get<2>());
     REQUIRE(0x04u == ctx_view.get<3>());
     REQUIRE(0x05050505u == ctx_view.get<4>());
+    REQUIRE(ALIGNED(ctx_view.get<0>()));
+    REQUIRE(ALIGNED(ctx_view.get<1>()));
+    REQUIRE(ALIGNED(ctx_view.get<2>()));
+    REQUIRE(ALIGNED(ctx_view.get<3>()));
+    REQUIRE(ALIGNED(ctx_view.get<4>()));
 
     auto &ctx_view1 = ctx.view_as<uint32_t>()
                           .rest()
@@ -36,6 +44,10 @@ TEST_CASE("context", "[utils]") {
     REQUIRE(0x03u == ctx_view1.get<1>());
     REQUIRE(0x04u == ctx_view1.get<2>());
     REQUIRE(0x05050505u == ctx_view1.get<3>());
+    REQUIRE(ALIGNED(ctx_view1.get<0>()));
+    REQUIRE(ALIGNED(ctx_view1.get<1>()));
+    REQUIRE(ALIGNED(ctx_view1.get<2>()));
+    REQUIRE(ALIGNED(ctx_view1.get<3>()));
 
     auto &ctx_view2 = ctx_view1.view_as<uint16_t>()
                           .rest()
@@ -43,12 +55,18 @@ TEST_CASE("context", "[utils]") {
     REQUIRE(0x03u == ctx_view2.get<0>());
     REQUIRE(0x04u == ctx_view2.get<1>());
     REQUIRE(0x05050505u == ctx_view2.get<2>());
+    REQUIRE(ALIGNED(ctx_view2.get<0>()));
+    REQUIRE(ALIGNED(ctx_view2.get<1>()));
+    REQUIRE(ALIGNED(ctx_view2.get<2>()));
 
     auto &ctx_view3 =
         ctx_view2.view_as<uint8_t>().rest().view_as<uint8_t, uint32_t>();
     REQUIRE(0x04u == ctx_view3.get<0>());
     REQUIRE(0x05050505u == ctx_view3.get<1>());
+    REQUIRE(ALIGNED(ctx_view3.get<0>()));
+    REQUIRE(ALIGNED(ctx_view3.get<1>()));
 
     auto &ctx_view4 = ctx_view3.view_as<uint8_t>().rest().view_as<uint32_t>();
     REQUIRE(0x05050505u == ctx_view4.get<0>());
+    REQUIRE(ALIGNED(ctx_view4.get<0>()));
 }

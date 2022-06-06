@@ -3,6 +3,7 @@
 #define GEC_UTILS_ARITHMETIC_HPP
 
 #include "basic.hpp"
+#include "cuda_utils.cuh"
 
 #if defined(_WIN32) &&                                                         \
     (defined(GEC_CLANG) || defined(GEC_MSVC) || defined(GEC_GCC))
@@ -17,35 +18,55 @@ namespace gec {
 
 namespace utils {
 
-/** @brief a + carry' = b + c + carry
- */
 template <typename T>
 __host__ __device__ GEC_INLINE bool
-uint_add_with_carry(T &GEC_RSTRCT a, const T &GEC_RSTRCT b,
-                    const T &GEC_RSTRCT c, bool carry) {
+dh_uint_add_with_carry(T &GEC_RSTRCT a, const T &GEC_RSTRCT b,
+                       const T &GEC_RSTRCT c, bool carry) {
     // TODO: avoid variadic running time
     a = b + c + static_cast<T>(carry);
     return (a < b || a < c) || (carry && (a == b || a == c));
 }
 
-#if defined(__CUDA_ARCH__)
+// device `uint_add_with_carry` and specialization
 
-// Device Specialized `add_with_carry`
-//
-// Check out: <https://docs.nvidia.com/cuda/cuda-math-api/index.html>
+template <typename T>
+__device__ GEC_INLINE bool
+d_uint_add_with_carry(T &GEC_RSTRCT a, const T &GEC_RSTRCT b,
+                      const T &GEC_RSTRCT c, bool carry) {
+    return dh_uint_add_with_carry(a, b, c, carry);
+}
 
-// TODO: find suitible intrinsics to construct a specialized `add_with_carry`
+#ifdef __CUDACC__
+template <>
+__device__ GEC_INLINE bool
+d_uint_add_with_carry<uint32_t>(uint32_t &GEC_RSTRCT a,
+                                const uint32_t &GEC_RSTRCT b,
+                                const uint32_t &GEC_RSTRCT c, bool carry) {
+    set_cc_cf_(carry);
+    addc_cc_(a, b, c);
+    return get_cc_cf_();
+}
+template <>
+__device__ GEC_INLINE bool
+d_uint_add_with_carry<uint64_t>(uint64_t &GEC_RSTRCT a,
+                                const uint64_t &GEC_RSTRCT b,
+                                const uint64_t &GEC_RSTRCT c, bool carry) {
+    set_cc_cf_(carry);
+    addc_cc_(a, b, c);
+    return get_cc_cf_();
+}
+#endif // __CUDACC__
 
-#else
+// TODO: specialization
 
-// Host Specialized `add_with_carry`
+// host `uint_add_with_carry` and platform specific specialization
 //
 // In terms of Clang, see:
 // <https://clang.llvm.org/docs/LanguageExtensions.html#multiprecision-arithmetic-builtins>
 //
 // In terms of GCC, see:
 // <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79173#c5>
-// my guess is that gcc has already supported x86 instrinstics like
+// my guess is that gcc has already supported x86 intrinsics like
 // `_addcarry_u...`, but without detailed documents?
 //
 // In terms of MSVC, see:
@@ -59,22 +80,30 @@ uint_add_with_carry(T &GEC_RSTRCT a, const T &GEC_RSTRCT b,
 // | 32                    | x86 Intrinsic | Builtin & x86 | x86 Intrinsic  |
 // | 64                    | x64 Intrinsic | Builtin & x64 | x64 Intrinsic  |
 
+template <typename T>
+__host__ GEC_INLINE bool
+h_uint_add_with_carry(T &GEC_RSTRCT a, const T &GEC_RSTRCT b,
+                      const T &GEC_RSTRCT c, bool carry) {
+    return dh_uint_add_with_carry(a, b, c, carry);
+}
+
 #if defined(GEC_AMD64)
 template <>
 __host__ GEC_INLINE bool
-uint_add_with_carry<uint64_t>(uint64_t &GEC_RSTRCT a,
-                              const uint64_t &GEC_RSTRCT b,
-                              const uint64_t &GEC_RSTRCT c, bool carry) {
-    return bool(_addcarry_u64((unsigned char)(carry), b, c, reinterpret_cast<unsigned long long *>(&a)));
+h_uint_add_with_carry<uint64_t>(uint64_t &GEC_RSTRCT a,
+                                const uint64_t &GEC_RSTRCT b,
+                                const uint64_t &GEC_RSTRCT c, bool carry) {
+    return bool(_addcarry_u64((unsigned char)(carry), b, c,
+                              reinterpret_cast<unsigned long long *>(&a)));
 }
 #endif
 
 #if defined(GEC_AMD64) || defined(GEC_X86)
 template <>
 __host__ GEC_INLINE bool
-uint_add_with_carry<uint32_t>(uint32_t &GEC_RSTRCT a,
-                              const uint32_t &GEC_RSTRCT b,
-                              const uint32_t &GEC_RSTRCT c, bool carry) {
+h_uint_add_with_carry<uint32_t>(uint32_t &GEC_RSTRCT a,
+                                const uint32_t &GEC_RSTRCT b,
+                                const uint32_t &GEC_RSTRCT c, bool carry) {
     return bool(_addcarry_u32((unsigned char)(carry), b, c, &a));
 }
 #endif
@@ -83,17 +112,18 @@ uint_add_with_carry<uint32_t>(uint32_t &GEC_RSTRCT a,
 // TODO: check if `__builtin_add` has variadic running time
 template <>
 __host__ GEC_INLINE bool
-uint_add_with_carry<uint8_t>(uint8_t &GEC_RSTRCT a, const uint8_t &GEC_RSTRCT b,
-                             const uint8_t &GEC_RSTRCT c, bool carry) {
+h_uint_add_with_carry<uint8_t>(uint8_t &GEC_RSTRCT a,
+                               const uint8_t &GEC_RSTRCT b,
+                               const uint8_t &GEC_RSTRCT c, bool carry) {
     uint8_t new_carry;
     a = __builtin_addcb(b, c, carry, &new_carry);
     return new_carry;
 }
 template <>
 __host__ GEC_INLINE bool
-uint_add_with_carry<uint16_t>(uint16_t &GEC_RSTRCT a,
-                              const uint16_t &GEC_RSTRCT b,
-                              const uint16_t &GEC_RSTRCT c, bool carry) {
+h_uint_add_with_carry<uint16_t>(uint16_t &GEC_RSTRCT a,
+                                const uint16_t &GEC_RSTRCT b,
+                                const uint16_t &GEC_RSTRCT c, bool carry) {
     uint16_t new_carry;
     a = __builtin_addcs(b, c, carry, &new_carry);
     return new_carry;
@@ -102,18 +132,18 @@ uint_add_with_carry<uint16_t>(uint16_t &GEC_RSTRCT a,
 #if !defined(GEC_AMD64) && !defined(GEC_X86)
 template <>
 __host__ GEC_INLINE bool
-uint_add_with_carry<uint32_t>(uint32_t &GEC_RSTRCT a,
-                              const uint32_t &GEC_RSTRCT b,
-                              const uint32_t &GEC_RSTRCT c, bool carry) {
+h_uint_add_with_carry<uint32_t>(uint32_t &GEC_RSTRCT a,
+                                const uint32_t &GEC_RSTRCT b,
+                                const uint32_t &GEC_RSTRCT c, bool carry) {
     uint32_t new_carry;
     a = __builtin_addc(b, c, carry, &new_carry);
     return new_carry;
 }
 template <>
 __host__ GEC_INLINE bool
-uint_add_with_carry<uint64_t>(uint64_t &GEC_RSTRCT a,
-                              const uint64_t &GEC_RSTRCT b,
-                              const uint64_t &GEC_RSTRCT c, bool carry) {
+h_uint_add_with_carry<uint64_t>(uint64_t &GEC_RSTRCT a,
+                                const uint64_t &GEC_RSTRCT b,
+                                const uint64_t &GEC_RSTRCT c, bool carry) {
     uint64_t new_carry;
     a = __builtin_addcll(b, c, carry, &new_carry);
     return new_carry;
@@ -124,24 +154,36 @@ uint_add_with_carry<uint64_t>(uint64_t &GEC_RSTRCT a,
 #if defined(GEC_MSVC) && (defined(GEC_X86) || defined(GEC_AMD64))
 template <>
 __host__ GEC_INLINE bool
-uint_add_with_carry<uint8_t>(uint8_t &GEC_RSTRCT a, const uint8_t &GEC_RSTRCT b,
-                             const uint8_t &GEC_RSTRCT c, bool carry) {
+h_uint_add_with_carry<uint8_t>(uint8_t &GEC_RSTRCT a,
+                               const uint8_t &GEC_RSTRCT b,
+                               const uint8_t &GEC_RSTRCT c, bool carry) {
     return bool(_addcarry_u8((unsigned char)(carry), b, c, &a));
 }
 template <>
 __host__ GEC_INLINE bool
-uint_add_with_carry<uint16_t>(uint16_t &GEC_RSTRCT a,
-                              const uint16_t &GEC_RSTRCT b,
-                              const uint16_t &GEC_RSTRCT c, bool carry) {
+h_uint_add_with_carry<uint16_t>(uint16_t &GEC_RSTRCT a,
+                                const uint16_t &GEC_RSTRCT b,
+                                const uint16_t &GEC_RSTRCT c, bool carry) {
     return bool(_addcarry_u16((unsigned char)(carry), b, c, &a));
 }
 #endif
 
+/** @brief a + carry' = b + c + carry
+ */
+template <typename T>
+__host__ __device__ GEC_INLINE bool
+uint_add_with_carry(T &GEC_RSTRCT a, const T &GEC_RSTRCT b,
+                    const T &GEC_RSTRCT c, bool carry) {
+#ifdef __CUDA_ARCH__
+    return d_uint_add_with_carry(a, b, c, carry);
+#else
+    return h_uint_add_with_carry(a, b, c, carry);
 #endif
+}
 
 /** @brief a + carry' = a + b + carry
  *
- * optimized for inplace add rether than simply calling `uint_add_with_carry`
+ * optimized for inplace add rather than simply calling `uint_add_with_carry`
  */
 template <typename T>
 __host__ __device__ GEC_INLINE bool
@@ -210,7 +252,42 @@ __host__ __device__ GEC_INLINE bool seq_add(T *GEC_RSTRCT a,
     return SeqAddInplace<N, T>::call(a, b, false);
 }
 
-/** @brief c = a + borrow' - b - borrow
+template <typename T>
+__host__ __device__ GEC_INLINE bool
+dh_uint_sub_with_borrow(T &GEC_RSTRCT a, const T &GEC_RSTRCT b,
+                        const T &GEC_RSTRCT c, bool borrow) {
+    // TODO: avoid variadic running time
+    a = b - c - static_cast<T>(borrow);
+    return (a > b) || (borrow && a == b);
+}
+
+// device `uint_sub_with_borrow` and specialization
+
+template <typename T>
+__device__ GEC_INLINE bool
+d_uint_sub_with_borrow(T &GEC_RSTRCT a, const T &GEC_RSTRCT b,
+                       const T &GEC_RSTRCT c, bool borrow) {
+    return dh_uint_sub_with_borrow(a, b, c, borrow);
+}
+
+// TODO: specialization
+
+// host `uint_sub_with_borrow` and specialization
+
+/**
+ * @brief host implement `uint_sub_with_borrow`
+ */
+template <typename T>
+__host__ GEC_INLINE bool
+h_uint_sub_with_borrow(T &GEC_RSTRCT a, const T &GEC_RSTRCT b,
+                       const T &GEC_RSTRCT c, bool borrow) {
+    return dh_uint_sub_with_borrow(a, b, c, borrow);
+}
+
+// TODO: specialization
+
+/**
+ * @brief c = a + borrow' - b - borrow
  *
  * returns a single bit borrow
  */
@@ -218,10 +295,11 @@ template <typename T>
 __host__ __device__ GEC_INLINE bool
 uint_sub_with_borrow(T &GEC_RSTRCT a, const T &GEC_RSTRCT b,
                      const T &GEC_RSTRCT c, bool borrow) {
-    // TODO: specialized with intrinsics
-    // TODO: avoid variadic running time
-    a = b - c - static_cast<T>(borrow);
-    return (a > b) || (borrow && a == b);
+#ifdef __CUDA_ARCH__
+    return d_uint_sub_with_borrow(a, b, c, borrow);
+#else
+    return h_uint_sub_with_borrow(a, b, c, borrow);
+#endif
 }
 
 /** @brief c = a + borrow' - b - borrow
@@ -234,8 +312,7 @@ uint_sub_with_borrow(T &GEC_RSTRCT a, const T &GEC_RSTRCT b, bool borrow) {
     // TODO: specialized with intrinsics
     // TODO: avoid variadic running time
     T a0 = a;
-    a = a0 - b - static_cast<T>(borrow);
-    return (a > a0) || (borrow && a == a0);
+    return uint_sub_with_borrow(a, a0, b, borrow);
 }
 
 /** @brief subtract sequence with a single bit borrow
@@ -300,8 +377,8 @@ __host__ __device__ GEC_INLINE bool seq_sub(T *GEC_RSTRCT a,
 
 template <typename T>
 __host__ __device__ GEC_INLINE void
-uint_mul_lh(T &GEC_RSTRCT l, T &GEC_RSTRCT h, const T &GEC_RSTRCT a,
-            const T &GEC_RSTRCT b) {
+dh_uint_mul_lh(T &GEC_RSTRCT l, T &GEC_RSTRCT h, const T &GEC_RSTRCT a,
+               const T &GEC_RSTRCT b) {
     constexpr size_t len = std::numeric_limits<T>::digits / 2;
     constexpr T lower_mask = (T(1) << len) - T(1);
 
@@ -321,30 +398,85 @@ uint_mul_lh(T &GEC_RSTRCT l, T &GEC_RSTRCT h, const T &GEC_RSTRCT a,
     h = ah_bh + (lh >> len) + carry2 + (carry1 << len);
 }
 
-#if defined(GEC_MSVC) && defined(GEC_AMD64)
-// see: <https://docs.microsoft.com/en-us/cpp/intrinsics/umul128?view=msvc-170>
-template <>
-__host__ GEC_INLINE void uint_mul_lh<uint64_t>(uint64_t &GEC_RSTRCT l,
-                                               uint64_t &GEC_RSTRCT h,
-                                               const uint64_t &GEC_RSTRCT a,
-                                               const uint64_t &GEC_RSTRCT b) {
-    l = _umul128(a, b, &h);
-}
-#endif // GEC_AMD64
-
-#define GEC_specialized_uint_mul_lh(U, DU)                                     \
+#define GEC_specialized_dh_uint_mul_lh(U, DU)                                  \
     template <>                                                                \
-    __host__ __device__ GEC_INLINE void uint_mul_lh<U>(                        \
+    __host__ __device__ GEC_INLINE void dh_uint_mul_lh<U>(                     \
         U & GEC_RSTRCT l, U & GEC_RSTRCT h, const U &GEC_RSTRCT a,             \
         const U &GEC_RSTRCT b) {                                               \
         DU product = DU(a) * DU(b);                                            \
         l = U(product);                                                        \
         h = product >> std::numeric_limits<U>::digits;                         \
     }
-GEC_specialized_uint_mul_lh(uint32_t, uint64_t);
-GEC_specialized_uint_mul_lh(uint16_t, uint32_t);
-GEC_specialized_uint_mul_lh(uint8_t, uint16_t);
-#undef GEC_specialized_uint_mul_lh
+GEC_specialized_dh_uint_mul_lh(uint32_t, uint64_t);
+GEC_specialized_dh_uint_mul_lh(uint16_t, uint32_t);
+GEC_specialized_dh_uint_mul_lh(uint8_t, uint16_t);
+#undef GEC_specialized_dh_uint_mul_lh
+
+template <typename T>
+__device__ GEC_INLINE void d_uint_mul_lh(T &GEC_RSTRCT l, T &GEC_RSTRCT h,
+                                         const T &GEC_RSTRCT a,
+                                         const T &GEC_RSTRCT b) {
+    return dh_uint_mul_lh(l, h, a, b);
+}
+
+#ifdef __CUDACC__
+template <>
+__device__ GEC_INLINE void
+d_uint_mul_lh<uint64_t>(uint64_t &GEC_RSTRCT l, uint64_t &GEC_RSTRCT h,
+                        const uint64_t &GEC_RSTRCT a,
+                        const uint64_t &GEC_RSTRCT b) {
+    l = a * b;
+    h = __umul64hi(a, b);
+}
+#endif
+
+template <typename T>
+__host__ GEC_INLINE void h_uint_mul_lh(T &GEC_RSTRCT l, T &GEC_RSTRCT h,
+                                       const T &GEC_RSTRCT a,
+                                       const T &GEC_RSTRCT b) {
+    return dh_uint_mul_lh(l, h, a, b);
+}
+
+// host `uint_add_with_carry` and platform specific specialization
+//
+// In terms of Clang, see:
+//
+// In terms of GCC, see:
+// <https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html>
+//
+// In terms of MSVC, see:
+// <https://docs.microsoft.com/en-us/cpp/intrinsics/umul128?view=msvc-170>
+
+#if defined(GEC_MSVC) && defined(GEC_AMD64)
+template <>
+__host__ GEC_INLINE void h_uint_mul_lh<uint64_t>(uint64_t &GEC_RSTRCT l,
+                                                 uint64_t &GEC_RSTRCT h,
+                                                 const uint64_t &GEC_RSTRCT a,
+                                                 const uint64_t &GEC_RSTRCT b) {
+    l = _umul128(a, b, &h);
+}
+#elif (defined(GEC_GCC) || defined(GEC_CLANG)) && defined(__SIZEOF_INT128__)
+template <>
+__host__ GEC_INLINE void h_uint_mul_lh<uint64_t>(uint64_t &GEC_RSTRCT l,
+                                                 uint64_t &GEC_RSTRCT h,
+                                                 const uint64_t &GEC_RSTRCT a,
+                                                 const uint64_t &GEC_RSTRCT b) {
+    unsigned __int128 product = (unsigned __int128)(a) * (unsigned __int128)(b);
+    l = (uint64_t)(product);
+    h = product >> std::numeric_limits<uint64_t>::digits;
+}
+#endif // GEC_AMD64
+
+template <typename T>
+__host__ __device__ GEC_INLINE void
+uint_mul_lh(T &GEC_RSTRCT l, T &GEC_RSTRCT h, const T &GEC_RSTRCT a,
+            const T &GEC_RSTRCT b) {
+#ifdef __CUDA_ARCH__
+    return d_uint_mul_lh(l, h, a, b);
+#else
+    return h_uint_mul_lh(l, h, a, b);
+#endif
+}
 
 /** @brief a = a + b * x
  *

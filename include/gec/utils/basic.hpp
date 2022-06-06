@@ -21,7 +21,7 @@
 #endif
 
 // compiler macro
-#if defined(__NVCC__)
+#if defined(__CUDACC__)
 #define GEC_NVCC __NVCC__
 #endif
 #if defined(__clang__)
@@ -91,8 +91,14 @@
 
 #endif
 
+#if defined(_MSC_VER)
+#define GEC_EMPTY_BASES __declspec(empty_bases)
+#else
+#define GEC_EMPTY_BASES
+#endif
+
 // CUDA function attribute modifier
-#if !defined(GEC_NVCC)
+#ifndef __CUDACC__
 #define __host__
 #define __device__
 #endif

@@ -2,10 +2,11 @@
 #ifndef GEC_DLP_POLLARD_RHO_HPP
 #define GEC_DLP_POLLARD_RHO_HPP
 
+#include <gec/bigint/mixin/random.hpp>
 #include <gec/utils/basic.hpp>
+#include <gec/utils/misc.hpp>
 
 #include <random>
-#include <utility>
 
 #ifdef GEC_ENABLE_PTHREADS
 #include <gec/utils/sequence.hpp>
@@ -21,13 +22,11 @@ namespace gec {
 
 namespace dlp {
 
-template <typename S, typename P, typename Ctx, typename Rng = std::mt19937>
-__host__ __device__ void pollard_rho(S &c,
-                                     S &d2, // TODO: require general int inv
-                                     size_t l, S *al, S *bl, P *pl, const P &g,
-                                     const P &h, size_t seed, Ctx &ctx) {
-    Rng rng(seed);
-
+template <typename S, typename P, typename Ctx, typename Rng>
+__host__ void pollard_rho(S &c,
+                          S &d2, // TODO: require general int inv
+                          size_t l, S *al, S *bl, P *pl, const P &g, const P &h,
+                          GecRng<Rng> &rng, Ctx &ctx) {
     using F = typename P::Field;
     auto &ctx_view = ctx.template view_as<P, P, P, P, P, F, F, S, S>();
 
@@ -69,7 +68,7 @@ __host__ __device__ void pollard_rho(S &c,
             S::add(c, al[i]);
             S::add(d, bl[i]);
             P::add(*tmp, *x, pl[i], rest_ctx);
-            std::swap(x, tmp);
+            utils::swap(x, tmp);
 
             i = x2.x().array()[0] % l;
             S::add(c2, al[i]);
@@ -127,7 +126,7 @@ void *worker(void *data_ptr) {
     using LT = typename F::LimbT;
 
     WorkerData<S, P> &data = *static_cast<WorkerData<S, P> *>(data_ptr);
-    Rng rng(data.seed);
+    auto rng = make_gec_rng(std::mt19937(data.seed));
     typename P::template Context<> ctx;
     Coefficient<S> coeff;
     auto &ctx_view = ctx.template view_as<P, P, P, P>();
@@ -175,18 +174,17 @@ void *worker(void *data_ptr) {
         S::add(coeff.x, data.al[i]);
         S::add(coeff.y, data.bl[i]);
         P::add(*tmp, *p, data.pl[i], ctx.template view_as<P, P>().rest());
-        std::swap(p, tmp);
+        utils::swap(p, tmp);
     }
 }
 
-template <typename S, typename P, typename Rng = std::mt19937>
+template <typename S, typename P, typename Rng>
 void multithread_pollard_rho(S &c,
                              S &d2, // TODO: require general int inv
                              size_t l, size_t worker_n,
                              const typename P::Field &mask, const P &g,
-                             const P &h, size_t seed) {
+                             const P &h, GecRng<Rng> &rng) {
     using Data = WorkerData<S, P>;
-    std::mt19937 rng(seed);
 
     std::vector<S> al(l), bl(l);
     std::vector<P> pl(l);
@@ -213,7 +211,7 @@ void multithread_pollard_rho(S &c,
     for (size_t k = 0; k < worker_n; ++k) {
         auto &data = workers_data[k];
         data.id = k;
-        data.seed = rng();
+        data.seed = rng.template sample<size_t>();
         pthread_create(&workers[k], nullptr, worker<S, P, Rng>,
                        static_cast<void *>(&data));
     }

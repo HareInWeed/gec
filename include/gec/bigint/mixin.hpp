@@ -11,6 +11,7 @@
 #include "mixin/mod_add_sub.hpp"
 #include "mixin/montgomery.hpp"
 #include "mixin/ostream.hpp"
+#include "mixin/params.hpp"
 #include "mixin/print.hpp"
 #include "mixin/random.hpp"
 #include "mixin/vt_compare.hpp"

@@ -3,7 +3,7 @@
 #define GEC_BIGINT_MIXIN_EXPONENTIATION_HPP
 
 #include <gec/utils/crtp.hpp>
-#include <utility>
+#include <gec/utils/misc.hpp>
 
 namespace gec {
 
@@ -43,11 +43,11 @@ class Exponentiation : protected CRTP<Core, Exponentiation<Core>> {
         for (; i >= 0; --i) {
             for (; j >= 0; --j) {
                 Core::mul(*p2, *p1, *p1);
-                std::swap(p1, p2);
+                utils::swap(p1, p2);
                 need_copy = !need_copy;
                 if ((IntT(1) << j) & e[i]) {
                     Core::mul(*p2, *p1, b);
-                    std::swap(p1, p2);
+                    utils::swap(p1, p2);
                     need_copy = !need_copy;
                 }
             }

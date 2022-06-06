@@ -145,8 +145,8 @@ TEST_CASE("uint_mul_lh bench", "[arithmetic][bench]") {
 TEST_CASE("seq_add_mul_limb", "[arithmetic]") {
     uint32_t a[LN_160] = {0xde15b1e0u, 0x7788c10cu, 0xc66edfbfu, 0x0bc7a6f0u,
                           0x113586c5u};
-    const uint32_t b[LN_160] = {0x5e3b0969u, 0x5c17ef6cu, 0xf5d7cecau,
-                                0xd8db9627u, 0xb77902abu};
+    // const uint32_t b[LN_160] = {0x5e3b0969u, 0x5c17ef6cu, 0xf5d7cecau,
+    //                             0xd8db9627u, 0xb77902abu};
     const uint32_t x = 2098395424;
     const uint32_t last_limb = utils::seq_add_mul_limb<LN_160>(a, MOD_160, x);
     REQUIRE(a[0] == 0x00000000u);

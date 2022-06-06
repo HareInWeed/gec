@@ -4,12 +4,19 @@
 
 #include "basic.hpp"
 
-#include <functional>
 #include <type_traits>
+#include <utility>
 
 namespace gec {
 
 namespace utils {
+
+template <typename T>
+__host__ __device__ GEC_INLINE void swap(T &a, T &b) {
+    T tmp = std::move(a);
+    a = std::move(b);
+    b = std::move(tmp);
+}
 
 template <typename T, size_t I = std::numeric_limits<T>::digits,
           typename Enable = void>

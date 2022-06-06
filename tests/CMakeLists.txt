@@ -2,12 +2,15 @@ cmake_minimum_required(VERSION 3.15)
 
 find_package(Catch2 CONFIG REQUIRED)
 
-add_executable(unit_test)
+add_library(unit_test_lib)
+target_sources(unit_test_lib PRIVATE "test_main.cpp")
+target_compile_features(unit_test_lib PRIVATE cxx_std_14)
+target_link_libraries(unit_test_lib PRIVATE Catch2::Catch2)
 
+add_executable(unit_test)
 target_sources(
     unit_test
-    PRIVATE "test_main.cpp"
-            "common.cpp"
+    PRIVATE "common.cpp"
             "curve.cpp"
             "test_misc.cpp"
             "test_arithmetic.cpp"
@@ -16,26 +19,17 @@ target_sources(
             "test_context.cpp"
             "test_curve.cpp"
             "test_dlp.cpp")
-
-if(GEC_ENABLE_AVX2)
-    target_sources(unit_test PRIVATE "test_avx_montgomery.cpp")
-endif()
-
 target_compile_features(unit_test PRIVATE cxx_std_14)
-target_link_libraries(unit_test PRIVATE gec)
-target_link_libraries(unit_test PRIVATE Catch2::Catch2)
+target_link_libraries(unit_test PRIVATE unit_test_lib gec Catch2::Catch2)
 
 add_test(NAME gec_test COMMAND unit_test ~[bench])
 
 if(GEC_ENABLE_CUDA)
     add_executable(cu_unit_test)
-
-    target_sources(cu_unit_test PRIVATE "test_main.cpp" "test_common.cpp"
-                                        "test_field.cu")
-
+    target_sources(cu_unit_test PRIVATE "common.cu" "cuda_common.cu"
+                                        "test_field.cu" "cu_test_field.cu")
     target_compile_features(cu_unit_test PRIVATE cxx_std_14)
-    target_link_libraries(cu_unit_test PRIVATE gec)
-    target_link_libraries(cu_unit_test PRIVATE Catch2::Catch2)
+    target_link_libraries(cu_unit_test PRIVATE unit_test_lib gec Catch2::Catch2)
     set_target_properties(cu_unit_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
     add_test(NAME gec_cuda_test COMMAND cu_unit_test ~[bench])

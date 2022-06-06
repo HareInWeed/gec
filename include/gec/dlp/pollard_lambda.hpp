@@ -2,11 +2,11 @@
 #ifndef GEC_DLP_POLLARD_LAMBDA_HPP
 #define GEC_DLP_POLLARD_LAMBDA_HPP
 
+#include <gec/bigint/mixin/random.hpp>
 #include <gec/utils/basic.hpp>
 #include <gec/utils/misc.hpp>
 
 #include <random>
-#include <utility>
 
 #ifdef GEC_ENABLE_PTHREADS
 #include <pthread.h>
@@ -21,11 +21,11 @@ namespace dlp {
  * `a` must be strictly less than `b`, otherwise the behaviour is undefined.
  */
 template <typename S, typename P, typename Rng, typename Ctx>
-void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl, P *GEC_RSTRCT pl,
-                    const S &GEC_RSTRCT bound, const S &GEC_RSTRCT a,
-                    const S &GEC_RSTRCT b, const P &GEC_RSTRCT g,
-                    const P &GEC_RSTRCT h, Rng &GEC_RSTRCT rng,
-                    Ctx &GEC_RSTRCT ctx) {
+__host__ void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl,
+                             P *GEC_RSTRCT pl, const S &GEC_RSTRCT bound,
+                             const S &GEC_RSTRCT a, const S &GEC_RSTRCT b,
+                             const P &GEC_RSTRCT g, const P &GEC_RSTRCT h,
+                             GecRng<Rng> &rng, Ctx &GEC_RSTRCT ctx) {
     using F = typename P::Field;
     auto &ctx_view = ctx.template view_as<P, P, P, S, S, S>();
     auto &p1 = ctx_view.template get<0>();
@@ -48,8 +48,7 @@ void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl, P *GEC_RSTRCT pl,
         }
         for (size_t i = 0; i < m; ++i) {
             size_t ri = m - 1 - i;
-            std::uniform_int_distribution<size_t> gen(0, ri);
-            std::swap(sl[ri].array()[0], sl[gen(rng)].array()[0]);
+            utils::swap(sl[ri].array()[0], sl[rng.sample(ri)].array()[0]);
         }
         for (size_t i = 0; i < m; ++i) {
             typename F::LimbT e = sl[i].array()[0];
@@ -63,7 +62,7 @@ void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl, P *GEC_RSTRCT pl,
             size_t i = u->x().array()[0] % m;
             S::add(x, sl[i]);
             P::add(*tmp, *u, pl[i], rest_ctx);
-            std::swap(u, tmp);
+            utils::swap(u, tmp);
         }
 
         d.set_zero();
@@ -76,7 +75,7 @@ void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl, P *GEC_RSTRCT pl,
             size_t i = v->x().array()[0] % m;
             S::add(d, sl[i]);
             P::add(*tmp, *v, pl[i], rest_ctx);
-            std::swap(v, tmp);
+            utils::swap(v, tmp);
         }
     }
 }
@@ -120,7 +119,7 @@ void *worker(void *data_ptr) {
     P *u = &p1, *tmp = &p2;
     S x, j, one(1);
     typename P::template Context<> ctx;
-    Rng rng(data.seed);
+    auto rng = make_gec_rng(std::mt19937(data.seed));
 
     while (true) {
         // calculate jump table
@@ -130,10 +129,11 @@ void *worker(void *data_ptr) {
             }
             for (size_t i = 0; i < m; ++i) {
                 size_t ri = m - 1 - i;
-                std::uniform_int_distribution<size_t> gen(0, ri);
-                std::swap(data.sl[ri].array()[0], data.sl[gen(rng)].array()[0]);
+                utils::swap(data.sl[ri].array()[0],
+                            data.sl[rng.sample(ri)].array()[0]);
             }
             for (size_t i = 0; i < m; ++i) {
+                // TODO: maybe using multithread to generate the jump table?
                 LimbT e = data.sl[i].array()[0];
                 data.sl[i].set_pow2(e);
                 P::mul(data.pl[i], data.sl[i], data.g, ctx);
@@ -152,7 +152,7 @@ void *worker(void *data_ptr) {
             size_t i = u->x().array()[0] % m;
             S::add(x, data.sl[i]);
             P::add(*tmp, *u, data.pl[i], ctx);
-            std::swap(u, tmp);
+            utils::swap(u, tmp);
 #ifdef GEC_DEBUG
             if (!(utils::LowerKMask<LimbT, 20>::value & j.array()[0])) {
                 printf("[worker %03zu]: calculating trap, step ", data.id);
@@ -190,7 +190,7 @@ void *worker(void *data_ptr) {
             size_t i = u->x().array()[0] % m;
             S::add(x, data.sl[i]);
             P::add(*tmp, *u, data.pl[i], ctx);
-            std::swap(u, tmp);
+            utils::swap(u, tmp);
 #ifdef GEC_DEBUG
             if (!(utils::LowerKMask<LimbT, 20>::value & j.array()[0])) {
                 printf("[worker %03zu]: searching, step ", data.id);
@@ -218,13 +218,11 @@ void *worker(void *data_ptr) {
  *
  * `a` must be strictly less than `b`, otherwise the behaviour is undefined.
  */
-template <typename S, typename P, typename Rng = std::mt19937>
+template <typename S, typename P, typename Rng>
 void multithread_pollard_lambda(S &GEC_RSTRCT x, const S &GEC_RSTRCT bound,
                                 size_t worker_n, const S &GEC_RSTRCT a,
                                 const S &GEC_RSTRCT b, const P &GEC_RSTRCT g,
-                                const P &GEC_RSTRCT h, size_t seed) {
-    Rng rng(seed);
-
+                                const P &GEC_RSTRCT h, GecRng<Rng> &rng) {
     using Data = WorkerData<S, P>;
 
     std::vector<pthread_t> workers(worker_n);
@@ -255,7 +253,7 @@ void multithread_pollard_lambda(S &GEC_RSTRCT x, const S &GEC_RSTRCT bound,
 
     for (size_t i = 0; i < worker_n; ++i) {
         auto &param = params[i];
-        param.seed = rng();
+        param.seed = rng.template sample<size_t>();
         param.id = i;
         pthread_create(&workers[i], nullptr, worker<S, P, Rng>,
                        static_cast<Data *>(&param));
@@ -272,6 +270,10 @@ void multithread_pollard_lambda(S &GEC_RSTRCT x, const S &GEC_RSTRCT bound,
 using pollard_lambda_::multithread_pollard_lambda;
 
 #endif // GEC_ENABLE_PTHREADS
+
+#ifdef GEC_ENABLE_CUDA
+
+#endif // GEC_ENABLE_CUDA
 
 } // namespace dlp
 

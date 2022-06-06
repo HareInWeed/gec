@@ -3,8 +3,8 @@
 #define GEC_CURVE_MIXIN_SCALER_MUL_HPP
 
 #include <gec/utils/crtp.hpp>
+#include <gec/utils/misc.hpp>
 #include <gec/utils/sequence.hpp>
-#include <utility>
 
 namespace gec {
 
@@ -43,11 +43,11 @@ class ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
         for (; i >= 0; --i) {
             for (; j >= 0; --j) {
                 Core::add(*p2, *p1, *p1, ctx_view.rest());
-                std::swap(p1, p2);
+                utils::swap(p1, p2);
                 need_copy = !need_copy;
                 if ((IntT(1) << j) & e[i]) {
                     Core::add(*p2, *p1, b, ctx_view.rest());
-                    std::swap(p1, p2);
+                    utils::swap(p1, p2);
                     need_copy = !need_copy;
                 }
             }

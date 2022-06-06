@@ -20,11 +20,6 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     include(CTest)
 endif()
 
-# # force MSVC compile with utf-8
-if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/utf-8")
-endif()
-
 add_library(gec INTERFACE)
 target_include_directories(gec INTERFACE "./include")
 target_compile_features(gec INTERFACE cxx_std_14)
@@ -32,12 +27,14 @@ target_compile_features(gec INTERFACE cxx_std_14)
 option(GEC_ENABLE_AVX2 "use avx2" OFF)
 if(GEC_ENABLE_AVX2)
     target_compile_definitions(gec INTERFACE GEC_ENABLE_AVX2)
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        target_compile_options(gec INTERFACE -march=native)
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(gec INTERFACE -march=native)
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-        target_compile_options(gec INTERFACE /arch:AVX2)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        target_compile_options(
+            gec INTERFACE "$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/arch:AVX2>"
+                          "$<$<COMPILE_LANGUAGE:CXX>:/arch:AVX2>")
+    else()
+        target_compile_options(
+            gec INTERFACE "$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-march=native>"
+                          "$<$<COMPILE_LANGUAGE:CXX>:-march=native>")
     endif()
 endif()
 
@@ -56,6 +53,11 @@ if(GEC_ENABLE_PTHREADS)
         find_package(Threads REQUIRED)
         target_link_libraries(gec INTERFACE Threads::Threads)
     endif()
+endif()
+
+if(GEC_ENABLE_CUDA)
+    find_package(CUDAToolkit)
+    target_link_libraries(gec INTERFACE CUDA::curand)
 endif()
 
 if(BUILD_TESTING)

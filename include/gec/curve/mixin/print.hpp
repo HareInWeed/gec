@@ -26,11 +26,11 @@ struct PointPrintHelper<Point, 0, N> {
 };
 template <typename Point, size_t N>
 struct PointPrintHelper<Point, N, N> {
-    __host__ __device__ GEC_INLINE static void call(const Point &point) {}
+    __host__ __device__ GEC_INLINE static void call(const Point &) {}
 };
 template <typename Point>
 struct PointPrintHelper<Point, 0, 0> {
-    __host__ __device__ GEC_INLINE static void call(const Point &point) {}
+    __host__ __device__ GEC_INLINE static void call(const Point &) {}
 };
 
 /** @brief mixin that enables output x() and y() with stdio

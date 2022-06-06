@@ -4,12 +4,26 @@
 
 #include <gec/utils/basic.hpp>
 #include <gec/utils/misc.hpp>
-
-#include <functional>
+#include <gec/utils/operators.hpp>
 
 namespace gec {
 
 namespace bigint {
+
+template <typename T, typename Enable = void>
+struct Hasher;
+
+template <typename T>
+struct Hasher<T, std::enable_if_t<(sizeof(T) <= sizeof(size_t))>> {
+    using argument_type = T;
+    using result_type = size_t;
+
+    __host__ __device__ GEC_INLINE result_type
+    operator()(const argument_type &x) const {
+        // FIXME: portable hash
+        return x;
+    }
+};
 
 template <typename ARRAY>
 struct ArrayHasher {
@@ -24,10 +38,10 @@ struct ArrayHasher {
 
     __host__ __device__ GEC_INLINE result_type
     operator()(const argument_type &array) const {
-        using Hasher = std::hash<typename ARRAY::LimbT>;
+        using H = Hasher<typename argument_type::LimbT>;
         size_t seed = 0;
-        Hasher hasher;
-        utils::SeqHasher<typename ARRAY::LimbT, ARRAY::LimbN, Hasher>::call(
+        H hasher;
+        utils::SeqHasher<typename ARRAY::LimbT, ARRAY::LimbN, H>::call(
             seed, array.array(), hasher);
         return seed;
     }

@@ -253,7 +253,7 @@ TEST_CASE("jacobian scaler_mul", "[curve][jacobian][scaler_mul]") {
     S sOne(1);
 
     std::random_device rd;
-    std::mt19937 rng(rd());
+    auto rng = make_gec_rng(std::mt19937(rd()));
 
     C::Context<> ctx;
 

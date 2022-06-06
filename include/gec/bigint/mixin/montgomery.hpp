@@ -18,31 +18,25 @@ namespace bigint {
  *
  * require `Core::set_zero`, `Core::set_one`, `Core::set_pow2` methods
  */
-template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD,
-          LIMB_T MOD_P, const LIMB_T *RR, const LIMB_T *OneR>
-class Montgomery
-    : protected CRTP<Core,
-                     Montgomery<Core, LIMB_T, LIMB_N, MOD, MOD_P, RR, OneR>> {
-    friend CRTP<Core, Montgomery<Core, LIMB_T, LIMB_N, MOD, MOD_P, RR, OneR>>;
+template <class Core, typename LIMB_T, size_t LIMB_N>
+class MontgomeryOps
+    : protected CRTP<Core, MontgomeryOps<Core, LIMB_T, LIMB_N>> {
+    friend CRTP<Core, MontgomeryOps<Core, LIMB_T, LIMB_N>>;
 
   public:
-    __host__ __device__ GEC_INLINE static const Core &r_sqr() {
-        return *reinterpret_cast<const Core *>(RR);
-    }
-    __host__ __device__ GEC_INLINE static const Core &one_r() {
-        return *reinterpret_cast<const Core *>(OneR);
-    }
-
-    bool is_mul_id() const {
+    __host__ __device__ GEC_INLINE bool is_mul_id() const {
         return utils::VtSeqAll<LIMB_N, LIMB_T, utils::ops::Eq<LIMB_T>>::call(
-            this->core().array(), OneR);
+            this->core().array(), this->core().one_r().array());
     }
-    void set_mul_id() { utils::fill_seq<LIMB_N>(this->core().array(), OneR); }
+    __host__ __device__ GEC_INLINE void set_mul_id() {
+        utils::fill_seq<LIMB_N>(this->core().array(),
+                                this->core().one_r().array());
+    }
 
     __host__ __device__ GEC_INLINE static void
     to_montgomery(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         a.set_zero();
-        add_mul(a, b, r_sqr());
+        add_mul(a, b, a.r_sqr());
     }
     __host__ __device__ GEC_INLINE static void
     from_montgomery(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
@@ -54,15 +48,16 @@ class Montgomery
         fill_seq<LIMB_N>(a_arr, b_arr);
 
         for (int i = 0; i < LIMB_N; ++i) {
-            LIMB_T m = a_arr[0] * MOD_P;
-            LIMB_T last = seq_add_mul_limb<LIMB_N>(a_arr, MOD, m);
+            LIMB_T m = a_arr[0] * a.mod_p();
+            LIMB_T last = seq_add_mul_limb<LIMB_N>(a_arr, a.mod().array(), m);
 
             seq_shift_right<LIMB_N, std::numeric_limits<LIMB_T>::digits>(a_arr);
             a_arr[LIMB_N - 1] = last;
         }
 
-        if (VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, MOD) != CmpEnum::Lt) {
-            seq_sub<LIMB_N>(a_arr, MOD);
+        if (VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, a.mod().array()) !=
+            CmpEnum::Lt) {
+            seq_sub<LIMB_N>(a_arr, a.mod().array());
         }
     }
 
@@ -76,18 +71,18 @@ class Montgomery
 
         bool carry = false;
         for (int i = 0; i < LIMB_N; ++i) {
-            LIMB_T m = (a_arr[0] + b_arr[i] * c_arr[0]) * MOD_P;
+            LIMB_T m = (a_arr[0] + b_arr[i] * c_arr[0]) * a.mod_p();
             LIMB_T last0 = seq_add_mul_limb<LIMB_N>(a_arr, c_arr, b_arr[i]);
-            LIMB_T last1 = seq_add_mul_limb<LIMB_N>(a_arr, MOD, m);
+            LIMB_T last1 = seq_add_mul_limb<LIMB_N>(a_arr, a.mod().array(), m);
             carry = uint_add_with_carry(last0, last1, carry);
 
             seq_shift_right<LIMB_N, std::numeric_limits<LIMB_T>::digits>(a_arr);
             a_arr[LIMB_N - 1] = last0;
         }
 
-        if (carry ||
-            VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, MOD) != CmpEnum::Lt) {
-            seq_sub<LIMB_N>(a_arr, MOD);
+        if (carry || VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, a.mod().array()) !=
+                         CmpEnum::Lt) {
+            seq_sub<LIMB_N>(a_arr, a.mod().array());
         }
     }
 
@@ -111,7 +106,6 @@ class Montgomery
         auto &ctx_view = ctx.template view_as<Core, Core, Core>();
 
         using utils::CmpEnum;
-        const auto &rr = *reinterpret_cast<const Core *>(RR);
         constexpr size_t LimbBit = std::numeric_limits<LIMB_T>::digits;
         constexpr size_t Bits = LimbBit * LIMB_N;
         constexpr LIMB_T mask = LIMB_T(1) << (LimbBit - 1);
@@ -127,7 +121,7 @@ class Montgomery
 
         r = a;
         s.set_one();
-        utils::fill_seq<LIMB_N>(t_arr, MOD);
+        utils::fill_seq<LIMB_N>(t_arr, a.mod().array());
         a.set_zero();
         int k = 0;
         bool a_carry = false, s_carry = false;
@@ -156,21 +150,21 @@ class Montgomery
             }
             ++k;
         }
-        if (a_carry ||
-            utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, MOD) != CmpEnum::Lt) {
-            utils::seq_sub<LIMB_N>(a_arr, MOD);
+        if (a_carry || utils::VtSeqCmp<LIMB_N, LIMB_T>::call(
+                           a_arr, a.mod().array()) != CmpEnum::Lt) {
+            utils::seq_sub<LIMB_N>(a_arr, a.mod().array());
         }
-        utils::seq_sub<LIMB_N>(s_arr, MOD, a_arr);
+        utils::seq_sub<LIMB_N>(s_arr, a.mod().array(), a_arr);
         if (k < Bits) {
-            mul(t, s, rr);
+            mul(t, s, a.r_sqr());
             k += Bits;
 
-            mul(s, t, rr);
+            mul(s, t, a.r_sqr());
 
             r.set_pow2(2 * Bits - k);
             mul(a, s, r);
         } else {
-            mul(t, s, rr);
+            mul(t, s, a.r_sqr());
 
             r.set_pow2(2 * Bits - k);
             mul(a, t, r);
@@ -189,32 +183,25 @@ class Montgomery
  *
  * require `Core::set_zero`, `Core::set_one`, `Core::set_pow2` methods
  */
-template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD,
-          LIMB_T MOD_P, const LIMB_T *RR, const LIMB_T *OneR>
-class MontgomeryCarryFree
-    : protected CRTP<Core, MontgomeryCarryFree<Core, LIMB_T, LIMB_N, MOD, MOD_P,
-                                               RR, OneR>> {
-    friend CRTP<
-        Core, MontgomeryCarryFree<Core, LIMB_T, LIMB_N, MOD, MOD_P, RR, OneR>>;
+template <class Core, typename LIMB_T, size_t LIMB_N>
+class CarryFreeMontgomeryOps
+    : protected CRTP<Core, CarryFreeMontgomeryOps<Core, LIMB_T, LIMB_N>> {
+    friend CRTP<Core, CarryFreeMontgomeryOps<Core, LIMB_T, LIMB_N>>;
 
   public:
-    __host__ __device__ GEC_INLINE static const Core &r_sqr() {
-        return *reinterpret_cast<const Core *>(RR);
-    }
-    __host__ __device__ GEC_INLINE static const Core &one_r() {
-        return *reinterpret_cast<const Core *>(OneR);
-    }
-
     bool is_mul_id() const {
         return utils::VtSeqAll<LIMB_N, LIMB_T, utils::ops::Eq<LIMB_T>>::call(
-            this->core().array(), OneR);
+            this->core().array(), this->core().one_r().array());
     }
-    void set_mul_id() { utils::fill_seq<LIMB_N>(this->core().array(), OneR); }
+    void set_mul_id() {
+        utils::fill_seq<LIMB_N>(this->core().array(),
+                                this->core().one_r().array());
+    }
 
     __host__ __device__ GEC_INLINE static void
     to_montgomery(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         a.set_zero();
-        add_mul(a, b, r_sqr());
+        add_mul(a, b, a.r_sqr().array());
     }
     __host__ __device__ GEC_INLINE static void
     from_montgomery(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
@@ -226,15 +213,16 @@ class MontgomeryCarryFree
         fill_seq<LIMB_N>(a_arr, b_arr);
 
         for (int i = 0; i < LIMB_N; ++i) {
-            LIMB_T m = a_arr[0] * MOD_P;
-            LIMB_T last = seq_add_mul_limb<LIMB_N>(a_arr, MOD, m);
+            LIMB_T m = a_arr[0] * a.mod_p();
+            LIMB_T last = seq_add_mul_limb<LIMB_N>(a_arr, a.mod().array(), m);
 
             seq_shift_right<LIMB_N, std::numeric_limits<LIMB_T>::digits>(a_arr);
             a_arr[LIMB_N - 1] = last;
         }
 
-        if (VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, MOD) != CmpEnum::Lt) {
-            seq_sub<LIMB_N>(a_arr, MOD);
+        if (VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, a.mod().array()) !=
+            CmpEnum::Lt) {
+            seq_sub<LIMB_N>(a_arr, a.mod().array());
         }
     }
 
@@ -247,17 +235,18 @@ class MontgomeryCarryFree
         const LIMB_T *c_arr = c.array();
 
         for (int i = 0; i < LIMB_N; ++i) {
-            LIMB_T m = (a_arr[0] + b_arr[i] * c_arr[0]) * MOD_P;
+            LIMB_T m = (a_arr[0] + b_arr[i] * c_arr[0]) * a.mod_p();
             LIMB_T last(0);
             last += seq_add_mul_limb<LIMB_N>(a_arr, c_arr, b_arr[i]);
-            last += seq_add_mul_limb<LIMB_N>(a_arr, MOD, m);
+            last += seq_add_mul_limb<LIMB_N>(a_arr, a.mod().array(), m);
 
             seq_shift_right<LIMB_N, std::numeric_limits<LIMB_T>::digits>(a_arr);
             a_arr[LIMB_N - 1] = last;
         }
 
-        if (VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, MOD) != CmpEnum::Lt) {
-            seq_sub<LIMB_N>(a_arr, MOD);
+        if (VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, a.mod().array()) !=
+            CmpEnum::Lt) {
+            seq_sub<LIMB_N>(a_arr, a.mod().array());
         }
     }
 
@@ -281,7 +270,6 @@ class MontgomeryCarryFree
         auto &ctx_view = ctx.template view_as<Core, Core, Core>();
 
         using utils::CmpEnum;
-        const auto &rr = *reinterpret_cast<const Core *>(RR);
         constexpr size_t LimbBit = std::numeric_limits<LIMB_T>::digits;
         constexpr size_t Bits = LimbBit * LIMB_N;
         constexpr LIMB_T mask = LIMB_T(1) << (LimbBit - 1);
@@ -297,7 +285,7 @@ class MontgomeryCarryFree
 
         r = a;
         s.set_one();
-        utils::fill_seq<LIMB_N>(t_arr, MOD);
+        utils::fill_seq<LIMB_N>(t_arr, a.mod().array());
         a.set_zero();
         int k = 0;
         while (!utils::SeqEqLimb<LIMB_N, LIMB_T>::call(r_arr, 0)) {
@@ -321,20 +309,21 @@ class MontgomeryCarryFree
             }
             ++k;
         }
-        if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, MOD) != CmpEnum::Lt) {
-            utils::seq_sub<LIMB_N>(a_arr, MOD);
+        if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, a.mod().array()) !=
+            CmpEnum::Lt) {
+            utils::seq_sub<LIMB_N>(a_arr, a.mod().array());
         }
-        utils::seq_sub<LIMB_N>(s_arr, MOD, a_arr);
+        utils::seq_sub<LIMB_N>(s_arr, a.mod().array(), a_arr);
         if (k < Bits) {
-            mul(t, s, rr);
+            mul(t, s, a.r_sqr());
             k += Bits;
 
-            mul(s, t, rr);
+            mul(s, t, a.r_sqr());
 
             r.set_pow2(2 * Bits - k);
             mul(a, s, r);
         } else {
-            mul(t, s, rr);
+            mul(t, s, a.r_sqr());
 
             r.set_pow2(2 * Bits - k);
             mul(a, t, r);
@@ -346,23 +335,18 @@ class MontgomeryCarryFree
 
 /** @brief mixin that enables Montgomery Multiplication with AVX2
  */
-template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD,
-          LIMB_T MOD_P, const LIMB_T *RR, const LIMB_T *OneR>
-class AVX2Montgomery
-    : protected CRTP<
-          Core, AVX2Montgomery<Core, LIMB_T, LIMB_N, MOD, MOD_P, RR, OneR>> {};
+template <class Core, typename LIMB_T, size_t LIMB_N>
+class AVX2MontgomeryOps
+    : protected CRTP<Core, AVX2MontgomeryOps<Core, LIMB_T, LIMB_N>> {};
 
 /** @brief mixin that enables Montgomery Multiplication with AVX2
  */
-template <class Core, const uint32_t *MOD, uint32_t MOD_P, const uint32_t *RR,
-          const uint32_t *OneR>
-class AVX2Montgomery<Core, uint32_t, 8, MOD, MOD_P, RR, OneR>
-    : protected CRTP<Core,
-                     AVX2Montgomery<Core, uint32_t, 8, MOD, MOD_P, RR, OneR>> {
+template <class Core>
+class AVX2MontgomeryOps<Core, uint32_t, 8>
+    : protected CRTP<Core, AVX2MontgomeryOps<Core, uint32_t, 8>> {
     using LIMB_T = uint32_t;
     constexpr static size_t LIMB_N = 8;
-    friend CRTP<Core,
-                AVX2Montgomery<Core, LIMB_T, LIMB_N, MOD, MOD_P, RR, OneR>>;
+    friend CRTP<Core, AVX2MontgomeryOps<Core, LIMB_T, LIMB_N>>;
 
     __host__ GEC_INLINE static __m256i add_limbs(__m256i &a, const __m256i &b,
                                                  const __m256i &c,
@@ -386,25 +370,19 @@ class AVX2Montgomery<Core, uint32_t, 8, MOD, MOD_P, RR, OneR>
     }
 
   public:
-    __host__ GEC_INLINE static const Core &r_sqr() {
-        return *reinterpret_cast<const Core *>(RR);
-    }
-    __host__ GEC_INLINE static const Core &one_r() {
-        return *reinterpret_cast<const Core *>(OneR);
-    }
-
     __host__ GEC_INLINE bool is_mul_id() const {
         return utils::VtSeqAll<LIMB_N, LIMB_T, utils::ops::Eq<LIMB_T>>::call(
-            this->core().array(), OneR);
+            this->core().array(), this->core().one_r().array());
     }
     __host__ GEC_INLINE void set_mul_id() {
-        utils::fill_seq<LIMB_N>(this->core().array(), OneR);
+        utils::fill_seq<LIMB_N>(this->core().array(),
+                                this->core().one_r().array());
     }
 
     __host__ GEC_INLINE static void to_montgomery(Core &GEC_RSTRCT a,
                                                   const Core &GEC_RSTRCT b) {
         a.set_zero();
-        add_mul(a, b, r_sqr());
+        add_mul(a, b, a.r_sqr());
     }
     __host__ GEC_INLINE static void from_montgomery(Core &GEC_RSTRCT a,
                                                     const Core &GEC_RSTRCT b) {
@@ -421,12 +399,12 @@ class AVX2Montgomery<Core, uint32_t, 8, MOD, MOD_P, RR, OneR>
 
         __m256i lm = _mm256_loadu_si256(reinterpret_cast<CV>(least_mask));
         __m256i cr = _mm256_loadu_si256(reinterpret_cast<CV>(cir_right));
-        __m256i vm = _mm256_loadu_si256(reinterpret_cast<CV>(MOD));
+        __m256i vm = _mm256_loadu_si256(reinterpret_cast<CV>(a.mod().array()));
         __m256i va = _mm256_loadu_si256(reinterpret_cast<CV>(b_arr));
-        __m256i mp = _mm256_set1_epi32(static_cast<int>(MOD_P));
+        __m256i mp = _mm256_set1_epi32(static_cast<int>(a.mod_p()));
         __m256i carry = _mm256_setzero_si256();
 
-        for (int i = 0; i < LIMB_N; ++i) {
+        for (size_t i = 0; i < LIMB_N; ++i) {
             __m256i vl, vh, new_carry;
             __m256i m = _mm256_mullo_epi32(
                 _mm256_broadcastd_epi32(_mm256_castsi256_si128(va)), mp);
@@ -447,9 +425,9 @@ class AVX2Montgomery<Core, uint32_t, 8, MOD, MOD_P, RR, OneR>
 
         seq_add<LIMB_N - 1>(a_arr + 1, carries);
 
-        if (carries[LIMB_N - 1] ||
-            VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, MOD) != CmpEnum::Lt) {
-            seq_sub<LIMB_N>(a_arr, MOD);
+        if (carries[LIMB_N - 1] || VtSeqCmp<LIMB_N, LIMB_T>::call(
+                                       a_arr, a.mod().array()) != CmpEnum::Lt) {
+            seq_sub<LIMB_N>(a_arr, a.mod().array());
         }
     }
 
@@ -469,15 +447,15 @@ class AVX2Montgomery<Core, uint32_t, 8, MOD, MOD_P, RR, OneR>
 
         __m256i lm = _mm256_loadu_si256(reinterpret_cast<CV>(least_mask));
         __m256i cr = _mm256_loadu_si256(reinterpret_cast<CV>(cir_right));
-        __m256i vm = _mm256_loadu_si256(reinterpret_cast<CV>(MOD));
+        __m256i vm = _mm256_loadu_si256(reinterpret_cast<CV>(a.mod().array()));
         __m256i va = _mm256_loadu_si256(reinterpret_cast<CV>(a_arr));
         __m256i vb = _mm256_loadu_si256(reinterpret_cast<CV>(b_arr));
         __m256i vc = _mm256_loadu_si256(reinterpret_cast<CV>(c_arr));
         __m256i c0 = _mm256_broadcastd_epi32(_mm256_castsi256_si128(vc));
-        __m256i mp = _mm256_set1_epi32(static_cast<int>(MOD_P));
+        __m256i mp = _mm256_set1_epi32(static_cast<int>(a.mod_p()));
         __m256i carry = _mm256_setzero_si256();
 
-        for (int i = 0; i < LIMB_N; ++i) {
+        for (size_t i = 0; i < LIMB_N; ++i) {
             __m256i vl, vh1, vh2, new_carry;
             __m256i bi = _mm256_broadcastd_epi32(_mm256_castsi256_si128(vb));
             __m256i m = _mm256_mullo_epi32(
@@ -510,9 +488,9 @@ class AVX2Montgomery<Core, uint32_t, 8, MOD, MOD_P, RR, OneR>
 
         seq_add<LIMB_N - 1>(a_arr + 1, carries);
 
-        if (carries[LIMB_N - 1] ||
-            VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, MOD) != CmpEnum::Lt) {
-            seq_sub<LIMB_N>(a_arr, MOD);
+        if (carries[LIMB_N - 1] || VtSeqCmp<LIMB_N, LIMB_T>::call(
+                                       a_arr, a.mod().array()) != CmpEnum::Lt) {
+            seq_sub<LIMB_N>(a_arr, a.mod().array());
         }
     }
 
@@ -535,7 +513,6 @@ class AVX2Montgomery<Core, uint32_t, 8, MOD, MOD_P, RR, OneR>
         auto &ctx_view = ctx.template view_as<Core, Core, Core>();
 
         using utils::CmpEnum;
-        const auto &rr = *reinterpret_cast<const Core *>(RR);
         constexpr size_t LimbBit = std::numeric_limits<LIMB_T>::digits;
         constexpr size_t Bits = LimbBit * LIMB_N;
         constexpr LIMB_T mask = LIMB_T(1) << (LimbBit - 1);
@@ -551,7 +528,7 @@ class AVX2Montgomery<Core, uint32_t, 8, MOD, MOD_P, RR, OneR>
 
         r = a;
         s.set_one();
-        utils::fill_seq<LIMB_N>(t_arr, MOD);
+        utils::fill_seq<LIMB_N>(t_arr, a.mod().array());
         a.set_zero();
         size_t k = 0;
         bool a_carry = false, s_carry = false;
@@ -580,21 +557,21 @@ class AVX2Montgomery<Core, uint32_t, 8, MOD, MOD_P, RR, OneR>
             }
             ++k;
         }
-        if (a_carry ||
-            utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a_arr, MOD) != CmpEnum::Lt) {
-            utils::seq_sub<LIMB_N>(a_arr, MOD);
+        if (a_carry || utils::VtSeqCmp<LIMB_N, LIMB_T>::call(
+                           a_arr, a.mod().array()) != CmpEnum::Lt) {
+            utils::seq_sub<LIMB_N>(a_arr, a.mod().array());
         }
-        utils::seq_sub<LIMB_N>(s_arr, MOD, a_arr);
+        utils::seq_sub<LIMB_N>(s_arr, a.mod().array(), a_arr);
         if (k < Bits) {
-            mul(t, s, rr);
+            mul(t, s, a.r_sqr());
             k += Bits;
 
-            mul(s, t, rr);
+            mul(s, t, a.r_sqr());
 
             r.set_pow2(2 * Bits - k);
             mul(a, s, r);
         } else {
-            mul(t, s, rr);
+            mul(t, s, a.r_sqr());
 
             r.set_pow2(2 * Bits - k);
             mul(a, t, r);

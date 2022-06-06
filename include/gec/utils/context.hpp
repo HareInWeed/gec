@@ -28,20 +28,22 @@ struct AlignTo {
 
 template <size_t align, typename T, typename... Types>
 struct CtxAlignChecker {
-    constexpr static bool call() {
+    __host__ __device__ constexpr static bool call() {
         return alignof(T) <= align && CtxAlignChecker<align, Types...>::call();
     }
 };
 template <size_t align, typename T>
 struct CtxAlignChecker<align, T> {
-    constexpr static bool call() { return alignof(T) <= align; }
+    __host__ __device__ constexpr static bool call() {
+        return alignof(T) <= align;
+    }
 };
 
 template <size_t I, size_t occupied, typename... Types>
 struct CtxGetOffset;
 template <size_t I, size_t occupied, typename T, typename... Types>
 struct CtxGetOffset<I, occupied, T, Types...> {
-    constexpr static size_t call() {
+    __host__ __device__ constexpr static size_t call() {
         return CtxGetOffset<I - 1,
                             AlignTo<occupied, alignof(T)>::value + sizeof(T),
                             Types...>::call();
@@ -49,27 +51,27 @@ struct CtxGetOffset<I, occupied, T, Types...> {
 };
 template <size_t occupied, typename T, typename... Types>
 struct CtxGetOffset<0, occupied, T, Types...> {
-    constexpr static size_t call() {
+    __host__ __device__ constexpr static size_t call() {
         return AlignTo<occupied, alignof(T)>::value;
     }
 };
 template <size_t occupied>
 struct CtxGetOffset<0, occupied> {
-    constexpr static size_t call() { return occupied; }
+    __host__ __device__ constexpr static size_t call() { return occupied; }
 };
 
 template <size_t I, size_t occupied, typename... Types>
 struct CtxGetEndOffset;
 template <size_t I, size_t occupied, typename T, typename... Types>
 struct CtxGetEndOffset<I, occupied, T, Types...> {
-    constexpr static size_t call() {
+    __host__ __device__ constexpr static size_t call() {
         return CtxGetOffset<I - 1, occupied, T, Types...>::call() +
                sizeof(typename CtxTypeI<I - 1, T, Types...>::type);
     }
 };
 template <size_t occupied>
 struct CtxGetEndOffset<0, occupied> {
-    constexpr static size_t call() { return occupied; }
+    __host__ __device__ constexpr static size_t call() { return occupied; }
 };
 
 template <size_t N, size_t align, size_t occupied, typename... Types>
@@ -110,7 +112,7 @@ class alignas(align) Context {
         Context<N, align,
                 CtxGetEndOffset<sizeof...(Types), occupied, Types...>::call()> &
         rest() const {
-        return *reinterpret_cast<Context<
+        return *reinterpret_cast<const Context<
             N, align,
             CtxGetEndOffset<sizeof...(Types), occupied, Types...>::call()> *>(
             this);

@@ -11,7 +11,7 @@ namespace gec {
 namespace curve {
 
 /// @brief Minimum context size for any function in GEC to work
-constexpr size_t MIN_POINT_NUM = 6;
+constexpr size_t MIN_POINT_NUM = 7;
 
 /** @brief mixin that add context type
  *
@@ -25,9 +25,9 @@ class WithPointContext : protected CRTP<Core, WithPointContext<Core, FN, PN>> {
   public:
     template <typename P = Core>
     using Context = utils::Context<
-        PN * utils::AlignTo<sizeof(P), 8 * alignof(P)>::value +
+        PN * utils::AlignTo<sizeof(P), alignof(P)>::value +
             FN * utils::AlignTo<sizeof(typename P::Field),
-                                8 * alignof(typename P::Field)>::value,
+                                alignof(typename P::Field)>::value,
         alignof(P), 0>;
 };
 

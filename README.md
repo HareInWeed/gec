@@ -36,6 +36,7 @@
           - [ ] Q: Is mon-arthmetic + $\mathbb{F}_{2^q}$ arthmetic + CRT a probable or even a good solution?
   - [ ] inv
     - [x] Montgomery Inversion
+- [ ] remove all non-constant indexing of array in `__device__` function
 - [ ] replace `array` based interface with `sequence` based (Maybe 2.0?)
 - [ ] refactor operations for heterogeneous data structures (Maybe 2.0?)
 - [ ] fix segment fault under Clang in release mode

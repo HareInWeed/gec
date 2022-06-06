@@ -18,10 +18,13 @@ class Array {
     LIMB_T arr[LIMB_N];
 
     __host__ __device__ GEC_INLINE Array() : arr() {}
-    __host__ __device__ GEC_INLINE Array(LIMB_T limb) : arr() { *arr = limb; }
+    __host__ __device__ GEC_INLINE Array(const LIMB_T &limb) : arr() {
+        *arr = limb;
+    }
 
     template <size_t LIMB_M>
-    __host__ __device__ GEC_INLINE Array(const Array<LIMB_T, LIMB_M> &other)
+    __host__ __device__ GEC_INLINE
+    Array(const Array<LIMB_T, LIMB_M> &GEC_RSTRCT other)
         : arr() {
         utils::fill_seq<(LIMB_N > LIMB_M ? LIMB_M : LIMB_N)>(arr, other.arr);
     }
@@ -56,7 +59,7 @@ class ArrayBE : public Array<LIMB_T, LIMB_N> {
     template <typename... LIMBS,
               std::enable_if_t<(sizeof...(LIMBS) == LIMB_N &&
                                 sizeof...(LIMBS) > 1)> * = nullptr>
-    __host__ __device__ GEC_INLINE ArrayBE(LIMBS... limbs) {
+    __host__ __device__ GEC_INLINE ArrayBE(const LIMBS &...limbs) {
         utils::fill_be<LIMB_T>(this->arr, limbs...);
     }
 };
@@ -75,7 +78,7 @@ class ArrayLE : public Array<LIMB_T, LIMB_N> {
     template <typename... LIMBS,
               std::enable_if_t<(sizeof...(LIMBS) == LIMB_N &&
                                 sizeof...(LIMBS) > 1)> * = nullptr>
-    __host__ __device__ GEC_INLINE ArrayLE(LIMBS... limbs) {
+    __host__ __device__ GEC_INLINE ArrayLE(const LIMBS &...limbs) {
         utils::fill_le<LIMB_T>(this->arr, limbs...);
     }
 };
