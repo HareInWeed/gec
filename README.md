@@ -9,7 +9,9 @@
     - [ ] inplace bit operations
   - [ ] add
     - [x] `add_with_carry`
-      - [x] with intrinsics
+      - [ ] with intrinsics
+        - [x] x86
+        - [ ] cuda
     - [x] `add_with_carry` inplace
       - [ ] with intrinsics
     - [x] `add`: $c = a + b \pmod{\mathrm{LIMB_BITS}}$
@@ -33,9 +35,26 @@
               A: No
           - [x] Q: If not, what's a good alternative?\
                 A: A possible alternative is to use Interleaved Multiplication-reduction Method instead
-          - [ ] Q: Is mon-arthmetic + $\mathbb{F}_{2^q}$ arthmetic + CRT a probable or even a good solution?
+          - [ ] Q: Is mon-arithmetic + $\mathbb{F}_{2^q}$ arithmetic + CRT a probable or even a good solution?
   - [ ] inv
     - [x] Montgomery Inversion
+- [ ] hashing
+  - [ ] working implementation
+    - [x] bigint
+    - [x] point
+  - [ ] `hash_combine`
+    - [x] basic
+    - [ ] `uint32_t` and `uint64_t` specialization
+  - [ ] hasher
+    - [ ] basic
+      - [ ] handle signed int
+    - [ ] 
+- [ ] hash table
+  - [ ] dynamic
+  - [ ] static
+    - [ ] perfect hash function
+      - [ ] HIT approach
+      - [ ] Fredman approach
 - [ ] remove all non-constant indexing of array in `__device__` function
 - [ ] replace `array` based interface with `sequence` based (Maybe 2.0?)
 - [ ] refactor operations for heterogeneous data structures (Maybe 2.0?)

@@ -11,6 +11,7 @@
 #ifdef __CUDACC__
 #include <cassert>
 #include <curand_kernel.h>
+#include <thrust/random.h>
 #endif // __CUDACC__
 
 namespace gec {
@@ -77,6 +78,31 @@ struct MaxHelper {
     static const T value = std::numeric_limits<T>::max();
 };
 
+template <typename Rng>
+struct is_thrust_rng {
+    static const bool value = false;
+};
+
+template <typename UIntType, UIntType a, UIntType c, UIntType m>
+struct is_thrust_rng<
+    thrust::random::linear_congruential_engine<UIntType, a, c, m>>
+    : public rng_enable {};
+template <typename UIntType, size_t w, size_t k, size_t q, size_t s>
+struct is_thrust_rng<
+    thrust::random::linear_feedback_shift_engine<UIntType, w, k, q, s>>
+    : public rng_enable {};
+template <typename UIntType, size_t w, size_t s, size_t r>
+struct is_thrust_rng<
+    thrust::random::subtract_with_carry_engine<UIntType, w, s, r>>
+    : public rng_enable {};
+template <typename Engine, size_t p, size_t r>
+struct is_thrust_rng<thrust::random::discard_block_engine<Engine, p, r>>
+    : public rng_enable {};
+template <typename Engine1, size_t s1, typename Engine2, size_t s2>
+struct is_thrust_rng<
+    thrust::random::xor_combine_engine<Engine1, s1, Engine2, s2>>
+    : public rng_enable {};
+
 #endif // __CUDACC__
 
 } // namespace gec_rng_
@@ -108,8 +134,8 @@ class GecRng<Rng, std::enable_if_t<gec_rng_::is_std_rng<Rng>::value>> {
 #ifdef __CUDA_ARCH__
         return reject<T>();
 #else
-        // FIXME: handle cases where the type of rng generation is not T
-        return rng();
+        std::uniform_int_distribution<T> gen;
+        return gen(rng);
 #endif // __CUDA_ARCH__
     }
     template <typename T>
@@ -151,10 +177,7 @@ class GecRng<Rng, std::enable_if_t<gec_rng_::is_cu_rand_rng<Rng>::value>> {
     template <typename T>
     __host__ __device__ GEC_INLINE T sample() {
 #ifdef __CUDA_ARCH__
-// FIXME: handle cases where the type of rng generation is not T
-#ifdef GEC_DEBUG
-        printf("rng sample [0, max]\n");
-#endif // GEC_DEBUG
+        // FIXME: handle cases where the type of rng generation is not T
         return curand(&get_rng());
 #else
         return reject<T>();
@@ -165,24 +188,15 @@ class GecRng<Rng, std::enable_if_t<gec_rng_::is_cu_rand_rng<Rng>::value>> {
 #ifdef __CUDA_ARCH__
         // FIXME: handle cases where max of rng generated number is less than
         // higher
-#ifdef GEC_DEBUG
-        printf("rng sample [0, %u]\n", higher);
-#endif // GEC_DEBUG
         constexpr T t_max = gec_rng_::MaxHelper<T>::value;
         if (higher == t_max) {
             return this->template sample<T>();
         } else {
             T m = higher + 1;
             T bound = (t_max / m) * m;
-#ifdef GEC_DEBUG
-            printf("bound: %u\n", bound);
-#endif // GEC_DEBUG
             while (true) {
                 T x = this->template sample<T>();
                 if (x <= bound) {
-#ifdef GEC_DEBUG
-                    printf("result: %u\n", x % m);
-#endif // GEC_DEBUG
                     return x % m;
                 }
             }
@@ -194,13 +208,34 @@ class GecRng<Rng, std::enable_if_t<gec_rng_::is_cu_rand_rng<Rng>::value>> {
     template <typename T>
     __host__ __device__ GEC_INLINE T sample(const T &lower, const T &higher) {
 #ifdef __CUDA_ARCH__
-#ifdef GEC_DEBUG
-        printf("rng sample [%u, %u]\n", lower, higher);
-#endif // GEC_DEBUG
         return lower + sample(higher - lower);
 #else
         return reject<T>();
 #endif // __CUDA_ARCH__
+    }
+    __host__ __device__ GEC_INLINE Rng &get_rng() { return rng; }
+};
+
+template <typename Rng>
+class GecRng<Rng, std::enable_if_t<gec_rng_::is_thrust_rng<Rng>::value>> {
+    Rng rng;
+
+  public:
+    __host__ __device__ GEC_INLINE GecRng(Rng &&rng) : rng(std::move(rng)){};
+    template <typename T>
+    __host__ __device__ GEC_INLINE T sample() {
+        thrust::uniform_int_distribution<T> gen;
+        return gen(rng);
+    }
+    template <typename T>
+    __host__ __device__ GEC_INLINE T sample(const T &higher) {
+        thrust::uniform_int_distribution<T> gen(T(0), higher);
+        return gen(rng);
+    }
+    template <typename T>
+    __host__ __device__ GEC_INLINE T sample(const T &lower, const T &higher) {
+        thrust::uniform_int_distribution<T> gen(lower, higher);
+        return gen(rng);
     }
     __host__ __device__ GEC_INLINE Rng &get_rng() { return rng; }
 };

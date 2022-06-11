@@ -7,6 +7,8 @@
 
 #include "configured_catch.hpp"
 
+#include <thrust/random.h>
+
 using namespace gec;
 using namespace utils;
 
@@ -239,13 +241,19 @@ TEST_CASE("addc_cc_", "[cuda][intrinsics]") {
 
 def_array(SmallMod, LIMB_T, 3, 0xb, 0x0, 0x7);
 
-template <typename Int, typename Rng>
-__global__ void test_cuda_sampling_kernel(size_t seed, Int *x,
-                                          GecRng<Rng> *rng_p) {
-    auto &rng = *rng_p;
+__device__ void test_rng_init(size_t seed, size_t id, size_t offset,
+                              curandStateXORWOW_t *rng) {
+    curand_init(seed, id, offset, rng);
+}
+__device__ void test_rng_init(size_t, size_t, size_t,
+                              thrust::random::ranlux24 *) {}
 
-    int id = threadIdx.x + blockIdx.x * blockDim.x;
-    curand_init(seed, id, 0, &rng.get_rng());
+template <typename Int, typename Rng>
+__global__ void test_cuda_sampling_kernel(size_t seed, Int *x) {
+    auto rng = make_gec_rng(Rng());
+
+    size_t id = threadIdx.x + blockIdx.x * blockDim.x;
+    test_rng_init(seed, id, size_t(0), &rng.get_rng());
 
     typename Int::template Context<> ctx;
 
@@ -267,12 +275,11 @@ void test_cuda_sampling() {
     std::random_device rd;
     Int *x, *d_x;
     size_t x_size = 6 * sizeof(Int);
-    GecRng<Rng> *d_rng;
+
     CUDA_REQUIRE(cudaMallocHost(&x, x_size));
     CUDA_REQUIRE(cudaMalloc(&d_x, x_size));
-    CUDA_REQUIRE(cudaMalloc(&d_rng, sizeof(GecRng<Rng>)));
 
-    test_cuda_sampling_kernel<Int, Rng><<<1, 1>>>(rd(), d_x, d_rng);
+    test_cuda_sampling_kernel<Int, Rng><<<1, 1>>>(rd(), d_x);
     CUDA_REQUIRE(cudaDeviceSynchronize());
     CUDA_REQUIRE(cudaGetLastError());
 
@@ -289,7 +296,6 @@ void test_cuda_sampling() {
 
     CUDA_REQUIRE(cudaFreeHost(x));
     CUDA_REQUIRE(cudaFree(d_x));
-    CUDA_REQUIRE(cudaFree(d_rng));
 }
 
 TEST_CASE("cuda random sampling", "[add_group][field][random][cuda]") {
@@ -298,6 +304,6 @@ TEST_CASE("cuda random sampling", "[add_group][field][random][cuda]") {
     using G = ADD_GROUP(LIMB_T, 3, 0, SmallMod);
 
     test_cuda_sampling<F1, curandStateXORWOW_t>();
-    // test_cuda_sampling<F2, curandStateSobol64_t>();
+    test_cuda_sampling<F2, thrust::random::ranlux24>();
     test_cuda_sampling<G, curandStateXORWOW_t>();
 }
