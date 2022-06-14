@@ -44,7 +44,7 @@ __host__ void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl,
         // with `a` less than `b`, `m` would not underflow
         size_t m = x.most_significant_bit() - 1;
         for (size_t i = 0; i < m; ++i) {
-            sl[i].array()[0] = i;
+            sl[i].array()[0] = typename S::LimbT(i);
         }
         for (size_t i = 0; i < m; ++i) {
             size_t ri = m - 1 - i;
@@ -119,13 +119,13 @@ void *worker(void *data_ptr) {
     P *u = &p1, *tmp = &p2;
     S x, j, one(1);
     typename P::template Context<> ctx;
-    auto rng = make_gec_rng(std::mt19937(data.seed));
+    auto rng = make_gec_rng(std::mt19937((unsigned int)(data.seed)));
 
     while (true) {
         // calculate jump table
         if (data.id == 0) {
             for (size_t i = 0; i < m; ++i) {
-                data.sl[i].array()[0] = i;
+                data.sl[i].array()[0] = typename S::LimbT(i);
             }
             for (size_t i = 0; i < m; ++i) {
                 size_t ri = m - 1 - i;
@@ -220,7 +220,7 @@ void *worker(void *data_ptr) {
  */
 template <typename S, typename P, typename Rng>
 void multithread_pollard_lambda(S &GEC_RSTRCT x, const S &GEC_RSTRCT bound,
-                                size_t worker_n, const S &GEC_RSTRCT a,
+                                unsigned int worker_n, const S &GEC_RSTRCT a,
                                 const S &GEC_RSTRCT b, const P &GEC_RSTRCT g,
                                 const P &GEC_RSTRCT h, GecRng<Rng> &rng) {
     using Data = WorkerData<S, P>;

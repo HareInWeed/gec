@@ -16,8 +16,8 @@ TEST_CASE("trailing_zeros", "[utils][misc]") {
 
     std::uniform_int_distribution<> gen;
 
-    for (int k = 0; k < 32; ++k) {
-        unsigned int x = 1 << k;
+    for (size_t k = 0; k < 32; ++k) {
+        size_t x = size_t(1) << k;
         REQUIRE(k == trailing_zeros(x));
     }
 

@@ -62,9 +62,9 @@ class BitOps : protected CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>> {
     }
 
     /** @brief shift element by `B` bit */
-    template <size_t B, std::enable_if_t<
-                            (B <= LIMB_N * std::numeric_limits<LIMB_T>::digits)>
-                            * = nullptr>
+    template <size_t B,
+              std::enable_if_t<(B <= LIMB_N * utils::type_bits<LIMB_T>::value)>
+                  * = nullptr>
     __host__ __device__ GEC_INLINE void shift_right() {
         utils::seq_shift_right<LIMB_N, B>(this->core().array());
     }
@@ -73,9 +73,9 @@ class BitOps : protected CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>> {
     // void shift_right(size_t n) {}
 
     /** @brief shift element by `B` bit */
-    template <size_t B, std::enable_if_t<
-                            (B <= LIMB_N * std::numeric_limits<LIMB_T>::digits)>
-                            * = nullptr>
+    template <size_t B,
+              std::enable_if_t<(B <= LIMB_N * utils::type_bits<LIMB_T>::value)>
+                  * = nullptr>
     __host__ __device__ GEC_INLINE void shift_left() {
         utils::seq_shift_left<LIMB_N, B>(this->core().array());
     }
@@ -84,7 +84,7 @@ class BitOps : protected CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>> {
     // void shift_left(size_t n) {}
 
     __host__ __device__ size_t most_significant_bit() {
-        constexpr size_t limb_digits = std::numeric_limits<LIMB_T>::digits;
+        constexpr size_t limb_digits = utils::type_bits<LIMB_T>::value;
 
         size_t i = LIMB_N;
         do {

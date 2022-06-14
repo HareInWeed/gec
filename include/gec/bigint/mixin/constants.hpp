@@ -39,16 +39,16 @@ class Constants : protected CRTP<Core, Constants<Core, LIMB_T, LIMB_N>> {
 
     template <size_t K>
     __host__ __device__ GEC_INLINE void set_pow2() {
-        constexpr size_t LimbBit = std::numeric_limits<LIMB_T>::digits;
-        constexpr int LimbIdx = K / LimbBit;
+        constexpr size_t LimbBit = utils::type_bits<LIMB_T>::value;
+        constexpr size_t LimbIdx = K / LimbBit;
         constexpr LIMB_T LimbVal = LIMB_T(1) << (K % LimbBit);
         this->set_zero();
         this->core().array()[LimbIdx] = LimbVal;
     }
 
-    __host__ __device__ GEC_INLINE void set_pow2(int k) {
-        constexpr size_t LimbBit = std::numeric_limits<LIMB_T>::digits;
-        int LimbIdx = k / LimbBit;
+    __host__ __device__ GEC_INLINE void set_pow2(size_t k) {
+        constexpr size_t LimbBit = utils::type_bits<LIMB_T>::value;
+        size_t LimbIdx = k / LimbBit;
         LIMB_T LimbVal = LIMB_T(1) << (k % LimbBit);
         this->set_zero();
         this->core().array()[LimbIdx] = LimbVal;

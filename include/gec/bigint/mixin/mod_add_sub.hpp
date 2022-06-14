@@ -15,7 +15,7 @@ struct MulPow2Helper {
     __host__ __device__ GEC_INLINE static void call(Core &GEC_RSTRCT a) {
         constexpr size_t Idx = LIMB_N - 1;
         constexpr LIMB_T Mask = LIMB_T(1)
-                                << (std::numeric_limits<LIMB_T>::digits - 1);
+                                << (utils::type_bits<LIMB_T>::value - 1);
 
         bool carry = bool(a.array()[Idx] & Mask);
         utils::seq_shift_left<LIMB_N, 1>(a.array());

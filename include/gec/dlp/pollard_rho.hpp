@@ -23,12 +23,11 @@ namespace gec {
 namespace dlp {
 
 template <typename S, typename P, typename Ctx, typename Rng>
-__host__ void pollard_rho(S &c,
-                          S &d2, // TODO: require general int inv
-                          size_t l, S *al, S *bl, P *pl, const P &g, const P &h,
-                          GecRng<Rng> &rng, Ctx &ctx) {
-    using F = typename P::Field;
-    auto &ctx_view = ctx.template view_as<P, P, P, P, P, F, F, S, S>();
+__host__ __device__ void pollard_rho(S &c,
+                                     S &d2, // TODO: require general int inv
+                                     size_t l, S *al, S *bl, P *pl, const P &g,
+                                     const P &h, GecRng<Rng> &rng, Ctx &ctx) {
+    auto &ctx_view = ctx.template view_as<P, P, P, P, P, S, S>();
 
     auto &ag = ctx_view.template get<0>();
     auto &bh = ctx_view.template get<1>();
@@ -36,11 +35,8 @@ __host__ void pollard_rho(S &c,
     auto &x1 = ctx_view.template get<3>();
     auto &x2 = ctx_view.template get<4>();
 
-    auto &f1 = ctx_view.template get<5>();
-    auto &f2 = ctx_view.template get<6>();
-
-    auto &c2 = ctx_view.template get<7>();
-    auto &d = ctx_view.template get<8>();
+    auto &c2 = ctx_view.template get<5>();
+    auto &d = ctx_view.template get<6>();
     auto &rest_ctx = ctx_view.rest();
     P *tmp = &temp, *x = &x1;
 
@@ -115,7 +111,7 @@ struct WorkerData {
     volatile bool &done;
     S &c;
     S &d2;
-    size_t seed;
+    std::random_device::result_type seed;
     size_t workers;
     size_t id;
 };
@@ -126,7 +122,7 @@ void *worker(void *data_ptr) {
     using LT = typename F::LimbT;
 
     WorkerData<S, P> &data = *static_cast<WorkerData<S, P> *>(data_ptr);
-    auto rng = make_gec_rng(std::mt19937(data.seed));
+    auto rng = make_gec_rng(Rng(data.seed));
     typename P::template Context<> ctx;
     Coefficient<S> coeff;
     auto &ctx_view = ctx.template view_as<P, P, P, P>();
@@ -142,7 +138,7 @@ void *worker(void *data_ptr) {
     P::mul(yh, coeff.y, data.h, ctx_view.rest());
     P::add(*p, xg, yh, ctx_view.rest());
 
-    int l = data.pl.size();
+    size_t l = data.pl.size();
     int i;
     while (true) {
         if (data.done) {
@@ -211,7 +207,7 @@ void multithread_pollard_rho(S &c,
     for (size_t k = 0; k < worker_n; ++k) {
         auto &data = workers_data[k];
         data.id = k;
-        data.seed = rng.template sample<size_t>();
+        data.seed = rng.template sample<std::random_device::result_type>();
         pthread_create(&workers[k], nullptr, worker<S, P, Rng>,
                        static_cast<void *>(&data));
     }

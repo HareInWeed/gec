@@ -7,6 +7,7 @@
 #include "utils/context.hpp"
 #include "utils/crtp.hpp"
 #include "utils/cuda_utils.cuh"
+#include "utils/hash.hpp"
 #include "utils/misc.hpp"
 #include "utils/operators.hpp"
 #include "utils/sequence.hpp"

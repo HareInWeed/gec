@@ -28,13 +28,13 @@ struct PointOstreamHelper<Point, 0, N> {
 };
 template <typename Point, size_t N>
 struct PointOstreamHelper<Point, N, N> {
-    __host__ __device__ GEC_INLINE static void call(std::ostream &o,
-                                                    const Point &point) {}
+    __host__ __device__ GEC_INLINE static void call(std::ostream &,
+                                                    const Point &) {}
 };
 template <typename Point>
 struct PointOstreamHelper<Point, 0, 0> {
-    __host__ __device__ GEC_INLINE static void call(std::ostream &o,
-                                                    const Point &point) {}
+    __host__ __device__ GEC_INLINE static void call(std::ostream &,
+                                                    const Point &) {}
 };
 
 /** @brief mixin that enables output x() and y() with ostream

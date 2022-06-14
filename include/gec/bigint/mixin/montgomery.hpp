@@ -47,11 +47,11 @@ class MontgomeryOps
 
         fill_seq<LIMB_N>(a_arr, b_arr);
 
-        for (int i = 0; i < LIMB_N; ++i) {
+        for (size_t i = 0; i < LIMB_N; ++i) {
             LIMB_T m = a_arr[0] * a.mod_p();
             LIMB_T last = seq_add_mul_limb<LIMB_N>(a_arr, a.mod().array(), m);
 
-            seq_shift_right<LIMB_N, std::numeric_limits<LIMB_T>::digits>(a_arr);
+            seq_shift_right<LIMB_N, utils::type_bits<LIMB_T>::value>(a_arr);
             a_arr[LIMB_N - 1] = last;
         }
 
@@ -70,13 +70,13 @@ class MontgomeryOps
         const LIMB_T *c_arr = c.array();
 
         bool carry = false;
-        for (int i = 0; i < LIMB_N; ++i) {
+        for (size_t i = 0; i < LIMB_N; ++i) {
             LIMB_T m = (a_arr[0] + b_arr[i] * c_arr[0]) * a.mod_p();
             LIMB_T last0 = seq_add_mul_limb<LIMB_N>(a_arr, c_arr, b_arr[i]);
             LIMB_T last1 = seq_add_mul_limb<LIMB_N>(a_arr, a.mod().array(), m);
             carry = uint_add_with_carry(last0, last1, carry);
 
-            seq_shift_right<LIMB_N, std::numeric_limits<LIMB_T>::digits>(a_arr);
+            seq_shift_right<LIMB_N, utils::type_bits<LIMB_T>::value>(a_arr);
             a_arr[LIMB_N - 1] = last0;
         }
 
@@ -106,7 +106,7 @@ class MontgomeryOps
         auto &ctx_view = ctx.template view_as<Core, Core, Core>();
 
         using utils::CmpEnum;
-        constexpr size_t LimbBit = std::numeric_limits<LIMB_T>::digits;
+        constexpr size_t LimbBit = utils::type_bits<LIMB_T>::value;
         constexpr size_t Bits = LimbBit * LIMB_N;
         constexpr LIMB_T mask = LIMB_T(1) << (LimbBit - 1);
 
@@ -123,7 +123,7 @@ class MontgomeryOps
         s.set_one();
         utils::fill_seq<LIMB_N>(t_arr, a.mod().array());
         a.set_zero();
-        int k = 0;
+        size_t k = 0;
         bool a_carry = false, s_carry = false;
         while (!utils::SeqEqLimb<LIMB_N, LIMB_T>::call(r_arr, 0)) {
             if (!(t_arr[0] & 0x1)) {
@@ -216,7 +216,7 @@ class CarryFreeMontgomeryOps
             LIMB_T m = a_arr[0] * a.mod_p();
             LIMB_T last = seq_add_mul_limb<LIMB_N>(a_arr, a.mod().array(), m);
 
-            seq_shift_right<LIMB_N, std::numeric_limits<LIMB_T>::digits>(a_arr);
+            seq_shift_right<LIMB_N, utils::type_bits<LIMB_T>::value>(a_arr);
             a_arr[LIMB_N - 1] = last;
         }
 
@@ -240,7 +240,7 @@ class CarryFreeMontgomeryOps
             last += seq_add_mul_limb<LIMB_N>(a_arr, c_arr, b_arr[i]);
             last += seq_add_mul_limb<LIMB_N>(a_arr, a.mod().array(), m);
 
-            seq_shift_right<LIMB_N, std::numeric_limits<LIMB_T>::digits>(a_arr);
+            seq_shift_right<LIMB_N, utils::type_bits<LIMB_T>::value>(a_arr);
             a_arr[LIMB_N - 1] = last;
         }
 
@@ -270,7 +270,7 @@ class CarryFreeMontgomeryOps
         auto &ctx_view = ctx.template view_as<Core, Core, Core>();
 
         using utils::CmpEnum;
-        constexpr size_t LimbBit = std::numeric_limits<LIMB_T>::digits;
+        constexpr size_t LimbBit = utils::type_bits<LIMB_T>::value;
         constexpr size_t Bits = LimbBit * LIMB_N;
         constexpr LIMB_T mask = LIMB_T(1) << (LimbBit - 1);
 
@@ -513,7 +513,7 @@ class AVX2MontgomeryOps<Core, uint32_t, 8>
         auto &ctx_view = ctx.template view_as<Core, Core, Core>();
 
         using utils::CmpEnum;
-        constexpr size_t LimbBit = std::numeric_limits<LIMB_T>::digits;
+        constexpr size_t LimbBit = utils::type_bits<LIMB_T>::value;
         constexpr size_t Bits = LimbBit * LIMB_N;
         constexpr LIMB_T mask = LIMB_T(1) << (LimbBit - 1);
 

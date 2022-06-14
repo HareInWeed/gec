@@ -119,6 +119,12 @@ enum CmpEnum {
     Gt = 2,
 };
 
+template <typename T>
+struct type_bits {
+    const static size_t value =
+        sizeof(T) * std::numeric_limits<unsigned char>::digits;
+};
+
 } // namespace utils
 
 } // namespace gec

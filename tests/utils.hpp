@@ -12,6 +12,8 @@ struct OpaqueNum {
     constexpr OpaqueNum(T num) : num(num) {}
     constexpr operator T() { return num; }
 
+    constexpr OpaqueNum(const OpaqueNum &others) : num(others.num) {}
+
     OpaqueNum &operator=(const OpaqueNum &others) {
         num = others.num;
         return *this;

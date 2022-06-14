@@ -379,7 +379,7 @@ template <typename T>
 __host__ __device__ GEC_INLINE void
 dh_uint_mul_lh(T &GEC_RSTRCT l, T &GEC_RSTRCT h, const T &GEC_RSTRCT a,
                const T &GEC_RSTRCT b) {
-    constexpr size_t len = std::numeric_limits<T>::digits / 2;
+    constexpr size_t len = utils::type_bits<T>::value / 2;
     constexpr T lower_mask = (T(1) << len) - T(1);
 
     T al = a & lower_mask;
@@ -405,7 +405,7 @@ dh_uint_mul_lh(T &GEC_RSTRCT l, T &GEC_RSTRCT h, const T &GEC_RSTRCT a,
         const U &GEC_RSTRCT b) {                                               \
         DU product = DU(a) * DU(b);                                            \
         l = U(product);                                                        \
-        h = product >> std::numeric_limits<U>::digits;                         \
+        h = product >> utils::type_bits<U>::value;                             \
     }
 GEC_specialized_dh_uint_mul_lh(uint32_t, uint64_t);
 GEC_specialized_dh_uint_mul_lh(uint16_t, uint32_t);
@@ -461,9 +461,10 @@ __host__ GEC_INLINE void h_uint_mul_lh<uint64_t>(uint64_t &GEC_RSTRCT l,
                                                  uint64_t &GEC_RSTRCT h,
                                                  const uint64_t &GEC_RSTRCT a,
                                                  const uint64_t &GEC_RSTRCT b) {
-    unsigned __int128 product = (unsigned __int128)(a) * (unsigned __int128)(b);
-    l = (uint64_t)(product);
-    h = product >> std::numeric_limits<uint64_t>::digits;
+    __extension__ using uint128_t = unsigned __int128;
+    uint128_t product = uint128_t(a) * uint128_t(b);
+    l = uint64_t(product);
+    h = product >> utils::type_bits<uint64_t>::value;
 }
 #endif // GEC_AMD64
 

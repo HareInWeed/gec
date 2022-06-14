@@ -183,7 +183,7 @@ template <size_t N, size_t LS, size_t BS, typename T>
 struct SeqShiftRightInplace {
     __host__ __device__ GEC_INLINE static void call(T *a) {
         *a = (*(a + LS) >> BS) |
-             (*(a + LS + 1) << (std::numeric_limits<T>::digits - BS));
+             (*(a + LS + 1) << (utils::type_bits<T>::value - BS));
         SeqShiftRightInplace<N - 1, LS, BS, T>::call(a + 1);
     }
 };
@@ -226,8 +226,8 @@ struct SeqShiftRightInplace<0, LS, 0, T> {
  */
 template <size_t LEN, size_t B, typename T>
 __host__ __device__ GEC_INLINE void seq_shift_right(T *a) {
-    constexpr size_t LS = B / std::numeric_limits<T>::digits;
-    constexpr size_t BS = B % std::numeric_limits<T>::digits;
+    constexpr size_t LS = B / utils::type_bits<T>::value;
+    constexpr size_t BS = B % utils::type_bits<T>::value;
     constexpr size_t N = LEN - LS;
     SeqShiftRightInplace<N, LS, BS, T>::call(a);
     fill_seq_limb<LS, T>(a + N, 0);
@@ -238,9 +238,8 @@ __host__ __device__ GEC_INLINE void seq_shift_right(T *a) {
 template <size_t N, size_t LS, size_t BS, typename T>
 struct SeqShiftLeftInplace {
     __host__ __device__ GEC_INLINE static void call(T *a) {
-        *(a + LS + N - 1) =
-            (*(a + N - 1) << BS) |
-            (*(a + N - 2) >> (std::numeric_limits<T>::digits - BS));
+        *(a + LS + N - 1) = (*(a + N - 1) << BS) |
+                            (*(a + N - 2) >> (utils::type_bits<T>::value - BS));
         SeqShiftLeftInplace<N - 1, LS, BS, T>::call(a);
     }
 };
@@ -283,8 +282,8 @@ struct SeqShiftLeftInplace<0, LS, 0, T> {
  */
 template <size_t LEN, size_t B, typename T>
 __host__ __device__ GEC_INLINE void seq_shift_left(T *a) {
-    constexpr size_t LS = B / std::numeric_limits<T>::digits;
-    constexpr size_t BS = B % std::numeric_limits<T>::digits;
+    constexpr size_t LS = B / utils::type_bits<T>::value;
+    constexpr size_t BS = B % utils::type_bits<T>::value;
     constexpr size_t N = LEN - LS;
     SeqShiftLeftInplace<N, LS, BS, T>::call(a);
     fill_seq_limb<LS, T>(a, 0);

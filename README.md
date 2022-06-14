@@ -38,19 +38,13 @@
           - [ ] Q: Is mon-arithmetic + $\mathbb{F}_{2^q}$ arithmetic + CRT a probable or even a good solution?
   - [ ] inv
     - [x] Montgomery Inversion
-- [ ] hashing
-  - [ ] working implementation
+- [x] hashing
+  - [x] working implementation
     - [x] bigint
     - [x] point
-  - [ ] `hash_combine`
-    - [x] basic
-    - [ ] `uint32_t` and `uint64_t` specialization
-  - [ ] hasher
-    - [ ] basic
-      - [ ] handle signed int
-    - [ ] 
+  - [x] `hash_combine`
+  - [x] hasher
 - [ ] hash table
-  - [ ] dynamic
   - [ ] static
     - [ ] perfect hash function
       - [ ] HIT approach

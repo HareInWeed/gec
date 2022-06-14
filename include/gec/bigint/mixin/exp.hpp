@@ -30,7 +30,7 @@ class Exponentiation : protected CRTP<Core, Exponentiation<Core>> {
         bool need_copy = false;
         Core *p1 = &a, *p2 = &ap;
         p1->set_mul_id();
-        constexpr size_t Bits = std::numeric_limits<IntT>::digits;
+        constexpr size_t Bits = utils::type_bits<IntT>::value;
         int i = N - 1, j;
         for (; i >= 0; --i) {
             for (j = Bits - 1; j >= 0; --j) {
