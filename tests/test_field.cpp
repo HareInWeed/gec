@@ -96,7 +96,9 @@ TEST_CASE("mul_pow2", "[add_group][field]") {
     using F = Field160;
 
     std::random_device rd;
-    std::mt19937 gen(rd());
+    auto seed = rd();
+    INFO("seed: " << seed);
+    std::mt19937 gen(seed);
 
     std::uniform_int_distribution<LIMB_T> dis_u32(
         std::numeric_limits<LIMB_T>::min(), std::numeric_limits<LIMB_T>::max());
@@ -137,7 +139,9 @@ TEST_CASE("random sampling", "[add_group][field][random]") {
     using G = ADD_GROUP(LIMB_T, 3, alignof(LIMB_T), SmallMod);
 
     std::random_device rd;
-    auto rng = make_gec_rng(std::mt19937(rd()));
+    auto seed = rd();
+    INFO("seed: " << seed);
+    auto rng = make_gec_rng(std::mt19937(seed));
 
 #define test(Int)                                                              \
     do {                                                                       \
@@ -178,7 +182,9 @@ TEST_CASE("mul_pow2 bench", "[add_group][bench]") {
     using F = Field160;
 
     std::random_device rd;
-    std::mt19937 gen(rd());
+    auto seed = rd();
+    INFO("seed: " << seed);
+    std::mt19937 gen(seed);
 
     std::uniform_int_distribution<LIMB_T> dis_u32(
         std::numeric_limits<LIMB_T>::min(), std::numeric_limits<LIMB_T>::max());
@@ -251,7 +257,9 @@ TEST_CASE("montgomery mul", "[ring][field]") {
     using F = Field160;
 
     std::random_device rd;
-    std::mt19937 gen(rd());
+    auto seed = rd();
+    INFO("seed: " << seed);
+    std::mt19937 gen(seed);
 
     std::uniform_int_distribution<LIMB_T> dis_u32(
         std::numeric_limits<LIMB_T>::min(), std::numeric_limits<LIMB_T>::max());
@@ -331,14 +339,15 @@ TEST_CASE("avx2 montgomery", "[ring][avx2]") {
     using Int = ADD_GROUP(LIMB_T, LN_256, 32, MOD_256);
 
     std::random_device rd;
-    auto rng = make_gec_rng(std::mt19937(rd()));
+    auto seed = rd();
+    INFO("seed: " << seed);
+    auto rng = make_gec_rng(std::mt19937(seed));
 
     Int x_arr(0x1f82f372u, 0x62639538u, 0xca640ff9u, 0xed12396au, 0x9c4d50dau,
               0xff21e339u, 0xfbfa64d8u, 0x75b40000u);
     Int y_arr(0xed469d79u, 0xaba8d6fau, 0x6724432cu, 0x7221f040u, 0x6416351du,
               0x923ec2cau, 0x72bc1127u, 0xf1e018aau);
     Int mon_x_arr, mon_y_arr, mon_xy_arr, xy_arr;
-    Int one_arr(1);
 
     for (int k = 0; k < 10000; ++k) {
         Int::sample(x_arr, rng);
@@ -392,14 +401,15 @@ TEST_CASE("avx2 montgomery", "[ring][avx2]") {
 
 TEST_CASE("256 montgomery bench", "[ring][avx2][bench]") {
     std::random_device rd;
-    auto rng = make_gec_rng(std::mt19937(rd()));
+    auto seed = rd();
+    INFO("seed: " << seed);
+    auto rng = make_gec_rng(std::mt19937(seed));
     using AddG = ADD_GROUP(LIMB_T, LN_256, 32, MOD_256);
     using SerialF =
         FIELD(LIMB_T, LN_256, 32, MOD_256, MOD_P_256, RR_256, OneR_256);
     using AVX2F =
         AVX2FIELD(LIMB_T, LN_256, 32, MOD_256, MOD_P_256, RR_256, OneR_256);
 
-    AddG one_arr(1);
     AddG x_arr, y_arr;
     AddG mon_x_arr, mon_y_arr;
 
@@ -475,7 +485,9 @@ TEST_CASE("montgomery inv", "[field]") {
     F::Context<> ctx;
 
     std::random_device rd;
-    std::mt19937 gen(rd());
+    auto seed = rd();
+    INFO("seed: " << seed);
+    std::mt19937 gen(seed);
 
     std::uniform_int_distribution<LIMB_T> dis_u32(
         std::numeric_limits<LIMB_T>::min(), std::numeric_limits<LIMB_T>::max());
@@ -503,13 +515,15 @@ TEST_CASE("montgomery exp", "[field]") {
     const F One(1);
 
     std::random_device rd;
-    std::mt19937 gen(rd());
+    auto seed = rd();
+    INFO("seed: " << seed);
+    std::mt19937 gen(seed);
 
     std::uniform_int_distribution<LIMB_T> dis_u32(
         std::numeric_limits<LIMB_T>::min(), std::numeric_limits<LIMB_T>::max());
 
     F::Context<> ctx;
-    F mod_m, a, mon_a, mon_exp_a, mon_prod, exp_a;
+    F mod_m, a, mon_a, mon_exp_a, exp_a;
     F::sub(mod_m, F::mod(), One);
 
     for (int k = 0; k < 10000; ++k) {
@@ -540,7 +554,9 @@ TEST_CASE("montgomery exp", "[field]") {
 
 TEST_CASE("montgomery mul bench", "[ring][field][bench]") {
     std::random_device rd;
-    std::mt19937 gen(rd());
+    auto seed = rd();
+    INFO("seed: " << seed);
+    std::mt19937 gen(seed);
 
     std::uniform_int_distribution<LIMB_T> dis_u32(
         std::numeric_limits<LIMB_T>::min(), std::numeric_limits<LIMB_T>::max());
@@ -614,7 +630,9 @@ TEST_CASE("montgomery mul bench", "[ring][field][bench]") {
 
 TEST_CASE("montgomery inv bench", "[field][bench]") {
     std::random_device rd;
-    std::mt19937 gen(rd());
+    auto seed = rd();
+    INFO("seed: " << seed);
+    std::mt19937 gen(seed);
 
     std::uniform_int_distribution<LIMB_T> dis_u32(
         std::numeric_limits<LIMB_T>::min(), std::numeric_limits<LIMB_T>::max());

@@ -32,7 +32,7 @@ __host__ void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl,
     auto &p2 = ctx_view.template get<1>();
     auto &temp = ctx_view.template get<2>();
     auto &d = ctx_view.template get<3>();
-    auto &i = ctx_view.template get<4>();
+    auto &idx = ctx_view.template get<4>();
     ctx_view.template get<5>().set_one();
     const auto &one = ctx_view.template get<5>();
     auto &rest_ctx = ctx_view.rest();
@@ -58,7 +58,7 @@ __host__ void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl,
 
         S::sample_inclusive(x, a, b, rng, rest_ctx);
         P::mul(*u, x, g, rest_ctx);
-        for (i.set_zero(); i < bound; S::add(i, one)) {
+        for (idx.set_zero(); idx < bound; S::add(idx, one)) {
             size_t i = u->x().array()[0] % m;
             S::add(x, sl[i]);
             P::add(*tmp, *u, pl[i], rest_ctx);
@@ -67,14 +67,14 @@ __host__ void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl,
 
         d.set_zero();
         *v = h;
-        for (i.set_zero(); i < bound; S::add(i, one)) {
+        for (idx.set_zero(); idx < bound; S::add(idx, one)) {
             if (P::eq(*u, *v)) {
                 S::sub(x, d);
                 return;
             }
-            size_t i = v->x().array()[0] % m;
-            S::add(d, sl[i]);
-            P::add(*tmp, *v, pl[i], rest_ctx);
+            size_t idx = v->x().array()[0] % m;
+            S::add(d, sl[idx]);
+            P::add(*tmp, *v, pl[idx], rest_ctx);
             utils::swap(v, tmp);
         }
     }
@@ -82,7 +82,7 @@ __host__ void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl,
 
 #ifdef GEC_ENABLE_PTHREADS
 
-namespace pollard_lambda_ {
+namespace _pollard_lambda_ {
 
 template <typename S, typename P>
 struct WorkerData {
@@ -264,10 +264,10 @@ void multithread_pollard_lambda(S &GEC_RSTRCT x, const S &GEC_RSTRCT bound,
     }
 }
 
-} // namespace pollard_lambda_
+} // namespace _pollard_lambda_
 
 // NOLINTNEXTLINE(misc-unused-using-decls)
-using pollard_lambda_::multithread_pollard_lambda;
+using _pollard_lambda_::multithread_pollard_lambda;
 
 #endif // GEC_ENABLE_PTHREADS
 

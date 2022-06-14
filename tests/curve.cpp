@@ -1,14 +1,14 @@
 #include "curve.hpp"
 
-const Field160 AR_160(0x821006a8u, 0x420792f5u, 0x3a8009a5u, 0xd1ddf060u,
-                      0x5d2d2098u);
-const Field160 BR_160(0x60c3a8e6u, 0x5781342fu, 0x242d1db1u, 0x2583f9d6u,
-                      0xcac79e59u);
+def_field(AR_160, Field160, //
+          0x821006a8u, 0x420792f5u, 0x3a8009a5u, 0xd1ddf060u, 0x5d2d2098u);
+def_field(BR_160, Field160, //
+          0x60c3a8e6u, 0x5781342fu, 0x242d1db1u, 0x2583f9d6u, 0xcac79e59u);
 
-const Field160_2 AR2_160(0x821006a8llu, 0x3a8009a5420792f5llu,
-                         0x5d2d2098d1ddf060llu);
-const Field160_2 BR2_160(0x60c3a8e6llu, 0x242d1db15781342fllu,
-                         0xcac79e592583f9d6llu);
+def_field(AR2_160, Field160_2, //
+          0x821006a8llu, 0x3a8009a5420792f5llu, 0x5d2d2098d1ddf060llu);
+def_field(BR2_160, Field160_2, //
+          0x60c3a8e6llu, 0x242d1db15781342fllu, 0xcac79e592583f9d6llu);
 
 def_array(Dlp1P, LIMB_T, LN_160, //
           0x9b7ed883u, 0x1ddf5414u, 0x448756f6u, 0xd5a0ed72u, 0x8049a325u);
@@ -17,9 +17,10 @@ def_array(Dlp1P_RR, LIMB_T, LN_160, //
 def_array(Dlp1P_OneR, LIMB_T, LN_160, //
           0x6481277du, 0xe220abebu, 0xbb78a909u, 0x2a5f128du, 0x7fb65cdau);
 
-const Dlp1Field Dlp1A(0);
-const Dlp1Field Dlp1B(0x7baf70c8u, 0x7b92164du, 0xfc11e794u, 0x3fea12cau,
-                      0xe3915053u);
+def_field(Dlp1A, Dlp1Field, //
+          0);
+def_field(Dlp1B, Dlp1Field, //
+          0x7baf70c8u, 0x7b92164du, 0xfc11e794u, 0x3fea12cau, 0xe3915053u);
 
 def_array(Dlp1Card, LIMB_T, LN_160, //
           0xfa89e3f2u, 0x9101e4f5u, 0x2244486cu, 0xead076b9u, 0x4024d192u);
@@ -31,9 +32,10 @@ def_aligned_array(Dlp1P2_RR, LIMB2_T, LN2_160, 32, //
 def_aligned_array(Dlp1P2_OneR, LIMB2_T, LN2_160, 32, //
                   0x912d3bbe10d1a50fllu, 0xe9e1701be85df2ccllu, 0x00f7f560llu);
 
-const Dlp1Field2 Dlp1A2(0);
-const Dlp1Field2 Dlp1B2(0x07bfab07llu, 0x4f0b80df42ef9664llu,
-                        0x8969ddf0868d2878llu);
+def_field(Dlp1A2, Dlp1Field2, //
+          0);
+def_field(Dlp1B2, Dlp1Field2, //
+          0x07bfab07llu, 0x4f0b80df42ef9664llu, 0x8969ddf0868d2878llu);
 
 def_array(Dlp1Card2, LIMB2_T, LN2_160, //
           0x9101e4f5fa89e3f2llu, 0xead076b92244486cllu, 0x4024d192llu);
@@ -45,8 +47,10 @@ def_array(Dlp2P_RR, LIMB_T, 1, //
 def_array(Dlp2P_OneR, LIMB_T, 1, //
           2618);
 
-const Dlp2Field Dlp2A(7348);
-const Dlp2Field Dlp2B(157);
+def_field(Dlp2A, Dlp2Field, //
+          7348);
+def_field(Dlp2B, Dlp2Field, //
+          157);
 
 def_array(Dlp2Card, LIMB_T, 1, //
           7889);
@@ -65,8 +69,10 @@ def_aligned_array(Dlp3P_OneR, LIMB_T, Dlp3N, 32, //
                   0x000003d1u, 0x00000001u, 0x00000000u, 0x00000000u,
                   0x00000000u, 0x00000000u, 0x00000000u, 0x00000000u);
 
-const Dlp3Field Dlp3A(0, 0, 0, 0, 0, 0, 0, 0);
-const Dlp3Field Dlp3B(0, 0, 0, 0, 0, 0, 0x0000000du, 0x0000319du);
+def_field(Dlp3A, Dlp3Field, //
+          0, 0, 0, 0, 0, 0, 0, 0);
+def_field(Dlp3B, Dlp3Field, //
+          0, 0, 0, 0, 0, 0, 0x0000000du, 0x0000319du);
 #ifdef GEC_ENABLE_AVX2
 const AVX2Dlp3Field AVX2Dlp3A(0, 0, 0, 0, 0, 0, 0, 0);
 const AVX2Dlp3Field AVX2Dlp3B(0, 0, 0, 0, 0, 0, 0x0000000du, 0x0000319du);
@@ -106,8 +112,10 @@ def_aligned_array(Dlp3P2_OneR, LIMB2_T, Dlp3N2, 32, //
                   0x00000001000003d1llu, 0x0000000000000000llu,
                   0x0000000000000000llu, 0x0000000000000000llu);
 
-const Dlp3Field2 Dlp3A2(0, 0, 0, 0);
-const Dlp3Field2 Dlp3B2(0, 0, 0, 0x0000000d0000319dllu);
+def_field(Dlp3A2, Dlp3Field2, //
+          0, 0, 0, 0);
+def_field(Dlp3B2, Dlp3Field2, //
+          0, 0, 0, 0x0000000d0000319dllu);
 
 def_aligned_array(Dlp3Card2, LIMB2_T, Dlp3SN2, 8, //
                   0x0000000285b3b1fbllu);

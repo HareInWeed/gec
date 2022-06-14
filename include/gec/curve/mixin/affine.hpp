@@ -13,9 +13,9 @@ namespace curve {
  *
  * TODO: list `FIELD_T` requirement
  */
-template <typename Core, typename FIELD_T, const FIELD_T &A, const FIELD_T &B>
-class Affine : protected CRTP<Core, Affine<Core, FIELD_T, A, B>> {
-    friend CRTP<Core, Affine<Core, FIELD_T, A, B>>;
+template <typename Core, typename FIELD_T>
+class Affine : protected CRTP<Core, Affine<Core, FIELD_T>> {
+    friend CRTP<Core, Affine<Core, FIELD_T>>;
 
     using F = FIELD_T;
 
@@ -57,9 +57,9 @@ class Affine : protected CRTP<Core, Affine<Core, FIELD_T, A, B>> {
         F::mul(l, a.y(), a.y()); // left = y^2
         F::mul(t, a.x(), a.x()); // x^2
         F::mul(r, t, a.x());     // x^3
-        F::mul(t, A, a.x());     // A x
+        F::mul(t, a.a(), a.x()); // A x
         F::add(r, t);            // x^3 + A x
-        F::add(r, B);            // right x^3 + A x + B
+        F::add(r, a.b());        // right x^3 + A x + B
         return l == r;
     }
 
@@ -100,8 +100,8 @@ class Affine : protected CRTP<Core, Affine<Core, FIELD_T, A, B>> {
         F::mul(a.y(), b.x(), b.x()); // x1^2
         F::add(a.x(), a.y(), a.y()); // 2 x1^2
         F::add(a.x(), a.y());        // 3 x1^2
-        F::add(a.x(), A);            // 3 x1^2 + B
-        F::mul(l, a.x(), d);         // l = (3 x1^2 + B) / (2 y1)
+        F::add(a.x(), a.a());        // 3 x1^2 + A
+        F::mul(l, a.x(), d);         // l = (3 x1^2 + A) / (2 y1)
         F::mul(a.x(), l, l);         // l^2
         F::add(a.y(), b.x(), b.x()); // 2 x1
         F::sub(a.x(), a.y());        // x = l^2 - 2 x1

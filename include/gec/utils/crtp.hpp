@@ -19,7 +19,7 @@ struct CRTP {
     }
 
   private:
-    CRTP() {}
+    __host__ __device__ GEC_INLINE constexpr CRTP() noexcept {}
     friend Mixin;
 };
 

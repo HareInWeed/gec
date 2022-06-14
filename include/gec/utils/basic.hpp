@@ -97,6 +97,62 @@
 #define GEC_EMPTY_BASES
 #endif
 
+#if defined _MSC_VER
+#define GEC_PRAGMA(X) __pragma(#X)
+#else
+#define GEC_PRAGMA(X) _Pragma(#X)
+#endif
+
+#ifdef GEC_NVCC
+
+#ifdef __NVCC_DIAG_PRAGMA_SUPPORT__
+#define GEC_NV_DIAGNOSTIC_PUSH GEC_PRAGMA(nv_diagnostic push)
+#else
+// there are not any alternatives in older versions of nvcc
+#define GEC_NV_DIAGNOSTIC_PUSH
+#endif
+#ifdef __NVCC_DIAG_PRAGMA_SUPPORT__
+#define GEC_NV_DIAGNOSTIC_POP GEC_PRAGMA(nv_diagnostic pop)
+#else
+// there are not any alternatives in older versions of nvcc
+#define GEC_NV_DIAGNOSTIC_POP
+#endif
+#ifdef __NVCC_DIAG_PRAGMA_SUPPORT__
+#define GEC_NV_DIAG_SUPPRESS(X) GEC_PRAGMA(nv_diag_suppress X)
+#else
+#define GEC_NV_DIAG_SUPPRESS(X) GEC_PRAGMA(diag_suppress X)
+#endif
+
+// source:
+// <https://gitlab.com/libeigen/eigen/-/blob/master/Eigen/src/Core/util/DisableStupidWarnings.h>
+// Disable the "invalid error number" message that we get with older versions of
+// nvcc
+GEC_NV_DIAG_SUPPRESS(1222)
+// Disable the "calling a __host__ function from a __host__ __device__ function
+// is not allowed" messages
+#define GEC_CALL_H_FROM_H_D                                                    \
+    GEC_NV_DIAG_SUPPRESS(2527)                                                 \
+    GEC_NV_DIAG_SUPPRESS(2529)                                                 \
+    GEC_NV_DIAG_SUPPRESS(2651)                                                 \
+    GEC_NV_DIAG_SUPPRESS(2653)                                                 \
+    GEC_NV_DIAG_SUPPRESS(2668)                                                 \
+    GEC_NV_DIAG_SUPPRESS(2669)                                                 \
+    GEC_NV_DIAG_SUPPRESS(2670)                                                 \
+    GEC_NV_DIAG_SUPPRESS(2671)                                                 \
+    GEC_NV_DIAG_SUPPRESS(2735)                                                 \
+    GEC_NV_DIAG_SUPPRESS(2737)                                                 \
+    GEC_NV_DIAG_SUPPRESS(2739)                                                 \
+    GEC_NV_DIAG_SUPPRESS(2885)                                                 \
+    GEC_NV_DIAG_SUPPRESS(2888)                                                 \
+    GEC_NV_DIAG_SUPPRESS(2976)                                                 \
+    GEC_NV_DIAG_SUPPRESS(2979)                                                 \
+    GEC_NV_DIAG_SUPPRESS(3123)                                                 \
+    GEC_NV_DIAG_SUPPRESS(3126)                                                 \
+    GEC_NV_DIAG_SUPPRESS(20011)                                                \
+    GEC_NV_DIAG_SUPPRESS(20014)
+
+#endif // __CUDACC__
+
 // CUDA function attribute modifier
 #ifndef __CUDACC__
 #define __host__
@@ -111,7 +167,7 @@ namespace gec {
 
 namespace utils {
 
-/** @brief comparsion results
+/** @brief comparision results
  */
 enum CmpEnum {
     Eq = 0,

@@ -19,7 +19,9 @@ TEST_CASE("pollard_rho", "[dlp][pollard_rho]") {
     using S = Dlp3G1Scaler;
 
     std::random_device rd;
-    auto rng = make_gec_rng(std::mt19937(rd()));
+    auto seed = rd();
+    INFO("seed: " << seed);
+    auto rng = make_gec_rng(std::mt19937(seed));
 
     C::Context<> ctx;
 
@@ -59,7 +61,9 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
     using S = Dlp3G1Scaler;
 
     std::random_device rd;
-    auto rng = make_gec_rng(std::mt19937(rd()));
+    auto seed = rd();
+    INFO("seed: " << seed);
+    auto rng = make_gec_rng(std::mt19937(seed));
 
     S x;
     S::sample_non_zero(x, rng);
@@ -98,6 +102,13 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
     }
 
 #ifdef GEC_ENABLE_AVX2
+#ifdef GEC_NVCC
+    GEC_NV_DIAGNOSTIC_PUSH
+    // disable NULL reference is not allowed warning, this occurs because for
+    // AVX2Field all pointer in parameters for device are set to `nullptr`
+    GEC_NV_DIAG_SUPPRESS(284)
+    GEC_CALL_H_FROM_H_D
+#endif // GEC_NVCC
     {
         using C = AVX2Dlp3CurveA;
         const C &g = reinterpret_cast<const C &>(Dlp3Gen1);
@@ -130,6 +141,9 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
             return c.array()[0];
         };
     }
+#ifdef GEC_NVCC
+    GEC_NV_DIAGNOSTIC_POP
+#endif // GEC_NVCC
 #endif // GEC_ENABLE_AVX2
 }
 
@@ -139,7 +153,9 @@ TEST_CASE("pollard_lambda", "[dlp][pollard_lambda]") {
     using S = Dlp3G1Scaler;
 
     std::random_device rd;
-    auto rng = make_gec_rng(std::mt19937(rd()));
+    auto seed = rd();
+    INFO("seed: " << seed);
+    auto rng = make_gec_rng(std::mt19937(seed));
 
     C::Context<> ctx;
 
@@ -160,7 +176,7 @@ TEST_CASE("pollard_lambda", "[dlp][pollard_lambda]") {
     std::vector<S> sl(l);
     std::vector<C> pl(l);
 
-    S x, d, mon_c, mon_d;
+    S x;
 
     pollard_lambda(x, sl.data(), pl.data(), bound, lower, upper, g, h, rng,
                    ctx);
@@ -180,7 +196,9 @@ TEST_CASE("multithread_pollard_rho", "[dlp][pollard_rho][multithread]") {
     using F = C::Field;
 
     std::random_device rd;
-    auto rng = make_gec_rng(std::mt19937(rd()));
+    auto seed = rd();
+    INFO("seed: " << seed);
+    auto rng = make_gec_rng(std::mt19937(seed));
 
     C::Context<> ctx;
 
@@ -221,12 +239,14 @@ TEST_CASE("multithread_pollard_rho bench",
     using S = Dlp3G1Scaler;
 
     std::random_device rd;
-    auto rng = make_gec_rng(std::mt19937(rd()));
+    auto seed = rd();
+    INFO("seed: " << seed);
+    auto rng = make_gec_rng(std::mt19937(seed));
     S x;
     S::sample_non_zero(x, rng);
 
     {
-        using C = AVX2Dlp3CurveA;
+        using C = Dlp3CurveA;
         const C &g = reinterpret_cast<const C &>(Dlp3Gen1);
         using F = C::Field;
 
@@ -270,6 +290,13 @@ TEST_CASE("multithread_pollard_rho bench",
     }
 
 #ifdef GEC_ENABLE_AVX2
+#ifdef GEC_NVCC
+    GEC_NV_DIAGNOSTIC_PUSH
+    // disable NULL reference is not allowed warning, this occurs because for
+    // AVX2Field all pointer in parameters for device are set to `nullptr`
+    GEC_NV_DIAG_SUPPRESS(284)
+    GEC_CALL_H_FROM_H_D
+#endif // GEC_NVCC
     {
         using C = AVX2Dlp3CurveA;
         const C &g = reinterpret_cast<const C &>(Dlp3Gen1);
@@ -313,6 +340,9 @@ TEST_CASE("multithread_pollard_rho bench",
             };
         }
     }
+#ifdef GEC_NVCC
+    GEC_NV_DIAGNOSTIC_POP
+#endif // GEC_NVCC
 #endif // GEC_ENABLE_AVX2
 }
 
@@ -322,7 +352,9 @@ TEST_CASE("multithread_pollard_lambda", "[dlp][pollard_lambda][multithread]") {
     using S = Dlp3G1Scaler;
 
     std::random_device rd;
-    auto rng = make_gec_rng(std::mt19937(rd()));
+    auto seed = rd();
+    INFO("seed: " << seed);
+    auto rng = make_gec_rng(std::mt19937(seed));
 
     C::Context<> ctx;
 
@@ -343,7 +375,7 @@ TEST_CASE("multithread_pollard_lambda", "[dlp][pollard_lambda][multithread]") {
     std::vector<S> sl(l);
     std::vector<C> pl(l);
 
-    S x, d, mon_c, mon_d;
+    S x;
 
     multithread_pollard_lambda(x, bound, 8, lower, upper, g, h, rng);
 
@@ -360,7 +392,9 @@ TEST_CASE("multithread_pollard_lambda bench",
     using S = Dlp3G1Scaler;
 
     std::random_device rd;
-    auto rng = make_gec_rng(std::mt19937(rd()));
+    auto seed = rd();
+    INFO("seed: " << seed);
+    auto rng = make_gec_rng(std::mt19937(seed));
 
     C::Context<> ctx;
 
@@ -381,7 +415,7 @@ TEST_CASE("multithread_pollard_lambda bench",
     std::vector<S> sl(l);
     std::vector<C> pl(l);
 
-    S x, d, mon_c, mon_d;
+    S x;
 
     BENCHMARK("multithread_pollard_lambda") {
         multithread_pollard_lambda(x, bound, 8, lower, upper, g, h, rng);

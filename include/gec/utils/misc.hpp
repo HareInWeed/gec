@@ -11,7 +11,7 @@ namespace gec {
 namespace utils {
 
 template <typename T>
-__host__ __device__ GEC_INLINE void swap(T &a, T &b) {
+__host__ __device__ GEC_INLINE constexpr void swap(T &a, T &b) {
     T tmp = std::move(a);
     a = std::move(b);
     b = std::move(tmp);

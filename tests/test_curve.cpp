@@ -23,7 +23,6 @@ TEST_CASE("point", "[curve]") {
 TEST_CASE("affine", "[curve][affine]") {
     using C = CurveA;
     using F = Field160;
-    const F One(1);
 
     C::Context<> ctx;
 
@@ -72,8 +71,6 @@ TEST_CASE("affine bench", "[curve][affine][bench]") {
     using C = CurveA2;
     using F = Field160_2;
 
-    const F One(1);
-
     C::Context<> ctx;
 
     C p1;
@@ -98,7 +95,6 @@ TEST_CASE("affine bench", "[curve][affine][bench]") {
 TEST_CASE("projective", "[curve][projective]") {
     using C = CurveP;
     using F = Field160;
-    const F One(1);
 
     C::Context<> ctx;
 
@@ -147,8 +143,6 @@ TEST_CASE("projective bench", "[curve][projective][bench]") {
     using C = CurveP2;
     using F = Field160_2;
 
-    const F One(1);
-
     C::Context<> ctx;
 
     C p1;
@@ -175,7 +169,6 @@ TEST_CASE("projective bench", "[curve][projective][bench]") {
 TEST_CASE("jacobian", "[curve][jacobian]") {
     using C = CurveJ;
     using F = Field160;
-    const F One(1);
 
     C::Context<> ctx;
 
@@ -221,8 +214,6 @@ TEST_CASE("jacobian bench", "[curve][jacobian][bench]") {
     using C = CurveJ2;
     using F = Field160_2;
 
-    const F One(1);
-
     C::Context<> ctx;
 
     C p1;
@@ -253,7 +244,9 @@ TEST_CASE("jacobian scaler_mul", "[curve][jacobian][scaler_mul]") {
     S sOne(1);
 
     std::random_device rd;
-    auto rng = make_gec_rng(std::mt19937(rd()));
+    auto seed = rd();
+    INFO("seed: " << seed);
+    auto rng = make_gec_rng(std::mt19937(seed));
 
     C::Context<> ctx;
 

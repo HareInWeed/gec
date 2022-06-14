@@ -271,15 +271,14 @@ __global__ void test_cuda_sampling_kernel(size_t seed, Int *x) {
 }
 
 template <typename Int, typename Rng>
-void test_cuda_sampling() {
-    std::random_device rd;
+void test_cuda_sampling(size_t seed) {
     Int *x, *d_x;
     size_t x_size = 6 * sizeof(Int);
 
     CUDA_REQUIRE(cudaMallocHost(&x, x_size));
     CUDA_REQUIRE(cudaMalloc(&d_x, x_size));
 
-    test_cuda_sampling_kernel<Int, Rng><<<1, 1>>>(rd(), d_x);
+    test_cuda_sampling_kernel<Int, Rng><<<1, 1>>>(seed, d_x);
     CUDA_REQUIRE(cudaDeviceSynchronize());
     CUDA_REQUIRE(cudaGetLastError());
 
@@ -303,7 +302,15 @@ TEST_CASE("cuda random sampling", "[add_group][field][random][cuda]") {
     using F2 = Field160_2;
     using G = ADD_GROUP(LIMB_T, 3, 0, SmallMod);
 
-    test_cuda_sampling<F1, curandStateXORWOW_t>();
-    test_cuda_sampling<F2, thrust::random::ranlux24>();
-    test_cuda_sampling<G, curandStateXORWOW_t>();
+    std::random_device rd;
+
+    auto seed = rd();
+    INFO("seed: " << seed);
+    test_cuda_sampling<F1, curandStateXORWOW_t>(seed);
+    seed = rd();
+    INFO("seed: " << seed);
+    test_cuda_sampling<F2, thrust::random::ranlux24>(seed);
+    seed = rd();
+    INFO("seed: " << seed);
+    test_cuda_sampling<G, curandStateXORWOW_t>(seed);
 }

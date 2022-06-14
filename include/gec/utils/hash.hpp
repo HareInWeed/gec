@@ -41,13 +41,14 @@
 
 #include "basic.hpp"
 
+#include <cstring>
 #include <type_traits>
 
 namespace gec {
 
 namespace hash {
 
-namespace HashIntegral_ {
+namespace _hash_integral_ {
 
 template <class T, bool bigger_than_size_t = (sizeof(T) > sizeof(size_t)),
           size_t size_t_bits = sizeof(size_t) * CHAR_BIT,
@@ -99,13 +100,13 @@ struct HashIntegral<T, true, 64, 128> {
     }
 };
 
-} // namespace HashIntegral_
+} // namespace _hash_integral_
 
 template <typename T>
 typename std::enable_if_t<
     std::is_integral<T>::value && std::is_unsigned<T>::value, size_t>
     __host__ __device__ hash_value(T v) {
-    return HashIntegral_::HashIntegral<T>::call(v);
+    return _hash_integral_::HashIntegral<T>::call(v);
 }
 
 template <typename T>
@@ -131,7 +132,7 @@ hash_value(T v) {
 
 // floating point types
 
-namespace HashFloat_ {
+namespace _hash_float_ {
 
 template <class T, size_t Bits = sizeof(T) * CHAR_BIT,
           int Digits = utils::type_bits<T>::value,
@@ -272,13 +273,13 @@ struct HashFloat<T, 128, Digits, 32> {
     }
 };
 
-} // namespace HashFloat_
+} // namespace _hash_float_
 
 template <typename T>
 __host__ __device__
     typename std::enable_if_t<std::is_floating_point<T>::value, size_t>
     hash_value(T v) {
-    return HashFloat_::HashFloat<T>::call(v + 0);
+    return _hash_float_::HashFloat<T>::call(v + 0);
 }
 
 // pointer types
@@ -300,7 +301,7 @@ struct Hash {
     }
 };
 
-namespace hash_combine_ {
+namespace _hash_combine_ {
 
 __host__ __device__ GEC_INLINE uint32_t rotl32(uint32_t x, int r) {
 #if !defined(__CUDA_ARCH__) && defined(_MSC_VER)
@@ -360,7 +361,7 @@ struct HashCombine<64> {
     }
 };
 
-} // namespace hash_combine_
+} // namespace _hash_combine_
 
 #if defined(GEC_MSVC)
 #pragma warning(push)
@@ -374,7 +375,7 @@ struct HashCombine<64> {
 
 __host__ __device__ GEC_INLINE void hash_combine(size_t &seed, size_t v) {
 
-    seed = hash_combine_::HashCombine<utils::type_bits<size_t>::value>::call(
+    seed = _hash_combine_::HashCombine<utils::type_bits<size_t>::value>::call(
         seed, v);
 }
 

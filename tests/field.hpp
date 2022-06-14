@@ -23,7 +23,7 @@ class GEC_EMPTY_BASES AddGroupMixin
       public gec::bigint::ArrayPrint<Core, T, N> {};
 
 template <typename T, size_t N, size_t align, const T (*MOD)[N],
-          const T (*d_MOD)[N] = nullptr>
+          const T (*d_MOD)[N] = MOD>
 class alignas(align) GEC_EMPTY_BASES AddGroup
     : public gec::bigint::ArrayBE<T, N>,
       public AddGroupMixin<AddGroup<T, N, align, MOD, d_MOD>, T, N, MOD,
@@ -48,8 +48,8 @@ class GEC_EMPTY_BASES FieldMixin
       public gec::bigint::Exponentiation<Core> {};
 
 template <typename T, size_t N, size_t align, const T (*MOD)[N], T MOD_P,
-          const T (*RR)[N], const T (*ONE_R)[N], const T (*d_MOD)[N] = nullptr,
-          const T (*d_RR)[N] = nullptr, const T (*d_ONE_R)[N] = nullptr>
+          const T (*RR)[N], const T (*ONE_R)[N], const T (*d_MOD)[N] = MOD,
+          const T (*d_RR)[N] = RR, const T (*d_ONE_R)[N] = ONE_R>
 class alignas(align) GEC_EMPTY_BASES Field
     : public gec::bigint::ArrayBE<T, N>,
       public FieldMixin<
@@ -64,6 +64,22 @@ class alignas(align) GEC_EMPTY_BASES Field
 #else
 #define FIELD(T, N, align, MOD, MOD_P, RR, ONE_R)                              \
     Field<T, N, align, &MOD, MOD_P, &RR, &ONE_R>
+#endif
+
+#ifdef __CUDACC__
+#define decl_field(name, F)                                                    \
+    extern const F name;                                                       \
+    extern __constant__ const F d_##name
+#else
+#define decl_field(name, F) extern const F name
+#endif
+
+#ifdef __CUDACC__
+#define def_field(name, F, ...)                                                \
+    const F name(__VA_ARGS__);                                                 \
+    __constant__ const F d_##name
+#else
+#define def_field(name, F, ...) const F name(__VA_ARGS__)
 #endif
 
 #ifdef GEC_ENABLE_AVX2
@@ -89,14 +105,8 @@ class alignas(align) GEC_EMPTY_BASES AVX2Field
     using gec::bigint::ArrayBE<T, N>::ArrayBE;
 };
 
-#ifdef __CUDACC__
-#define AVX2FIELD(T, N, align, MOD, MOD_P, RR, ONE_R)                          \
-    AVX2Field<T, N, align, &MOD, MOD_P, &RR, &ONE_R, &d_##MOD, &d_##RR,        \
-              &d_##ONE_R>
-#else
 #define AVX2FIELD(T, N, align, MOD, MOD_P, RR, ONE_R)                          \
     AVX2Field<T, N, align, &MOD, MOD_P, &RR, &ONE_R>
-#endif
 
 #endif // GEC_ENABLE_AVX2
 

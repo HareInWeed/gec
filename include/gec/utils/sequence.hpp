@@ -111,7 +111,7 @@ struct SeqUnaryOp<1, T, F> {
     }
 };
 
-/** @brief fill `dst` with anthor sequence `src`
+/** @brief fill `dst` with another sequence `src`
  */
 template <size_t LEN, typename T>
 __host__ __device__ GEC_INLINE void fill_seq(T *GEC_RSTRCT dst,
@@ -137,7 +137,7 @@ struct VtSeqAll<1, T, F> {
     }
 };
 
-/** @brief variadic time dictionary comparsion of two sequence
+/** @brief variadic time dictionary comparison of two sequence
  *
  * return value is consistant with constants in `CmpEnum`
  */

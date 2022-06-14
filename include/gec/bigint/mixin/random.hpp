@@ -16,7 +16,7 @@
 
 namespace gec {
 
-namespace gec_rng_ {
+namespace _gec_rng_ {
 struct rng_enable {
     static const bool value = true;
 };
@@ -105,7 +105,7 @@ struct is_thrust_rng<
 
 #endif // __CUDACC__
 
-} // namespace gec_rng_
+} // namespace _gec_rng_
 
 template <typename Rng, typename Enable = void>
 struct GecRng {
@@ -117,7 +117,7 @@ struct GecRng {
 };
 
 template <typename Rng>
-class GecRng<Rng, std::enable_if_t<gec_rng_::is_std_rng<Rng>::value>> {
+class GecRng<Rng, std::enable_if_t<_gec_rng_::is_std_rng<Rng>::value>> {
     Rng rng;
 
     template <typename T>
@@ -162,7 +162,7 @@ class GecRng<Rng, std::enable_if_t<gec_rng_::is_std_rng<Rng>::value>> {
 #ifdef __CUDACC__
 
 template <typename Rng>
-class GecRng<Rng, std::enable_if_t<gec_rng_::is_cu_rand_rng<Rng>::value>> {
+class GecRng<Rng, std::enable_if_t<_gec_rng_::is_cu_rand_rng<Rng>::value>> {
     Rng rng;
 
     template <typename T>
@@ -188,7 +188,7 @@ class GecRng<Rng, std::enable_if_t<gec_rng_::is_cu_rand_rng<Rng>::value>> {
 #ifdef __CUDA_ARCH__
         // FIXME: handle cases where max of rng generated number is less than
         // higher
-        constexpr T t_max = gec_rng_::MaxHelper<T>::value;
+        constexpr T t_max = _gec_rng_::MaxHelper<T>::value;
         if (higher == t_max) {
             return this->template sample<T>();
         } else {
@@ -217,7 +217,7 @@ class GecRng<Rng, std::enable_if_t<gec_rng_::is_cu_rand_rng<Rng>::value>> {
 };
 
 template <typename Rng>
-class GecRng<Rng, std::enable_if_t<gec_rng_::is_thrust_rng<Rng>::value>> {
+class GecRng<Rng, std::enable_if_t<_gec_rng_::is_thrust_rng<Rng>::value>> {
     Rng rng;
 
   public:

@@ -11,9 +11,9 @@ namespace curve {
 /** @brief mixin that enables elliptic curve arithmetic with projective
  * coordinate
  */
-template <typename Core, typename FIELD_T, const FIELD_T &A, const FIELD_T &B>
-class Projective : protected CRTP<Core, Projective<Core, FIELD_T, A, B>> {
-    friend CRTP<Core, Projective<Core, FIELD_T, A, B>>;
+template <typename Core, typename FIELD_T>
+class Projective : protected CRTP<Core, Projective<Core, FIELD_T>> {
+    friend CRTP<Core, Projective<Core, FIELD_T>>;
     using F = FIELD_T;
 
   public:
@@ -68,11 +68,11 @@ class Projective : protected CRTP<Core, Projective<Core, FIELD_T, A, B>> {
         F::mul(t2, a.z(), a.z()); // z^2
         F::mul(r, a.x(), t2);     // x z^2
         F::mul(l, a.x(), a.x());  // x^2
-        F::mul(t1, A, r);         // A x z^2
+        F::mul(t1, a.a(), r);     // A x z^2
         F::mul(r, l, a.x());      // x^3
         F::add(r, t1);            // x^3 + A x z^2
         F::mul(t1, t2, a.z());    // z^3
-        F::mul(t2, t1, B);        // B z^3
+        F::mul(t2, t1, a.b());    // B z^3
         F::add(r, t2);            // right = x^3 + A x z^2 + B z^3
         F::mul(t1, a.y(), a.y()); // y^2
         F::mul(l, t1, a.z());     // left = y^2 z
@@ -171,7 +171,7 @@ class Projective : protected CRTP<Core, Projective<Core, FIELD_T, A, B>> {
         auto &t3 = ctx_view.template get<2>();
 
         F::mul(t3, b.z(), b.z());       // z1^2
-        F::mul(t2, A, t3);              // A z1^2
+        F::mul(t2, a.a(), t3);          // A z1^2
         F::mul(t3, b.x(), b.x());       // x1^2
         F::add(a.z(), t3, t3);          // 2 x1^2
         F::add(a.z(), t3);              // 3 x1^2

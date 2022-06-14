@@ -12,29 +12,25 @@ namespace curve {
 
 template <typename Point, size_t I, size_t N>
 struct PointOstreamHelper {
-    __host__ __device__ GEC_INLINE static void call(std::ostream &o,
-                                                    const Point &point) {
+    __host__ GEC_INLINE static void call(std::ostream &o, const Point &point) {
         o << ',' << std::endl << ' ' << point.template get<I>();
         PointOstreamHelper<Point, I + 1, N>::call(o, point);
     }
 };
 template <typename Point, size_t N>
 struct PointOstreamHelper<Point, 0, N> {
-    __host__ __device__ GEC_INLINE static void call(std::ostream &o,
-                                                    const Point &point) {
+    __host__ GEC_INLINE static void call(std::ostream &o, const Point &point) {
         o << point.template get<0>();
         PointOstreamHelper<Point, 1, N>::call(o, point);
     }
 };
 template <typename Point, size_t N>
 struct PointOstreamHelper<Point, N, N> {
-    __host__ __device__ GEC_INLINE static void call(std::ostream &,
-                                                    const Point &) {}
+    __host__ GEC_INLINE static void call(std::ostream &, const Point &) {}
 };
 template <typename Point>
 struct PointOstreamHelper<Point, 0, 0> {
-    __host__ __device__ GEC_INLINE static void call(std::ostream &,
-                                                    const Point &) {}
+    __host__ GEC_INLINE static void call(std::ostream &, const Point &) {}
 };
 
 /** @brief mixin that enables output x() and y() with ostream

@@ -9,6 +9,8 @@
 #include "mixin/hasher.hpp"
 #include "mixin/named_comp.hpp"
 
+#include "mixin/params.hpp"
+
 #include "mixin/affine.hpp"
 // #include "mixin/chudnovsky.hpp" // TODO
 #include "mixin/jacobain.hpp"

@@ -12,7 +12,9 @@ using namespace gec;
 
 TEST_CASE("uint_add_with_carry", "[arithmetic]") {
     std::random_device rd;
-    std::mt19937 gen(rd());
+    auto seed = rd();
+    INFO("seed: " << seed);
+    std::mt19937 gen(seed);
 
     std::uniform_int_distribution<uint32_t> dis_u32(
         std::numeric_limits<uint32_t>::min(),
@@ -101,7 +103,9 @@ TEST_CASE("uint_mul_lh", "[arithmetic]") {
 
 TEST_CASE("uint_mul_lh bench", "[arithmetic][bench]") {
     std::random_device rd;
-    std::mt19937 gen(rd());
+    auto seed = rd();
+    INFO("seed: " << seed);
+    std::mt19937 gen(seed);
 
     std::uniform_int_distribution<uint32_t> dis_u32(
         std::numeric_limits<uint32_t>::min(),

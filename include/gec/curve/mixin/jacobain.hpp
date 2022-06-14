@@ -10,9 +10,9 @@ namespace curve {
 
 /** @brief mixin that enables elliptic curve arithmetic with Jacobian coordinate
  */
-template <typename Core, typename FIELD_T, const FIELD_T &A, const FIELD_T &B>
-class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
-    friend CRTP<Core, Jacobain<Core, FIELD_T, A, B>>;
+template <typename Core, typename FIELD_T>
+class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
+    friend CRTP<Core, Jacobain<Core, FIELD_T>>;
 
     using F = FIELD_T;
 
@@ -42,8 +42,8 @@ class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
         F::mul(t2, t1, t1);       // z^4
         F::mul(r, t1, t2);        // z^6
         F::mul(l, a.x(), t2);     // x z^4
-        F::mul(t2, A, l);         // a x z^4
-        F::mul(t1, B, r);         // b z^6
+        F::mul(t2, a.a(), l);     // a x z^4
+        F::mul(t1, a.b(), r);     // b z^6
         F::mul(l, a.x(), a.x());  // x^2
         F::mul(r, l, a.x());      // x^3
         F::add(r, t2);            // x^3 + a x z^4
@@ -197,8 +197,8 @@ class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T, A, B>> {
 
         F::mul(t5, b.z(), b.z());       // z1^2
         F::mul(t4, t5, t5);             // z1^4
-        F::mul(t5, A, t4);              // A z1^4
-        F::mul(t4, b.x(), b.x());       // x1^2
+        F::mul(t5, a.a(), t4);          // A z1^4
+        F::mul(t4, b.x(), b.x());       // x1^
         F::add(t5, t4);                 // x1^2 + A z1^4
         F::add(t5, t4);                 // 2 x1^2 + A z1^4
         F::add(t5, t4);                 // b = 3 x1^2 + A z1^4

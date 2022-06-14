@@ -85,11 +85,13 @@ __host__ __device__ void pollard_rho(S &c,
 
 #ifdef GEC_ENABLE_PTHREADS
 
-namespace pollard_rho_ {
+namespace _pollard_rho_ {
 
 template <typename T>
 struct MaskZero {
-    GEC_INLINE static bool call(const T &a, const T &b) { return !(a & b); }
+    __host__ __device__ GEC_INLINE static bool call(const T &a, const T &b) {
+        return !(a & b);
+    }
 };
 
 template <typename S>
@@ -217,9 +219,9 @@ void multithread_pollard_rho(S &c,
     }
 }
 
-} // namespace pollard_rho_
+} // namespace _pollard_rho_
 
-using pollard_rho_::multithread_pollard_rho; // NOLINT(misc-unused-using-decls)
+using _pollard_rho_::multithread_pollard_rho; // NOLINT(misc-unused-using-decls)
 
 #endif // GEC_ENABLE_PTHREADS
 
