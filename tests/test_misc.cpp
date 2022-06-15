@@ -193,13 +193,16 @@ TEST_CASE("CHD static map", "[utils][static map][chd]") {
 
     std::uniform_int_distribution<> gen;
 
-    constexpr size_t M = 100000;
-    constexpr size_t N = next_prime(M * 123 / 100);
+    size_t M = 10000;
 
     gec::hash::Hash<int> hasher;
 
-    vector<int> data(N);
-    vector<size_t> hashes(N);
+    CHD<> phf(nullptr, M);
+    vector<size_t> buckets(phf.B);
+    phf.buckets = buckets.data();
+
+    vector<int> data(phf.N);
+    vector<size_t> hashes(phf.N);
     for (size_t k = 0; k < M - 1; ++k) {
         data[k] = gen(rng);
         hashes[k] = hasher(data[k]);
@@ -208,10 +211,9 @@ TEST_CASE("CHD static map", "[utils][static map][chd]") {
     data[M - 1] = data[0];
     hashes[M - 1] = hashes[0];
 
-    CHD<N> phf;
-    size_t placeholder = phf.fill_placeholder(hashes.data(), M);
+    size_t placeholder = phf.fill_placeholder(hashes.data());
     CAPTURE(placeholder);
-    auto duplicates = phf.build(hashes.data(), M);
+    auto duplicates = phf.build(hashes.data());
 
     REQUIRE(duplicates.size() > 0);
     for (auto &dup : duplicates) {
@@ -219,7 +221,7 @@ TEST_CASE("CHD static map", "[utils][static map][chd]") {
         REQUIRE(hashes[dup.first] == hashes[dup.second]);
     }
 
-    phf.rearrange(hashes.data(), M, placeholder);
+    phf.rearrange(hashes.data(), placeholder);
 
     for (size_t k = 0; k < M; ++k) {
         auto expected_hash = hasher(data[k]);
