@@ -188,29 +188,44 @@ TEST_CASE("is_prime", "[utils][prime]") {
 TEST_CASE("CHD static map", "[utils][static map][chd]") {
     std::random_device rd;
     auto seed = rd();
-    // auto seed = 2472976684;
-    INFO("seed: " << seed);
+    CAPTURE(seed);
     std::mt19937 rng(seed);
 
     std::uniform_int_distribution<> gen;
 
-    constexpr size_t M = 10000;
+    constexpr size_t M = 100000;
     constexpr size_t N = next_prime(M * 123 / 100);
 
-    unordered_set<size_t> hashes_set;
-    while (hashes_set.size() < M) {
-        hashes_set.insert(gen(rng));
+    gec::hash::Hash<int> hasher;
+
+    vector<int> data(N);
+    vector<size_t> hashes(N);
+    for (size_t k = 0; k < M - 1; ++k) {
+        data[k] = gen(rng);
+        hashes[k] = hasher(data[k]);
     }
-    vector<size_t> hashes(hashes_set.begin(), hashes_set.end());
+    // introduce duplication manually
+    data[M - 1] = data[0];
+    hashes[M - 1] = hashes[0];
 
-    CHD<N> phf(hashes.data(), M);
+    CHD<N> phf;
+    size_t placeholder = phf.fill_placeholder(hashes.data(), M);
+    CAPTURE(placeholder);
+    auto duplicates = phf.build(hashes.data(), M);
 
-    unordered_set<size_t> test_set;
+    REQUIRE(duplicates.size() > 0);
+    for (auto &dup : duplicates) {
+        CAPTURE(dup.first, dup.second);
+        REQUIRE(hashes[dup.first] == hashes[dup.second]);
+    }
+
+    phf.rearrange(hashes.data(), M, placeholder);
+
     for (size_t k = 0; k < M; ++k) {
-        size_t idx = phf.get(hashes[k]);
-        REQUIRE(idx < N);
-        test_set.insert(idx);
+        auto expected_hash = hasher(data[k]);
+        auto idx = phf.get(expected_hash);
+        auto hash = hashes[idx];
+        CAPTURE(k, data[k], idx);
+        REQUIRE(expected_hash == hash);
     }
-
-    REQUIRE(M == test_set.size());
 }

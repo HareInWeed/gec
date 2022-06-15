@@ -10,6 +10,8 @@
 #include "utils/hash.hpp"
 #include "utils/misc.hpp"
 #include "utils/operators.hpp"
+#include "utils/prime.hpp"
 #include "utils/sequence.hpp"
+#include "utils/static_map.hpp"
 
 #endif // !GEC_UTILS_HPP

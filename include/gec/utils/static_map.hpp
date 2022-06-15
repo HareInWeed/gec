@@ -9,6 +9,8 @@
 
 #include <algorithm>
 #include <cstring>
+#include <utility>
+#include <vector>
 
 namespace gec {
 
@@ -32,31 +34,47 @@ struct HashFamily {
     }
 };
 
+__host__ __device__ GEC_INLINE void multi_swap(size_t, size_t) {}
+
+template <typename T, typename... Args>
+__host__ __device__ GEC_INLINE void multi_swap(size_t i, size_t j, T *arr,
+                                               Args *...args) {
+    utils::swap(arr[i], arr[j]);
+    multi_swap(i, j, args...);
+}
+
 } // namespace _CHD_
 
 template <size_t N, size_t B = next_prime(N / 10),
           typename BucketHash = _CHD_::BucketHash<B>,
           typename HashFamily = _CHD_::HashFamily<N>>
-struct CHD {
+class CHD {
     size_t buckets[B];
+
+  public:
     __host__ __device__ GEC_INLINE constexpr CHD() noexcept : buckets() {}
-    __host__ __device__ GEC_INLINE constexpr CHD(size_t *hashes,
-                                                 size_t n) noexcept
-        : buckets() {
-        build(hashes, n);
-    }
     __host__ __device__ GEC_INLINE void clear() {
         memset(buckets, 0, sizeof(size_t) * B);
     }
-    __host__ __device__ void build(size_t *hashes, size_t n) {
+    __host__ std::vector<std::pair<size_t, size_t>> build(const size_t *hashes,
+                                                          size_t n) {
+        // TODO: make build function device compatible
+        // 1. device compatible sort
+        // 2. device compatible deduplication
+        //    - device compatible vector
+        //    - device algorithm
+
         size_t indices[B];
         size_t count[B] = {};
         size_t *hash_buckets[B] = {};
         bool flags[N] = {};
 
+        // count elements
         for (size_t k = 0; k < n; ++k) {
             ++count[BucketHash::call(hashes[k])];
         }
+
+        // allocating resources
         for (size_t k = 0; k < B; ++k) {
             if (count[k] != 0) {
                 hash_buckets[k] = new size_t[count[k]];
@@ -64,30 +82,45 @@ struct CHD {
             }
             indices[k] = k;
         }
+
+        // construct buckets & deduplicating
+        std::vector<std::pair<size_t, size_t>> duplicates;
         for (size_t k = 0; k < n; ++k) {
-            size_t bucket_id = BucketHash::call(hashes[k]);
-            hash_buckets[bucket_id][count[bucket_id]] = hashes[k];
-            ++count[bucket_id];
-        }
-        // for small bucket number, insertion sorting should be enough.
-        for (size_t k = 0; k < B; ++k) {
-            size_t cdt = k;
-            for (size_t j = cdt + 1; j < B; ++j) {
-                if (count[indices[cdt]] < count[indices[j]]) {
-                    cdt = j;
+            const size_t hash = hashes[k];
+            const size_t bucket_id = BucketHash::call(hash);
+            auto &bucket = hash_buckets[bucket_id];
+            auto &len = count[bucket_id];
+            for (size_t j = 0; j < count[bucket_id]; ++j) {
+                if (hashes[bucket[j]] == hash) {
+                    duplicates.push_back(std::make_pair(bucket[j], k));
+                    goto skip;
                 }
             }
-            if (cdt != k) {
-                utils::swap(indices[cdt], indices[k]);
+            bucket[len] = k;
+            ++len;
+        skip:;
+        }
+        for (size_t k = 0; k < B; ++k) {
+            auto &bucket = hash_buckets[k];
+            const size_t len = count[k];
+            for (size_t j = 0; j < len; ++j) {
+                bucket[j] = hashes[bucket[j]];
             }
         }
+
+        // sort buckets
+        std::sort(indices, indices + B, [&](const size_t &a, const size_t &b) {
+            return count[a] > count[b];
+        });
+
+        // build phf
         for (size_t i = 0; i < B; ++i) {
-            size_t bucket_id = indices[i];
-            size_t bucket_len = count[bucket_id];
+            const size_t bucket_id = indices[i];
+            const size_t bucket_len = count[bucket_id];
             if (bucket_len == 0) {
                 break;
             }
-            size_t *bucket = hash_buckets[bucket_id];
+            const size_t *bucket = hash_buckets[bucket_id];
             for (size_t hash_id = 0;; ++hash_id) {
                 size_t j = 0;
                 for (; j < bucket_len; ++j) {
@@ -107,14 +140,49 @@ struct CHD {
                 }
             }
         }
+
+        // free resources
         for (size_t k = 0; k < B; ++k) {
             if (hash_buckets[k]) {
                 delete hash_buckets[k];
             }
         }
+
+        return duplicates;
     }
-    size_t get(size_t hash) {
+    __host__ __device__ GEC_INLINE size_t get(size_t hash) {
         return HashFamily::call(buckets[BucketHash::call(hash)], hash);
+    }
+    __host__ __device__ static size_t fill_placeholder(size_t *hashes,
+                                                       size_t n) {
+        size_t placeholder = 0;
+        for (size_t k = 0; k < n; ++k) {
+            if (placeholder == hashes[k]) {
+                ++placeholder;
+                k = 0;
+            }
+        }
+        for (size_t k = n; k < N; ++k) {
+            hashes[k] = placeholder;
+        }
+        return placeholder;
+    }
+    template <typename... Args>
+    __host__ __device__ void rearrange(size_t *hashes, size_t n,
+                                       size_t placeholder, Args *...args) {
+        for (size_t k = 0; k < n; ++k) {
+            if (hashes[k] == placeholder)
+                continue;
+            size_t j = get(hashes[k]);
+            for (;;) {
+                if (hashes[j] == hashes[k])
+                    break;
+                _CHD_::multi_swap(k, j, hashes, args...);
+                if (hashes[k] == placeholder)
+                    break;
+                j = get(hashes[k]);
+            }
+        }
     }
 };
 

@@ -1,8 +1,6 @@
 #include "common.hpp"
 #include "field.hpp"
 
-#include <gec/utils.hpp>
-
 #include "configured_catch.hpp"
 
 using namespace gec;

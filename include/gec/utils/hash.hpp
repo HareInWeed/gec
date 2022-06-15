@@ -304,11 +304,15 @@ struct Hash {
 namespace _hash_combine_ {
 
 __host__ __device__ GEC_INLINE uint32_t rotl32(uint32_t x, int r) {
-#if !defined(__CUDA_ARCH__) && defined(_MSC_VER)
+#ifdef __CUDA_ARCH__
+    return __funnelshift_l(x, x, r);
+#else
+#ifdef _MSC_VER
     return _rotl(x, r);
 #else
     return (x << r) | (x >> (32 - r));
-#endif
+#endif // _MSC_VER
+#endif // __CUDA_ARCH__
 }
 
 template <size_t Bits>
@@ -365,7 +369,7 @@ struct HashCombine<64> {
 
 #if defined(GEC_MSVC)
 #pragma warning(push)
-#if BOOST_MSVC <= 1400
+#if defined(_MSC_VER) && _MSC_VER <= 1400
 #pragma warning(disable : 4267) // 'argument' : conversion from 'size_t' to
                                 // 'unsigned int', possible loss of data
                                 // A misguided attempt to detect 64-bit
