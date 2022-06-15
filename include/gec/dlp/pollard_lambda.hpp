@@ -5,6 +5,7 @@
 #include <gec/bigint/mixin/random.hpp>
 #include <gec/utils/basic.hpp>
 #include <gec/utils/misc.hpp>
+#include <gec/utils/static_map.hpp>
 
 #include <random>
 
@@ -86,9 +87,13 @@ namespace _pollard_lambda_ {
 
 template <typename S, typename P>
 struct SharedData {
-    std::unordered_map<P, S, typename P::Hasher> traps;
+    std::vector<size_t> buckets;
+    std::vector<typename P::Hasher::result_type> trap_hashes;
+    std::vector<S> xs;
+    std::vector<P> traps;
     std::vector<S> sl;
     std::vector<P> pl;
+    utils::CHD<> phf;
     pthread_mutex_t x_lock;
     pthread_mutex_t traps_lock;
     pthread_barrier_t barrier;
@@ -105,9 +110,15 @@ struct SharedData {
     SharedData(size_t worker_n, S &GEC_RSTRCT x, const S &GEC_RSTRCT a,
                const S &GEC_RSTRCT b, const P &GEC_RSTRCT g,
                const P &GEC_RSTRCT h, const S &GEC_RSTRCT bound, size_t m)
-        : traps(worker_n), sl(m), pl(m), x_lock(PTHREAD_MUTEX_INITIALIZER),
+        : buckets(), trap_hashes(), xs(), traps(), sl(m), pl(m),
+          phf(nullptr, worker_n), x_lock(PTHREAD_MUTEX_INITIALIZER),
           traps_lock(PTHREAD_MUTEX_INITIALIZER), barrier(), x(x), a(a), b(b),
           g(g), h(h), bound(bound), worker_n(worker_n), shutdown(false) {
+        buckets.resize(phf.B);
+        trap_hashes.resize(phf.N);
+        xs.resize(phf.N);
+        traps.resize(phf.N);
+        phf.buckets = buckets.data();
         pthread_barrier_init(&barrier, nullptr, (unsigned int)(worker_n));
     }
 };
@@ -124,109 +135,132 @@ void *worker(void *data_ptr) {
     using Data = WorkerData<S, P>;
     using LimbT = typename P::Field::LimbT;
 
-    Data &worker_data = *static_cast<Data *>(data_ptr);
-    SharedData<S, P> &data = worker_data.shared_data;
-    const size_t m = data.sl.size();
+    typename P::Hasher hasher;
+    Data &local = *static_cast<Data *>(data_ptr);
+    SharedData<S, P> &shared = local.shared_data;
+    volatile bool &shutdown = shared.shutdown;
+
+    const size_t m = shared.sl.size();
     P p1, p2;
     P *u = &p1, *tmp = &p2;
     S x, j, one(1);
     typename P::template Context<> ctx;
-    auto rng = make_gec_rng(std::mt19937((unsigned int)(worker_data.seed)));
+    auto rng = make_gec_rng(std::mt19937((unsigned int)(local.seed)));
 
     while (true) {
         // calculate jump table
-        if (worker_data.id == 0) {
+        if (local.id == 0) {
             for (size_t i = 0; i < m; ++i) {
-                data.sl[i].array()[0] = typename S::LimbT(i);
+                shared.sl[i].array()[0] = typename S::LimbT(i);
             }
             for (size_t i = 0; i < m; ++i) {
                 size_t ri = m - 1 - i;
-                utils::swap(data.sl[ri].array()[0],
-                            data.sl[rng.sample(ri)].array()[0]);
+                utils::swap(shared.sl[ri].array()[0],
+                            shared.sl[rng.sample(ri)].array()[0]);
             }
             for (size_t i = 0; i < m; ++i) {
                 // TODO: maybe using multithread to generate the jump table?
-                LimbT e = data.sl[i].array()[0];
-                data.sl[i].set_pow2(e);
-                P::mul(data.pl[i], data.sl[i], data.g, ctx);
+                LimbT e = shared.sl[i].array()[0];
+                shared.sl[i].set_pow2(e);
+                P::mul(shared.pl[i], shared.sl[i], shared.g, ctx);
             }
 #ifdef GEC_DEBUG
-            printf("[worker %03zu]: jump table generated\n", worker_data.id);
+            printf("[worker %03zu]: jump table generated\n", local.id);
 #endif // GEC_DEBUG
         }
 
-        pthread_barrier_wait(&data.barrier);
+        pthread_barrier_wait(&shared.barrier);
 
         // setting traps
-        S::sample_inclusive(x, data.a, data.b, rng, ctx);
-        P::mul(*u, x, data.g, ctx);
-        for (j.set_zero(); j < data.bound; S::add(j, one)) {
+        S &t = shared.xs[local.id];
+        S::sample_inclusive(t, shared.a, shared.b, rng, ctx);
+        P::mul(*u, t, shared.g, ctx);
+        for (j.set_zero(); j < shared.bound; S::add(j, one)) {
             size_t i = u->x().array()[0] % m;
-            S::add(x, data.sl[i]);
-            P::add(*tmp, *u, data.pl[i], ctx);
+            S::add(t, shared.sl[i]);
+            P::add(*tmp, *u, shared.pl[i], ctx);
             utils::swap(u, tmp);
 #ifdef GEC_DEBUG
             if (!(utils::LowerKMask<LimbT, 20>::value & j.array()[0])) {
-                printf("[worker %03zu]: calculating trap, step ",
-                       worker_data.id);
+                printf("[worker %03zu]: calculating trap, step ", local.id);
                 j.println();
             }
 #endif // GEC_DEBUG
         }
-        pthread_mutex_lock(&data.traps_lock);
-        data.traps.insert(std::make_pair(*u, x));
-        pthread_mutex_unlock(&data.traps_lock);
-
+        shared.traps[local.id] = *u;
+        shared.trap_hashes[local.id] = hasher(*u);
 #ifdef GEC_DEBUG
-        printf("[worker %03zu]: trap set\n", worker_data.id);
+        printf("[worker %03zu]: trap set\n", local.id);
 #endif // GEC_DEBUG
-        pthread_barrier_wait(&data.barrier);
+        pthread_barrier_wait(&shared.barrier);
+
+        if (local.id == 0) {
+            size_t placeholder =
+                shared.phf.fill_placeholder(shared.trap_hashes.data());
+#ifdef GEC_DEBUG
+            auto duplicates = shared.phf.build(shared.trap_hashes.data());
+            for (auto &dup : duplicates) {
+                printf("[worker %03zu]: find hash collision: \n", local.id);
+                shared.traps[dup.first].println();
+                shared.traps[dup.second].println();
+                printf("some traps are omitted");
+            }
+#else
+            data.phf.build(shared.trap_hashes.data());
+#endif // GEC_DEBUG
+            shared.phf.rearrange(shared.trap_hashes.data(), placeholder,
+                                 shared.xs.data(), shared.traps.data());
+        }
+        pthread_barrier_wait(&shared.barrier);
 
         // start searching
-        S::sample_inclusive(x, data.a, data.b, rng, ctx);
-        P::mul(*tmp, x, data.g, ctx);
-        P::add(*u, data.h, *tmp, ctx);
-        for (j.set_zero(); j < data.bound; S::add(j, one)) {
-            if (data.shutdown) {
+        S::sample_inclusive(x, shared.a, shared.b, rng, ctx);
+        P::mul(*tmp, x, shared.g, ctx);
+        P::add(*u, shared.h, *tmp, ctx);
+        for (j.set_zero(); j < shared.bound; S::add(j, one)) {
+            if (shutdown) {
                 break;
             }
-            auto it = data.traps.find(*u);
-            if (it != data.traps.end() && it->second != x) {
-                pthread_mutex_lock(&data.x_lock);
-                if (!data.shutdown) {
-                    S::sub(data.x, it->second, x);
-                    data.shutdown = true;
+            auto hash = hasher(*u);
+            auto idx = shared.phf.get(hasher(*u));
+            if (shared.trap_hashes[idx] == hash &&
+                P::eq(shared.traps[idx], *u)) {
+                pthread_mutex_lock(&shared.x_lock);
+                if (!shutdown) {
+                    S::sub(shared.x, shared.xs[idx], x);
+                    shutdown = true;
                 }
-                pthread_mutex_unlock(&data.x_lock);
-                break;
+                pthread_mutex_unlock(&shared.x_lock);
             }
             size_t i = u->x().array()[0] % m;
-            S::add(x, data.sl[i]);
-            P::add(*tmp, *u, data.pl[i], ctx);
+            S::add(x, shared.sl[i]);
+            P::add(*tmp, *u, shared.pl[i], ctx);
             utils::swap(u, tmp);
 #ifdef GEC_DEBUG
             if (!(utils::LowerKMask<LimbT, 20>::value & j.array()[0])) {
-                printf("[worker %03zu]: searching, step ", worker_data.id);
+                printf("[worker %03zu]: searching, step ", local.id);
                 j.println();
             }
 #endif // GEC_DEBUG
         }
 
-        pthread_barrier_wait(&data.barrier);
+        pthread_barrier_wait(&shared.barrier);
         // check success
 
-        if (data.shutdown) {
+        if (shutdown) {
 #ifdef GEC_DEBUG
             printf("[worker %03zu]: collision found, shutting down\n",
-                   worker_data.id);
+                   local.id);
 #endif // GEC_DEBUG
             return nullptr;
         }
 #ifdef GEC_DEBUG
-        printf("[worker %03zu]: collision not found, retry\n", worker_data.id);
+        printf("[worker %03zu]: collision not found, retry\n", local.id);
 #endif // GEC_DEBUG
     }
 }
+
+} // namespace _pollard_lambda_
 
 /** @brief multithread pollard lambda algorithm for ECDLP, requires `pthreads`
  *
@@ -237,6 +271,7 @@ void multithread_pollard_lambda(S &GEC_RSTRCT x, const S &GEC_RSTRCT bound,
                                 unsigned int worker_n, const S &GEC_RSTRCT a,
                                 const S &GEC_RSTRCT b, const P &GEC_RSTRCT g,
                                 const P &GEC_RSTRCT h, GecRng<Rng> &rng) {
+    using namespace _pollard_lambda_;
     using Shared = SharedData<S, P>;
     using Data = WorkerData<S, P>;
 
@@ -264,11 +299,6 @@ void multithread_pollard_lambda(S &GEC_RSTRCT x, const S &GEC_RSTRCT bound,
         pthread_join(workers[i], nullptr);
     }
 }
-
-} // namespace _pollard_lambda_
-
-// NOLINTNEXTLINE(misc-unused-using-decls)
-using _pollard_lambda_::multithread_pollard_lambda;
 
 #endif // GEC_ENABLE_PTHREADS
 
