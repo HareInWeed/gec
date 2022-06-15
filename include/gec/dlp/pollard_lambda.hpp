@@ -85,26 +85,37 @@ __host__ void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl,
 namespace _pollard_lambda_ {
 
 template <typename S, typename P>
-struct WorkerData {
-    pthread_mutex_t *x_lock;
+struct SharedData {
+    std::unordered_map<P, S, typename P::Hasher> traps;
+    std::vector<S> sl;
+    std::vector<P> pl;
+    pthread_mutex_t x_lock;
+    pthread_mutex_t traps_lock;
+    pthread_barrier_t barrier;
     S &x;
     const S &a;
     const S &b;
     const P &g;
     const P &h;
-    std::vector<S> &sl;
-    std::vector<P> &pl;
     const S &bound;
 
-    pthread_barrier_t *barrier;
-
-    pthread_mutex_t *traps_lock;
-    std::unordered_map<P, S, typename P::Hasher> &traps;
-
-    volatile bool &shutdown;
-
-    size_t seed;
     size_t worker_n;
+    bool shutdown;
+
+    SharedData(size_t worker_n, S &GEC_RSTRCT x, const S &GEC_RSTRCT a,
+               const S &GEC_RSTRCT b, const P &GEC_RSTRCT g,
+               const P &GEC_RSTRCT h, const S &GEC_RSTRCT bound, size_t m)
+        : traps(worker_n), sl(m), pl(m), x_lock(PTHREAD_MUTEX_INITIALIZER),
+          traps_lock(PTHREAD_MUTEX_INITIALIZER), barrier(), x(x), a(a), b(b),
+          g(g), h(h), bound(bound), worker_n(worker_n), shutdown(false) {
+        pthread_barrier_init(&barrier, nullptr, (unsigned int)(worker_n));
+    }
+};
+
+template <typename S, typename P>
+struct WorkerData {
+    SharedData<S, P> &shared_data;
+    size_t seed;
     size_t id;
 };
 
@@ -113,17 +124,18 @@ void *worker(void *data_ptr) {
     using Data = WorkerData<S, P>;
     using LimbT = typename P::Field::LimbT;
 
-    Data &data = *static_cast<Data *>(data_ptr);
+    Data &worker_data = *static_cast<Data *>(data_ptr);
+    SharedData<S, P> &data = worker_data.shared_data;
     const size_t m = data.sl.size();
     P p1, p2;
     P *u = &p1, *tmp = &p2;
     S x, j, one(1);
     typename P::template Context<> ctx;
-    auto rng = make_gec_rng(std::mt19937((unsigned int)(data.seed)));
+    auto rng = make_gec_rng(std::mt19937((unsigned int)(worker_data.seed)));
 
     while (true) {
         // calculate jump table
-        if (data.id == 0) {
+        if (worker_data.id == 0) {
             for (size_t i = 0; i < m; ++i) {
                 data.sl[i].array()[0] = typename S::LimbT(i);
             }
@@ -139,11 +151,11 @@ void *worker(void *data_ptr) {
                 P::mul(data.pl[i], data.sl[i], data.g, ctx);
             }
 #ifdef GEC_DEBUG
-            printf("[worker %03zu]: jump table generated\n", data.id);
+            printf("[worker %03zu]: jump table generated\n", worker_data.id);
 #endif // GEC_DEBUG
         }
 
-        pthread_barrier_wait(data.barrier);
+        pthread_barrier_wait(&data.barrier);
 
         // setting traps
         S::sample_inclusive(x, data.a, data.b, rng, ctx);
@@ -155,19 +167,20 @@ void *worker(void *data_ptr) {
             utils::swap(u, tmp);
 #ifdef GEC_DEBUG
             if (!(utils::LowerKMask<LimbT, 20>::value & j.array()[0])) {
-                printf("[worker %03zu]: calculating trap, step ", data.id);
+                printf("[worker %03zu]: calculating trap, step ",
+                       worker_data.id);
                 j.println();
             }
 #endif // GEC_DEBUG
         }
-        pthread_mutex_lock(data.traps_lock);
+        pthread_mutex_lock(&data.traps_lock);
         data.traps.insert(std::make_pair(*u, x));
-        pthread_mutex_unlock(data.traps_lock);
+        pthread_mutex_unlock(&data.traps_lock);
 
 #ifdef GEC_DEBUG
-        printf("[worker %03zu]: trap set\n", data.id);
+        printf("[worker %03zu]: trap set\n", worker_data.id);
 #endif // GEC_DEBUG
-        pthread_barrier_wait(data.barrier);
+        pthread_barrier_wait(&data.barrier);
 
         // start searching
         S::sample_inclusive(x, data.a, data.b, rng, ctx);
@@ -179,12 +192,12 @@ void *worker(void *data_ptr) {
             }
             auto it = data.traps.find(*u);
             if (it != data.traps.end() && it->second != x) {
-                pthread_mutex_lock(data.x_lock);
+                pthread_mutex_lock(&data.x_lock);
                 if (!data.shutdown) {
                     S::sub(data.x, it->second, x);
                     data.shutdown = true;
                 }
-                pthread_mutex_unlock(data.x_lock);
+                pthread_mutex_unlock(&data.x_lock);
                 break;
             }
             size_t i = u->x().array()[0] % m;
@@ -193,23 +206,24 @@ void *worker(void *data_ptr) {
             utils::swap(u, tmp);
 #ifdef GEC_DEBUG
             if (!(utils::LowerKMask<LimbT, 20>::value & j.array()[0])) {
-                printf("[worker %03zu]: searching, step ", data.id);
+                printf("[worker %03zu]: searching, step ", worker_data.id);
                 j.println();
             }
 #endif // GEC_DEBUG
         }
 
-        pthread_barrier_wait(data.barrier);
+        pthread_barrier_wait(&data.barrier);
         // check success
 
         if (data.shutdown) {
 #ifdef GEC_DEBUG
-            printf("[worker %03zu]: collision found, shutting down\n", data.id);
+            printf("[worker %03zu]: collision found, shutting down\n",
+                   worker_data.id);
 #endif // GEC_DEBUG
             return nullptr;
         }
 #ifdef GEC_DEBUG
-        printf("[worker %03zu]: collision not found, retry\n", data.id);
+        printf("[worker %03zu]: collision not found, retry\n", worker_data.id);
 #endif // GEC_DEBUG
     }
 }
@@ -223,6 +237,7 @@ void multithread_pollard_lambda(S &GEC_RSTRCT x, const S &GEC_RSTRCT bound,
                                 unsigned int worker_n, const S &GEC_RSTRCT a,
                                 const S &GEC_RSTRCT b, const P &GEC_RSTRCT g,
                                 const P &GEC_RSTRCT h, GecRng<Rng> &rng) {
+    using Shared = SharedData<S, P>;
     using Data = WorkerData<S, P>;
 
     std::vector<pthread_t> workers(worker_n);
@@ -233,30 +248,16 @@ void multithread_pollard_lambda(S &GEC_RSTRCT x, const S &GEC_RSTRCT bound,
     // with `a` less than `b`, `m` would not underflow
     size_t m = x.most_significant_bit() - 1;
 
-    std::vector<S> sl(m);
-    std::vector<P> pl(m);
+    Shared shared(worker_n, x, a, b, g, h, bound, m);
 
-    pthread_mutex_t x_lock = PTHREAD_MUTEX_INITIALIZER;
-    pthread_mutex_t traps_lock = PTHREAD_MUTEX_INITIALIZER;
-    std::unordered_map<P, S, typename P::Hasher> traps(worker_n);
-
-    pthread_barrier_t barrier;
-    pthread_barrier_init(&barrier, nullptr, worker_n);
-
-    bool shutdown = false;
-
-    std::vector<Data> params(worker_n,
-                             Data{&x_lock, x, a, b, g, h, sl, pl, bound,
-                                  &barrier, &traps_lock, traps, shutdown,
-                                  /* seed */ 0, worker_n,
-                                  /* id */ 0});
+    std::vector<Data> params(worker_n, Data{shared, 0, 0});
 
     for (size_t i = 0; i < worker_n; ++i) {
         auto &param = params[i];
         param.seed = rng.template sample<size_t>();
         param.id = i;
         pthread_create(&workers[i], nullptr, worker<S, P, Rng>,
-                       static_cast<Data *>(&param));
+                       static_cast<void *>(&param));
     }
 
     for (size_t i = 0; i < worker_n; ++i) {
