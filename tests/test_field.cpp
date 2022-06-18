@@ -416,10 +416,10 @@ TEST_CASE("256 montgomery bench", "[ring][avx2][bench]") {
 
     {
         using F = SerialF;
-        const auto &x = reinterpret_cast<const F &>(x_arr);
-        const auto &y = reinterpret_cast<const F &>(y_arr);
-        auto &mon_x = reinterpret_cast<F &>(mon_x_arr);
-        auto &mon_y = reinterpret_cast<F &>(mon_y_arr);
+        const auto &x = *reinterpret_cast<const F *>(x_arr.array());
+        const auto &y = *reinterpret_cast<const F *>(y_arr.array());
+        auto &mon_x = *reinterpret_cast<F *>(mon_x_arr.array());
+        auto &mon_y = *reinterpret_cast<F *>(mon_y_arr.array());
 
         F::to_montgomery(mon_x, x);
         F::to_montgomery(mon_y, y);
@@ -427,9 +427,9 @@ TEST_CASE("256 montgomery bench", "[ring][avx2][bench]") {
 
     {
         using F = SerialF;
-        const auto &x = reinterpret_cast<const F &>(x_arr);
-        const auto &mon_x = reinterpret_cast<const F &>(mon_x_arr);
-        const auto &mon_y = reinterpret_cast<const F &>(mon_y_arr);
+        const auto &x = *reinterpret_cast<const F *>(x_arr.array());
+        const auto &mon_x = *reinterpret_cast<const F *>(mon_x_arr.array());
+        const auto &mon_y = *reinterpret_cast<const F *>(mon_y_arr.array());
 
         BENCHMARK("into montgomery form") {
             F res;
@@ -452,9 +452,9 @@ TEST_CASE("256 montgomery bench", "[ring][avx2][bench]") {
 
     {
         using F = AVX2F;
-        const auto &x = reinterpret_cast<const F &>(x_arr);
-        const auto &mon_x = reinterpret_cast<const F &>(mon_x_arr);
-        const auto &mon_y = reinterpret_cast<const F &>(mon_y_arr);
+        const auto &x = *reinterpret_cast<const F *>(x_arr.array());
+        const auto &mon_x = *reinterpret_cast<const F *>(mon_x_arr.array());
+        const auto &mon_y = *reinterpret_cast<const F *>(mon_y_arr.array());
 
         BENCHMARK("avx2 into montgomery form") {
             F res;
@@ -577,9 +577,9 @@ TEST_CASE("montgomery mul bench", "[ring][field][bench]") {
 
     {
         using F = Field160;
-        const F &x = reinterpret_cast<const F &>(x0);
-        const F &mon_x = reinterpret_cast<const F &>(mon_x0);
-        const F &mon_y = reinterpret_cast<const F &>(mon_y0);
+        const F &x = *reinterpret_cast<const F *>(x0.array());
+        const F &mon_x = *reinterpret_cast<const F *>(mon_x0.array());
+        const F &mon_y = *reinterpret_cast<const F *>(mon_y0.array());
 
         BENCHMARK("32-bits into montgomery form") {
             F res;
@@ -647,7 +647,7 @@ TEST_CASE("montgomery inv bench", "[field][bench]") {
 
     {
         using F = Field160;
-        const F &mon_x = reinterpret_cast<const F &>(mon_x0);
+        const F &mon_x = *reinterpret_cast<const F *>(mon_x0.array());
         F::Context<> ctx;
         BENCHMARK("32-bits montgomery inv") {
             F inv_x;

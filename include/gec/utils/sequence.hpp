@@ -26,11 +26,12 @@ __host__ __device__ GEC_INLINE void fill_le(T *dst, T elem, S... seq) {
  * endian)
  */
 template <typename T>
-__host__ __device__ GEC_INLINE void fill_be(T *dst, T elem) {
+constexpr __host__ __device__ GEC_INLINE void fill_be(T *dst, T elem) {
     *dst = elem;
 }
 template <typename T, typename... S>
-__host__ __device__ GEC_INLINE void fill_be(T *dst, T elem, S... seq) {
+constexpr __host__ __device__ GEC_INLINE void fill_be(T *dst, T elem,
+                                                      S... seq) {
     *(dst + sizeof...(seq)) = elem;
     fill_be<T>(dst, seq...);
 }

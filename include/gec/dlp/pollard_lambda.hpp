@@ -364,14 +364,13 @@ __global__ void generate_traps_kernel(
 }
 
 template <typename S, typename P>
-__global__ void
-searching_kernel(volatile bool *GEC_RSTRCT done, size_t *GEC_RSTRCT found_id,
-                 typename P::Hasher::result_type *GEC_RSTRCT trap_hashes,
-                 P *GEC_RSTRCT traps, S *GEC_RSTRCT txs, S *GEC_RSTRCT xs,
-                 utils::CHD<> phf, const S *GEC_RSTRCT sl,
-                 const P *GEC_RSTRCT pl, size_t l_len, const P &GEC_RSTRCT g,
-                 const P &GEC_RSTRCT h, const S &GEC_RSTRCT bound,
-                 typename P::Field::LimbT check_mask) {
+__global__ void searching_kernel(
+    volatile bool *GEC_RSTRCT done, unsigned int *GEC_RSTRCT found_id,
+    typename P::Hasher::result_type *GEC_RSTRCT trap_hashes,
+    P *GEC_RSTRCT traps, S *GEC_RSTRCT txs, S *GEC_RSTRCT xs, utils::CHD<> phf,
+    const S *GEC_RSTRCT sl, const P *GEC_RSTRCT pl, size_t l_len,
+    const P &GEC_RSTRCT g, const P &GEC_RSTRCT h, const S &GEC_RSTRCT bound,
+    typename P::Field::LimbT check_mask) {
     typename P::template Context<> ctx;
     typename P::Hasher hasher;
 
@@ -498,7 +497,7 @@ __host__ cudaError_t cu_pollard_lambda(
     cudaStream_t s_exec, s_data;
 
     size_t found_id;
-    size_t *d_found_id = nullptr;
+    unsigned int *d_found_id = nullptr;
 
     bool *d_done;
 
@@ -513,7 +512,7 @@ __host__ cudaError_t cu_pollard_lambda(
     _CUDA_CHECK_(cudaMalloc(&d_xs, sizeof(S) * thread_n));
     _CUDA_CHECK_(cudaMalloc(&d_txs, sizeof(S) * phf.N));
     _CUDA_CHECK_(cudaMalloc(&d_traps, sizeof(P) * phf.N));
-    _CUDA_CHECK_(cudaMalloc(&d_found_id, sizeof(size_t)));
+    _CUDA_CHECK_(cudaMalloc(&d_found_id, sizeof(unsigned int)));
     _CUDA_CHECK_(cudaMalloc(&d_done, sizeof(bool)));
 
     _CUDA_CHECK_(cudaMemcpyToSymbolAsync(d_a, &a, sizeof(S), 0,
@@ -609,7 +608,7 @@ __host__ cudaError_t cu_pollard_lambda(
 
         switch (cudaGetLastError()) {
         case cudaErrorLaunchFailure: // success
-            cudaMemcpy(&found_id, d_found_id, sizeof(size_t),
+            cudaMemcpy(&found_id, d_found_id, sizeof(unsigned int),
                        cudaMemcpyDeviceToHost);
             cudaMemcpy(&x, d_xs + found_id, sizeof(S), cudaMemcpyDeviceToHost);
             goto clean_up;

@@ -5,7 +5,18 @@
 #include <gec/dlp.hpp>
 
 #include "configured_catch.hpp"
+
+#ifdef GEC_NVCC
+GEC_NV_DIAGNOSTIC_PUSH
+// disable NULL reference is not allowed warning, this occurs because
+// all device pointer in template parameters of AVX2Field are set to `nullptr`
+GEC_NV_DIAG_SUPPRESS(284)
+GEC_CALL_H_FROM_H_D
+#endif // GEC_NVCC
 #include "curve.hpp"
+#ifdef GEC_NVCC
+GEC_NV_DIAGNOSTIC_POP
+#endif // GEC_NVCC
 
 #include <iomanip>
 #include <sstream>
@@ -102,13 +113,6 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
     }
 
 #ifdef GEC_ENABLE_AVX2
-#ifdef GEC_NVCC
-    GEC_NV_DIAGNOSTIC_PUSH
-    // disable NULL reference is not allowed warning, this occurs because for
-    // AVX2Field all pointer in parameters for device are set to `nullptr`
-    GEC_NV_DIAG_SUPPRESS(284)
-    GEC_CALL_H_FROM_H_D
-#endif // GEC_NVCC
     {
         using C = AVX2Dlp3CurveA;
         const C &g = reinterpret_cast<const C &>(Dlp3Gen1);
@@ -141,9 +145,6 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
             return c.array()[0];
         };
     }
-#ifdef GEC_NVCC
-    GEC_NV_DIAGNOSTIC_POP
-#endif // GEC_NVCC
 #endif // GEC_ENABLE_AVX2
 }
 
@@ -290,16 +291,10 @@ TEST_CASE("multithread_pollard_rho bench",
     }
 
 #ifdef GEC_ENABLE_AVX2
-#ifdef GEC_NVCC
-    GEC_NV_DIAGNOSTIC_PUSH
-    // disable NULL reference is not allowed warning, this occurs because for
-    // AVX2Field all pointer in parameters for device are set to `nullptr`
-    GEC_NV_DIAG_SUPPRESS(284)
-    GEC_CALL_H_FROM_H_D
-#endif // GEC_NVCC
+
     {
         using C = AVX2Dlp3CurveA;
-        const C &g = reinterpret_cast<const C &>(Dlp3Gen1);
+        const C &g = *reinterpret_cast<const C *>(Dlp3Gen1.array());
         using F = C::Field;
 
         C::Context<> ctx;
@@ -340,9 +335,6 @@ TEST_CASE("multithread_pollard_rho bench",
             };
         }
     }
-#ifdef GEC_NVCC
-    GEC_NV_DIAGNOSTIC_POP
-#endif // GEC_NVCC
 #endif // GEC_ENABLE_AVX2
 }
 

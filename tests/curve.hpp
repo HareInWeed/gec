@@ -104,7 +104,7 @@ decl_field(Dlp1A2, Dlp1Field2);
 decl_field(Dlp1B2, Dlp1Field2);
 
 decl_array(Dlp1Card2, LIMB2_T, LN2_160);
-using Dlp1Scaler2 = ADD_GROUP(LIMB2_T, LN2_160, 0, Dlp1Card2);
+using Dlp1Scaler2 = ADD_GROUP(LIMB2_T, LN2_160, alignof(LIMB2_T), Dlp1Card2);
 
 using Dlp1CurveJ2 = CURVE(JacobianC, Dlp1Field2, Dlp1A2, Dlp1B2);
 

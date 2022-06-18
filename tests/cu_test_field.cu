@@ -300,7 +300,7 @@ void test_cuda_sampling(size_t seed) {
 TEST_CASE("cuda random sampling", "[add_group][field][random][cuda]") {
     using F1 = Field160;
     using F2 = Field160_2;
-    using G = ADD_GROUP(LIMB_T, 3, 0, SmallMod);
+    using G = ADD_GROUP(LIMB_T, 3, alignof(LIMB_T), SmallMod);
 
     std::random_device rd;
 

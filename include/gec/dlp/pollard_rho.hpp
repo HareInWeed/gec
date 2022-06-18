@@ -290,14 +290,15 @@ __global__ void init_ps_kernel(P *GEC_RSTRCT init_ps,
     init_ps[id] = p;
 }
 template <typename S, typename P>
-__global__ void
-searching_kernel(volatile bool *GEC_RSTRCT done, P *GEC_RSTRCT candidate,
-                 S *GEC_RSTRCT xs, S *GEC_RSTRCT ys, size_t *GEC_RSTRCT len,
-                 size_t max_len, S *GEC_RSTRCT init_xs, S *GEC_RSTRCT init_ys,
-                 P *GEC_RSTRCT init_ps, const S *GEC_RSTRCT al,
-                 const S *GEC_RSTRCT bl, const P *GEC_RSTRCT pl, size_t l,
-                 const typename P::Field &GEC_RSTRCT mask,
-                 const unsigned int check_mask) {
+__global__ void searching_kernel(volatile bool *GEC_RSTRCT done,
+                                 P *GEC_RSTRCT candidate, S *GEC_RSTRCT xs,
+                                 S *GEC_RSTRCT ys, unsigned int *GEC_RSTRCT len,
+                                 unsigned int max_len, S *GEC_RSTRCT init_xs,
+                                 S *GEC_RSTRCT init_ys, P *GEC_RSTRCT init_ps,
+                                 const S *GEC_RSTRCT al, const S *GEC_RSTRCT bl,
+                                 const P *GEC_RSTRCT pl, size_t l,
+                                 const typename P::Field &GEC_RSTRCT mask,
+                                 const unsigned int check_mask) {
     size_t id = blockIdx.x * blockDim.x + threadIdx.x;
 
     using F = typename P::Field;
@@ -346,12 +347,12 @@ shutdown:
 
 template <typename S, typename P, typename Rng = std::mt19937,
           typename cuRng = thrust::random::ranlux24>
-cudaError_t cu_pollard_rho(S &c,
-                           S &d2, // TODO: require general int inv
-                           size_t l, const typename P::Field &mask, const P &g,
-                           const P &h, size_t seed, unsigned int block_num,
-                           unsigned int thread_num, size_t buffer_size = 0,
-                           unsigned int check_mask = 0xFF) {
+cudaError_t
+cu_pollard_rho(S &c,
+               S &d2, // TODO: require general int inv
+               size_t l, const typename P::Field &mask, const P &g, const P &h,
+               size_t seed, unsigned int block_num, unsigned int thread_num,
+               unsigned int buffer_size = 0, unsigned int check_mask = 0xFF) {
 
     using namespace _pollard_rho_;
     using F = typename P::Field;
@@ -366,7 +367,7 @@ cudaError_t cu_pollard_rho(S &c,
 #define _CUDA_CHECK_(code) _CUDA_CHECK_TO_((code), clean_up)
 
     const bool false_literal = false;
-    const size_t zero_literal = 0;
+    const unsigned int zero_literal = 0;
 
     const P &d_g = cd_g<P>, &d_h = cd_h<P>;
     const F &d_mask = cd_mask<F>;
@@ -388,13 +389,13 @@ cudaError_t cu_pollard_rho(S &c,
     S *d_init_xs = nullptr, *d_init_ys = nullptr;
     P *d_init_ps = nullptr;
 
-    const size_t buf_size = buffer_size ? buffer_size : thread_n;
+    const unsigned int buf_size = buffer_size ? buffer_size : thread_n;
     std::unordered_multimap<P, Coefficient<S>, typename P::Hasher>
         candidates_map;
     std::vector<P> candidates(buf_size);
     std::vector<S> xs(buf_size);
     std::vector<S> ys(buf_size);
-    size_t *d_buf_cursor;
+    unsigned int *d_buf_cursor;
     P *d_candidate = nullptr;
     S *d_xs = nullptr, *d_ys = nullptr;
 
@@ -416,7 +417,7 @@ cudaError_t cu_pollard_rho(S &c,
     _CUDA_CHECK_(cudaMalloc(&d_candidate, sizeof(P) * buf_size));
     _CUDA_CHECK_(cudaMalloc(&d_xs, sizeof(S) * buf_size));
     _CUDA_CHECK_(cudaMalloc(&d_ys, sizeof(S) * buf_size));
-    _CUDA_CHECK_(cudaMalloc(&d_buf_cursor, sizeof(size_t)));
+    _CUDA_CHECK_(cudaMalloc(&d_buf_cursor, sizeof(unsigned int)));
     _CUDA_CHECK_(cudaMalloc(&d_done, sizeof(bool)));
 
     _CUDA_CHECK_(cudaMemcpyToSymbolAsync(d_g, &g, sizeof(P), 0,
@@ -449,7 +450,7 @@ cudaError_t cu_pollard_rho(S &c,
     for (;;) {
         cudaMemcpyAsync(d_done, &false_literal, sizeof(bool),
                         cudaMemcpyHostToDevice, stream1);
-        cudaMemcpyAsync(d_buf_cursor, &zero_literal, sizeof(size_t),
+        cudaMemcpyAsync(d_buf_cursor, &zero_literal, sizeof(unsigned int),
                         cudaMemcpyHostToDevice, stream1);
         searching_kernel<S, P><<<block_num, thread_num, 0, stream1>>>(
             d_done, d_candidate, d_xs, d_ys, d_buf_cursor, buf_size, d_init_xs,
@@ -462,7 +463,7 @@ cudaError_t cu_pollard_rho(S &c,
                         cudaMemcpyDeviceToHost, stream1);
         _CUDA_CHECK_(cudaDeviceSynchronize());
         _CUDA_CHECK_(cudaGetLastError());
-        for (size_t k = 0; k < buf_size; ++k) {
+        for (unsigned int k = 0; k < buf_size; ++k) {
             auto &p = candidates[k];
             auto &x = xs[k];
             auto &y = ys[k];

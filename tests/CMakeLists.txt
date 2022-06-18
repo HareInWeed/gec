@@ -16,7 +16,8 @@ target_compile_options(
         -Wextra
         -Wpedantic>
         $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CXX_COMPILER_ID:MSVC>>:-Xcompiler=/W3>
-        $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:-Xcompiler="-Wall -Wextra -Wpedantic">
+        $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:-Xcompiler=-Wall
+        -Xcompiler=-Wextra>
 )
 
 add_executable(unit_test)

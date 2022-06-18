@@ -407,15 +407,19 @@ dh_uint_mul_lh(T &GEC_RSTRCT l, T &GEC_RSTRCT h, const T &GEC_RSTRCT a,
         l = U(product);                                                        \
         h = product >> utils::type_bits<U>::value;                             \
     }
-GEC_specialized_dh_uint_mul_lh(uint32_t, uint64_t);
-GEC_specialized_dh_uint_mul_lh(uint16_t, uint32_t);
-GEC_specialized_dh_uint_mul_lh(uint8_t, uint16_t);
+// clang-format off
+GEC_specialized_dh_uint_mul_lh(uint32_t, uint64_t)
+GEC_specialized_dh_uint_mul_lh(uint16_t, uint32_t)
+GEC_specialized_dh_uint_mul_lh(uint8_t, uint16_t)
+// clang-format on
 #undef GEC_specialized_dh_uint_mul_lh
 
+    // clang-format off
 template <typename T>
 __device__ GEC_INLINE void d_uint_mul_lh(T &GEC_RSTRCT l, T &GEC_RSTRCT h,
                                          const T &GEC_RSTRCT a,
                                          const T &GEC_RSTRCT b) {
+    // clang-format on
     return dh_uint_mul_lh(l, h, a, b);
 }
 

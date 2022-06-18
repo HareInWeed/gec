@@ -77,7 +77,7 @@ class alignas(align) GEC_EMPTY_BASES Field
 #ifdef __CUDACC__
 #define def_field(name, F, ...)                                                \
     const F name(__VA_ARGS__);                                                 \
-    __constant__ const F d_##name
+    __constant__ const F d_##name(__VA_ARGS__)
 #else
 #define def_field(name, F, ...) const F name(__VA_ARGS__)
 #endif

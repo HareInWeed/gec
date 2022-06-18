@@ -6,6 +6,7 @@
 #include <gec/utils/misc.hpp>
 #include <gec/utils/sequence.hpp>
 
+#include <cassert>
 #include <random>
 
 #ifdef __CUDACC__
@@ -180,7 +181,7 @@ class GecRng<Rng, std::enable_if_t<_gec_rng_::is_cu_rand_rng<Rng>::value>> {
         // FIXME: handle cases where the type of rng generation is not T
         return curand(&get_rng());
 #else
-        return reject<T>();
+        return reject();
 #endif // __CUDA_ARCH__
     }
     template <typename T>
@@ -202,6 +203,7 @@ class GecRng<Rng, std::enable_if_t<_gec_rng_::is_cu_rand_rng<Rng>::value>> {
             }
         }
 #else
+        (void)higher;
         return reject<T>();
 #endif // __CUDA_ARCH__
     }
@@ -210,6 +212,8 @@ class GecRng<Rng, std::enable_if_t<_gec_rng_::is_cu_rand_rng<Rng>::value>> {
 #ifdef __CUDA_ARCH__
         return lower + sample(higher - lower);
 #else
+        (void)lower;
+        (void)higher;
         return reject<T>();
 #endif // __CUDA_ARCH__
     }

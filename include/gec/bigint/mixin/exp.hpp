@@ -23,7 +23,7 @@ class Exponentiation : protected CRTP<Core, Exponentiation<Core>> {
     __host__ __device__ static void
     pow(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT *GEC_RSTRCT e,
         CTX &GEC_RSTRCT ctx) {
-        auto ctx_view = ctx.template view_as<Core>();
+        auto &ctx_view = ctx.template view_as<Core>();
 
         auto &ap = ctx_view.template get<0>();
 

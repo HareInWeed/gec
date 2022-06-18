@@ -41,6 +41,7 @@
 
 #include "basic.hpp"
 
+#include <climits>
 #include <cstring>
 #include <type_traits>
 
