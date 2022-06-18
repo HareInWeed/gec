@@ -18,6 +18,10 @@
 
 #endif // GEC_ENABLE_PTHREADS
 
+#ifdef __CUDACC__
+#include <gec/utils/hash.hpp>
+#endif // __CUDACC__
+
 namespace gec {
 
 namespace dlp {
@@ -230,11 +234,278 @@ void multithread_pollard_rho(S &c,
     }
 }
 
+#endif // GEC_ENABLE_PTHREADS
+
+#ifdef __CUDACC__
+
+namespace _pollard_rho_ {
+
+template <typename P>
+static __constant__ P cd_g;
+template <typename P>
+static __constant__ P cd_h;
+template <typename F>
+static __constant__ F cd_mask;
+
+template <typename Rng>
+__global__ void init_rng_kernel(GecRng<Rng> *GEC_RSTRCT rng, size_t seed) {
+    size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+    hash::hash_combine(seed, id);
+    rng[id] = make_gec_rng(Rng((unsigned int)(seed)));
+}
+template <typename S, typename Rng>
+__global__ void sampling_scaler_kernel(S *GEC_RSTRCT s,
+                                       GecRng<Rng> *GEC_RSTRCT rng) {
+    size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+    S tmp;
+    auto r = rng[id];
+    S::sample(tmp, r);
+    s[id] = tmp;
+}
+template <typename S, typename P>
+__global__ void init_ps_kernel(P *GEC_RSTRCT init_ps,
+                               const S *GEC_RSTRCT init_xs,
+                               const S *GEC_RSTRCT init_ys,
+                               const P &GEC_RSTRCT g, const P &GEC_RSTRCT h) {
+
+    size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+
+    typename P::template Context<> ctx;
+    auto ctx_view = ctx.template view_as<P, P, P, S, S>();
+    auto &p = ctx_view.template get<0>();
+    auto &xg = ctx_view.template get<1>();
+    auto &yh = ctx_view.template get<2>();
+    auto &x = ctx_view.template get<3>();
+    auto &y = ctx_view.template get<4>();
+    auto &rest_ctx = ctx_view.rest();
+
+    x = init_xs[id];
+    y = init_ys[id];
+    p = init_ps[id];
+
+    P::mul(xg, x, g, rest_ctx);
+    P::mul(yh, y, h, rest_ctx);
+    P::add(p, xg, yh, rest_ctx);
+
+    init_ps[id] = p;
+}
+template <typename S, typename P>
+__global__ void
+searching_kernel(volatile bool *GEC_RSTRCT done, P *GEC_RSTRCT candidate,
+                 S *GEC_RSTRCT xs, S *GEC_RSTRCT ys, size_t *GEC_RSTRCT len,
+                 size_t max_len, S *GEC_RSTRCT init_xs, S *GEC_RSTRCT init_ys,
+                 P *GEC_RSTRCT init_ps, const S *GEC_RSTRCT al,
+                 const S *GEC_RSTRCT bl, const P *GEC_RSTRCT pl, size_t l,
+                 const typename P::Field &GEC_RSTRCT mask,
+                 const unsigned int check_mask) {
+    size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+
+    using F = typename P::Field;
+    using LT = typename F::LimbT;
+
+    typename P::template Context<> ctx;
+    auto &ctx_view = ctx.template view_as<P, P>();
+    auto &p1 = ctx_view.template get<0>();
+    auto &p2 = ctx_view.template get<1>();
+    auto &rest_ctx = ctx_view.rest();
+    P *p = &p1, *tmp = &p2;
+
+    S x = init_xs[id], y = init_ys[id];
+    *p = init_ps[id];
+
+    int i;
+    for (unsigned int k = 0;; ++k) {
+        if (!(k & check_mask) && *done)
+            goto shutdown;
+        if (utils::VtSeqAll<F::LimbN, LT, MaskZero<LT>>::call(p->x().array(),
+                                                              mask.array())) {
+            size_t idx = atomicAdd(len, 1);
+            if (idx >= max_len) {
+                *done = true;
+                candidate[idx] = *p;
+                xs[idx] = x;
+                ys[idx] = y;
+                goto shutdown;
+            }
+        }
+        i = p->x().array()[0] % l;
+        S::add(x, al[i]);
+        S::add(y, bl[i]);
+        P::add(*tmp, *p, pl[i], rest_ctx);
+        utils::swap(p, tmp);
+    }
+
+shutdown:
+    init_xs[id] = x;
+    init_ys[id] = y;
+    init_ps[id] = *p;
+    return;
+}
+
 } // namespace _pollard_rho_
 
-using _pollard_rho_::multithread_pollard_rho; // NOLINT(misc-unused-using-decls)
+template <typename S, typename P, typename Rng = std::mt19937,
+          typename cuRng = thrust::random::ranlux24>
+cudaError_t cu_pollard_rho(S &c,
+                           S &d2, // TODO: require general int inv
+                           size_t l, const typename P::Field &mask, const P &g,
+                           const P &h, size_t seed, unsigned int block_num,
+                           unsigned int thread_num, size_t buffer_size = 0,
+                           unsigned int check_mask = 0xFF) {
 
-#endif // GEC_ENABLE_PTHREADS
+    using namespace _pollard_rho_;
+    using F = typename P::Field;
+
+    cudaError_t cu_err = cudaSuccess;
+#define _CUDA_CHECK_TO_(code, label)                                           \
+    do {                                                                       \
+        cu_err = (code);                                                       \
+        if (cu_err != cudaSuccess)                                             \
+            goto label;                                                        \
+    } while (0)
+#define _CUDA_CHECK_(code) _CUDA_CHECK_TO_((code), clean_up)
+
+    const bool false_literal = false;
+    const size_t zero_literal = 0;
+
+    const P &d_g = cd_g<P>, &d_h = cd_h<P>;
+    const F &d_mask = cd_mask<F>;
+
+    const size_t thread_n = block_num * thread_num;
+
+    GecRng<Rng> rng = make_gec_rng(Rng((unsigned int)(seed)));
+
+    std::vector<S> al(l);
+    S *d_al = nullptr;
+    std::vector<S> bl(l);
+    S *d_bl = nullptr;
+    std::vector<P> pl(l);
+    P *d_pl = nullptr;
+
+    typename P::template Context<> ctx;
+
+    GecRng<cuRng> *d_rng = nullptr;
+    S *d_init_xs = nullptr, *d_init_ys = nullptr;
+    P *d_init_ps = nullptr;
+
+    const size_t buf_size = buffer_size ? buffer_size : thread_n;
+    std::unordered_multimap<P, Coefficient<S>, typename P::Hasher>
+        candidates_map;
+    std::vector<P> candidates(buf_size);
+    std::vector<S> xs(buf_size);
+    std::vector<S> ys(buf_size);
+    size_t *d_buf_cursor;
+    P *d_candidate = nullptr;
+    S *d_xs = nullptr, *d_ys = nullptr;
+
+    P ag, bh;
+
+    bool *d_done = nullptr;
+
+    cudaStream_t stream1, stream2, stream3;
+    _CUDA_CHECK_TO_(cudaStreamCreate(&stream1), clean_stream1);
+    _CUDA_CHECK_TO_(cudaStreamCreate(&stream2), clean_stream2);
+    _CUDA_CHECK_TO_(cudaStreamCreate(&stream3), clean_stream3);
+
+    _CUDA_CHECK_(cudaMalloc(&d_al, sizeof(S) * l));
+    _CUDA_CHECK_(cudaMalloc(&d_bl, sizeof(S) * l));
+    _CUDA_CHECK_(cudaMalloc(&d_pl, sizeof(P) * l));
+    _CUDA_CHECK_(cudaMalloc(&d_init_xs, sizeof(S) * thread_n));
+    _CUDA_CHECK_(cudaMalloc(&d_init_ys, sizeof(S) * thread_n));
+    _CUDA_CHECK_(cudaMalloc(&d_init_ps, sizeof(P) * thread_n));
+    _CUDA_CHECK_(cudaMalloc(&d_candidate, sizeof(P) * buf_size));
+    _CUDA_CHECK_(cudaMalloc(&d_xs, sizeof(S) * buf_size));
+    _CUDA_CHECK_(cudaMalloc(&d_ys, sizeof(S) * buf_size));
+    _CUDA_CHECK_(cudaMalloc(&d_buf_cursor, sizeof(size_t)));
+    _CUDA_CHECK_(cudaMalloc(&d_done, sizeof(bool)));
+
+    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(d_g, &g, sizeof(P), 0,
+                                         cudaMemcpyHostToDevice, stream1));
+    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(d_h, &h, sizeof(P), 0,
+                                         cudaMemcpyHostToDevice, stream1));
+    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(d_mask, &mask, sizeof(F), 0,
+                                         cudaMemcpyHostToDevice, stream1));
+
+    init_rng_kernel<cuRng><<<block_num, thread_num, 0, stream2>>>(d_rng, seed);
+    sampling_scaler_kernel<S, cuRng>
+        <<<block_num, thread_num, 0, stream2>>>(d_init_xs, d_rng);
+    sampling_scaler_kernel<S, cuRng>
+        <<<block_num, thread_num, 0, stream2>>>(d_init_ys, d_rng);
+
+    init_ps_kernel<S, P>
+        <<<block_num, thread_num>>>(d_init_ps, d_init_xs, d_init_ys, g, h);
+
+    for (size_t k = 0; k < l; ++k) {
+        S::sample(al[k], rng);
+        S::sample(bl[k], rng);
+        P::mul(ag, al[k], g, ctx);
+        P::mul(bh, bl[k], h, ctx);
+        P::add(pl[k], ag, bh, ctx);
+    }
+
+    _CUDA_CHECK_(cudaDeviceSynchronize());
+    _CUDA_CHECK_(cudaGetLastError());
+
+    for (;;) {
+        cudaMemcpyAsync(d_done, &false_literal, sizeof(bool),
+                        cudaMemcpyHostToDevice, stream1);
+        cudaMemcpyAsync(d_buf_cursor, &zero_literal, sizeof(size_t),
+                        cudaMemcpyHostToDevice, stream1);
+        searching_kernel<S, P><<<block_num, thread_num, 0, stream1>>>(
+            d_done, d_candidate, d_xs, d_ys, d_buf_cursor, buf_size, d_init_xs,
+            d_init_ys, d_init_ps, d_al, d_bl, d_pl, l, d_mask, check_mask);
+        cudaMemcpyAsync(candidates.data(), d_candidate, sizeof(P) * buf_size,
+                        cudaMemcpyDeviceToHost, stream1);
+        cudaMemcpyAsync(xs.data(), d_xs, sizeof(S) * buf_size,
+                        cudaMemcpyDeviceToHost, stream1);
+        cudaMemcpyAsync(ys.data(), d_ys, sizeof(S) * buf_size,
+                        cudaMemcpyDeviceToHost, stream1);
+        _CUDA_CHECK_(cudaDeviceSynchronize());
+        _CUDA_CHECK_(cudaGetLastError());
+        for (size_t k = 0; k < buf_size; ++k) {
+            auto &p = candidates[k];
+            auto &x = xs[k];
+            auto &y = ys[k];
+            auto range = candidates_map.equal_range(p);
+            for (auto it = range.first; it != range.second; ++it) {
+                const auto &p0 = it->first;
+                const auto &coeff0 = it->second;
+                if (P::eq(p0, p) && coeff0.y != y) {
+                    S::sub(c, coeff0.x, x);
+                    S::sub(d2, y, coeff0.y);
+                    goto clean_up;
+                }
+            }
+            candidates_map.insert(std::make_pair(p, Coefficient<S>{x, y}));
+        }
+    }
+
+clean_up:
+    cudaFree(d_al);
+    cudaFree(d_bl);
+    cudaFree(d_pl);
+    cudaFree(d_init_xs);
+    cudaFree(d_init_ys);
+    cudaFree(d_init_ps);
+    cudaFree(d_candidate);
+    cudaFree(d_xs);
+    cudaFree(d_ys);
+    cudaFree(d_buf_cursor);
+    cudaFree(d_done);
+
+    cudaStreamDestroy(stream3);
+clean_stream3:
+    cudaStreamDestroy(stream2);
+clean_stream2:
+    cudaStreamDestroy(stream1);
+clean_stream1:
+    return cu_err;
+
+#undef _CUDA_CHECK_
+#undef _CUDA_CHECK_TO_
+}
+
+#endif // __CUDACC__
 
 } // namespace dlp
 

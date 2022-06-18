@@ -13,6 +13,11 @@
 #include <pthread.h>
 #include <unordered_map>
 #endif // GEC_ENABLE_PTHREADS
+
+#ifdef __CUDACC__
+#include <thrust/random.h>
+#endif // __CUDACC__
+
 namespace gec {
 
 namespace dlp {
@@ -95,7 +100,6 @@ struct SharedData {
     std::vector<P> pl;
     utils::CHD<> phf;
     pthread_mutex_t x_lock;
-    pthread_mutex_t traps_lock;
     pthread_barrier_t barrier;
     S &x;
     const S &a;
@@ -111,9 +115,9 @@ struct SharedData {
                const S &GEC_RSTRCT b, const P &GEC_RSTRCT g,
                const P &GEC_RSTRCT h, const S &GEC_RSTRCT bound, size_t m)
         : buckets(), trap_hashes(), xs(), traps(), sl(m), pl(m),
-          phf(nullptr, worker_n), x_lock(PTHREAD_MUTEX_INITIALIZER),
-          traps_lock(PTHREAD_MUTEX_INITIALIZER), barrier(), x(x), a(a), b(b),
-          g(g), h(h), bound(bound), worker_n(worker_n), shutdown(false) {
+          phf(nullptr, worker_n), x_lock(PTHREAD_MUTEX_INITIALIZER), barrier(),
+          x(x), a(a), b(b), g(g), h(h), bound(bound), worker_n(worker_n),
+          shutdown(false) {
         buckets.resize(phf.B);
         trap_hashes.resize(phf.N);
         xs.resize(phf.N);
@@ -145,7 +149,7 @@ void *worker(void *data_ptr) {
     P *u = &p1, *tmp = &p2;
     S x, j, one(1);
     typename P::template Context<> ctx;
-    auto rng = make_gec_rng(std::mt19937((unsigned int)(local.seed)));
+    auto rng = make_gec_rng(Rng((unsigned int)(local.seed)));
 
     while (true) {
         // calculate jump table
@@ -194,6 +198,7 @@ void *worker(void *data_ptr) {
 #endif // GEC_DEBUG
         pthread_barrier_wait(&shared.barrier);
 
+        // construct static maps
         if (local.id == 0) {
             size_t placeholder =
                 shared.phf.fill_placeholder(shared.trap_hashes.data());
@@ -206,7 +211,7 @@ void *worker(void *data_ptr) {
                 printf("some traps are omitted");
             }
 #else
-            data.phf.build(shared.trap_hashes.data());
+            shared.phf.build(shared.trap_hashes.data());
 #endif // GEC_DEBUG
             shared.phf.rearrange(shared.trap_hashes.data(), placeholder,
                                  shared.xs.data(), shared.traps.data());
@@ -222,7 +227,7 @@ void *worker(void *data_ptr) {
                 break;
             }
             auto hash = hasher(*u);
-            auto idx = shared.phf.get(hasher(*u));
+            auto idx = shared.phf.get(hash);
             if (shared.trap_hashes[idx] == hash &&
                 P::eq(shared.traps[idx], *u)) {
                 pthread_mutex_lock(&shared.x_lock);
@@ -302,9 +307,340 @@ void multithread_pollard_lambda(S &GEC_RSTRCT x, const S &GEC_RSTRCT bound,
 
 #endif // GEC_ENABLE_PTHREADS
 
-#ifdef GEC_ENABLE_CUDA
+#ifdef __CUDACC__
 
-#endif // GEC_ENABLE_CUDA
+namespace _pollard_lambda_ {
+
+template <typename Rng>
+__global__ void init_rng_kernel(GecRng<Rng> *GEC_RSTRCT rng, size_t seed) {
+    size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+    hash::hash_combine(seed, id);
+    rng[id] = make_gec_rng(Rng((unsigned int)(seed)));
+}
+template <typename S, typename Rng>
+__global__ void sampling_scaler_kernel(S *GEC_RSTRCT s, const S &GEC_RSTRCT a,
+                                       const S &GEC_RSTRCT b,
+                                       GecRng<Rng> *GEC_RSTRCT rng) {
+    typename S::template Context<> ctx;
+    size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+    S tmp;
+    auto r = rng[id];
+    S::sample_inclusive(tmp, a, b, r, ctx);
+    s[id] = tmp;
+}
+template <typename S, typename P>
+__global__ void generate_traps_kernel(
+    P *GEC_RSTRCT traps, typename P::Hasher::result_type *GEC_RSTRCT hashes,
+    S *GEC_RSTRCT txs, const S *GEC_RSTRCT sl, const P *GEC_RSTRCT pl,
+    size_t l_len, const P &GEC_RSTRCT g, const S &GEC_RSTRCT bound) {
+
+    typename P::template Context<> ctx;
+    typename P::Hasher hasher;
+
+    const size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+
+    P p1, p2;
+    P *u = &p1, *tmp = &p2;
+    S t = txs[id], j, one(1);
+
+    P::mul(*u, t, g, ctx);
+    for (j.set_zero(); j < bound; S::add(j, one)) {
+        size_t i = u->x().array()[0] % l_len;
+        S::add(t, sl[i]);
+        P::add(*tmp, *u, pl[i], ctx);
+        utils::swap(u, tmp);
+#ifdef GEC_DEBUG
+        using LimbT = typename P::Field::LimbT;
+        if (!(utils::LowerKMask<LimbT, 20>::value & j.array()[0])) {
+            printf("[worker %03zu]: calculating trap, step ", id);
+            j.println();
+        }
+#endif // GEC_DEBUG
+    }
+
+    txs[id] = t;
+    hashes[id] = hasher(*u);
+    traps[id] = *u;
+}
+
+template <typename S, typename P>
+__global__ void
+searching_kernel(volatile bool *GEC_RSTRCT done, size_t *GEC_RSTRCT found_id,
+                 typename P::Hasher::result_type *GEC_RSTRCT trap_hashes,
+                 P *GEC_RSTRCT traps, S *GEC_RSTRCT txs, S *GEC_RSTRCT xs,
+                 utils::CHD<> phf, const S *GEC_RSTRCT sl,
+                 const P *GEC_RSTRCT pl, size_t l_len, const P &GEC_RSTRCT g,
+                 const P &GEC_RSTRCT h, const S &GEC_RSTRCT bound,
+                 typename P::Field::LimbT check_mask) {
+    typename P::template Context<> ctx;
+    typename P::Hasher hasher;
+
+    const size_t thread_n = gridDim.x * blockDim.x;
+    const size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+
+    P p1, p2;
+    P *u = &p1, *tmp = &p2;
+
+    S x = xs[id], j, one(1);
+
+    P::mul(*tmp, x, g, ctx);
+    P::add(*u, h, *tmp, ctx);
+    for (j.set_zero(); j < bound; S::add(j, one)) {
+        if (!(j.array()[0] & check_mask) && *done)
+            return;
+        auto hash = hasher(*u);
+        auto idx = phf.get(hasher(*u));
+        if (trap_hashes[idx] == hash && P::eq(traps[idx], *u)) {
+            atomicCAS(found_id, thread_n, id);
+            *done = true;
+            // FIXME: names of reused variables are confusing
+            j = txs[idx];
+            S::sub(one, j, x);
+            xs[idx] = one;
+            return;
+        }
+        size_t i = u->x().array()[0] % l_len;
+        S::add(x, sl[i]);
+        P::add(*tmp, *u, pl[i], ctx);
+        utils::swap(u, tmp);
+    }
+}
+
+template <typename S>
+static __constant__ S cd_a;
+template <typename S>
+static __constant__ S cd_b;
+template <typename S>
+static __constant__ S cd_bound;
+template <typename P>
+static __constant__ P cd_g;
+template <typename P>
+static __constant__ P cd_h;
+
+} // namespace _pollard_lambda_
+
+/**
+ * @brief CUDA implementation of pollard lambda algorithm
+ *
+ * Note that this function is not thread safe
+ *
+ * @tparam S: TODO
+ * @tparam P: TODO
+ * @tparam Rng: TODO
+ * @tparam cuRng: TODO
+ * @param x: TODO
+ * @param bound: TODO
+ * @param lower: TODO
+ * @param upper: TODO
+ * @param g: TODO
+ * @param h: TODO
+ * @param seed: TODO
+ * @param block_num: TODO
+ * @param thread_num: TODO
+ */
+template <typename S, typename P, typename Rng = std::mt19937,
+          typename cuRng = thrust::random::ranlux24>
+__host__ cudaError_t cu_pollard_lambda(
+    S &GEC_RSTRCT x, const S &GEC_RSTRCT bound, const S &GEC_RSTRCT a,
+    const S &GEC_RSTRCT b, const P &GEC_RSTRCT g, const P &GEC_RSTRCT h,
+    size_t seed, unsigned int block_num, unsigned int thread_num,
+    typename P::Field::LimbT check_mask = typename P::Field::LimbT(0xFF)) {
+
+    using namespace _pollard_lambda_;
+    using LimbT = typename P::Field::LimbT;
+
+    cudaError_t cu_err = cudaSuccess;
+#define _CUDA_CHECK_TO_(code, label)                                           \
+    do {                                                                       \
+        cu_err = (code);                                                       \
+        if (cu_err != cudaSuccess)                                             \
+            goto label;                                                        \
+    } while (0)
+#define _CUDA_CHECK_(code) _CUDA_CHECK_TO_((code), clean_up)
+
+    const bool false_literal = false;
+
+    const size_t thread_n = block_num * thread_num;
+
+    utils::CHD<> phf(nullptr, thread_n);
+
+    std::vector<size_t> buckets(phf.B);
+    size_t *d_buckets = nullptr;
+
+    using HashT = typename P::Hasher::result_type;
+    std::vector<HashT> hashes;
+    HashT *d_hashes = nullptr;
+
+    const S &d_a = cd_a<S>, &d_b = cd_b<S>, &d_bound = cd_bound<S>;
+    const P &d_g = cd_g<P>, &d_h = cd_h<P>;
+
+    S::sub(x, b, a);
+    size_t l_len = x.most_significant_bit() - 1;
+
+    std::vector<S> sl(l_len);
+    S *d_sl = nullptr;
+
+    std::vector<P> pl(l_len);
+    P *d_pl = nullptr;
+
+    typename P::template Context<> ctx;
+
+    GecRng<cuRng> *d_rng;
+
+    std::vector<S> txs(phf.N);
+    S *d_txs = nullptr;
+    S *d_xs = nullptr;
+    std::vector<P> traps(phf.N);
+    P *d_traps = nullptr;
+
+    GecRng<Rng> rng = make_gec_rng(Rng((unsigned int)(seed)));
+
+    cudaStream_t s_exec, s_data;
+
+    size_t found_id;
+    size_t *d_found_id = nullptr;
+
+    bool *d_done;
+
+    _CUDA_CHECK_TO_(cudaStreamCreate(&s_exec), clean_s_exec);
+    _CUDA_CHECK_TO_(cudaStreamCreate(&s_data), clean_s_data);
+
+    _CUDA_CHECK_(cudaMalloc(&d_buckets, sizeof(size_t) * phf.B));
+    _CUDA_CHECK_(cudaMalloc(&d_hashes, sizeof(HashT) * phf.N));
+    _CUDA_CHECK_(cudaMalloc(&d_sl, sizeof(S) * l_len));
+    _CUDA_CHECK_(cudaMalloc(&d_pl, sizeof(P) * l_len));
+    _CUDA_CHECK_(cudaMalloc(&d_rng, sizeof(GecRng<cuRng>) * thread_n));
+    _CUDA_CHECK_(cudaMalloc(&d_xs, sizeof(S) * thread_n));
+    _CUDA_CHECK_(cudaMalloc(&d_txs, sizeof(S) * phf.N));
+    _CUDA_CHECK_(cudaMalloc(&d_traps, sizeof(P) * phf.N));
+    _CUDA_CHECK_(cudaMalloc(&d_found_id, sizeof(size_t)));
+    _CUDA_CHECK_(cudaMalloc(&d_done, sizeof(bool)));
+
+    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(d_a, &a, sizeof(S), 0,
+                                         cudaMemcpyHostToDevice, s_exec));
+    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(d_b, &b, sizeof(S), 0,
+                                         cudaMemcpyHostToDevice, s_exec));
+    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(d_bound, &bound, sizeof(S), 0,
+                                         cudaMemcpyHostToDevice, s_data));
+    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(d_g, &g, sizeof(P), 0,
+                                         cudaMemcpyHostToDevice, s_data));
+    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(d_h, &h, sizeof(P), 0,
+                                         cudaMemcpyHostToDevice, s_data));
+
+    init_rng_kernel<cuRng><<<block_num, thread_num, 0, s_exec>>>(d_rng, seed);
+
+    for (;;) {
+        sampling_scaler_kernel<S, cuRng>
+            <<<block_num, thread_num, 0, s_exec>>>(d_txs, d_a, d_b, d_rng);
+        sampling_scaler_kernel<S, cuRng>
+            <<<block_num, thread_num, 0, s_exec>>>(d_xs, d_a, d_b, d_rng);
+
+        // calculate jump table
+        for (size_t i = 0; i < l_len; ++i) {
+            sl[i].array()[0] = typename S::LimbT(i);
+        }
+        for (size_t i = 0; i < l_len; ++i) {
+            size_t ri = l_len - 1 - i;
+            utils::swap(sl[ri].array()[0], sl[rng.sample(ri)].array()[0]);
+        }
+        for (size_t i = 0; i < l_len; ++i) {
+            LimbT e = sl[i].array()[0];
+            sl[i].set_pow2(e);
+            P::mul(pl[i], sl[i], g, ctx);
+        }
+
+        _CUDA_CHECK_(cudaMemcpyAsync(d_sl, sl.data(), sizeof(S) * l_len,
+                                     cudaMemcpyHostToDevice, s_data));
+        _CUDA_CHECK_(cudaMemcpyAsync(d_pl, pl.data(), sizeof(P) * l_len,
+                                     cudaMemcpyHostToDevice, s_data));
+
+        _CUDA_CHECK_(cudaDeviceSynchronize());
+        _CUDA_CHECK_(cudaGetLastError());
+
+        // setting traps
+        generate_traps_kernel<S, P><<<block_num, thread_num, 0, s_exec>>>(
+            d_traps, d_hashes, d_txs, d_sl, d_pl, l_len, d_g, d_bound);
+        _CUDA_CHECK_(cudaMemcpyAsync(txs.data(), d_txs, sizeof(S) * thread_n,
+                                     cudaMemcpyDeviceToHost, s_exec));
+        _CUDA_CHECK_(cudaMemcpyAsync(traps.data(), d_traps,
+                                     sizeof(P) * thread_n,
+                                     cudaMemcpyDeviceToHost, s_exec));
+        _CUDA_CHECK_(cudaMemcpyAsync(hashes.data(), d_hashes,
+                                     sizeof(HashT) * thread_n,
+                                     cudaMemcpyDeviceToHost, s_exec));
+        _CUDA_CHECK_(cudaDeviceSynchronize());
+        _CUDA_CHECK_(cudaGetLastError());
+
+        // construct static maps
+        phf.buckets = buckets.data();
+        size_t placeholder = phf.fill_placeholder(hashes.data());
+#ifdef GEC_DEBUG
+        auto duplicates =
+#endif // GEC_DEBUG
+            phf.build(hashes.data());
+#ifdef GEC_DEBUG
+        for (auto &dup : duplicates) {
+            printf("[host]: find hash collision: \n");
+            traps[dup.first].println();
+            traps[dup.second].println();
+            printf("some traps are omitted");
+        }
+#endif // GEC_DEBUG
+        phf.rearrange(hashes.data(), placeholder, txs.data(), traps.data());
+
+        // start searching
+        phf.buckets = d_buckets;
+        cudaMemcpyAsync(d_done, &false_literal, sizeof(bool),
+                        cudaMemcpyHostToDevice, s_exec);
+        _CUDA_CHECK_(cudaMemcpyAsync(d_buckets, buckets.data(),
+                                     sizeof(size_t) * phf.B,
+                                     cudaMemcpyHostToDevice, s_exec));
+        _CUDA_CHECK_(cudaMemcpyAsync(d_txs, txs.data(), sizeof(S) * phf.N,
+                                     cudaMemcpyHostToDevice, s_exec));
+        _CUDA_CHECK_(cudaMemcpyAsync(d_traps, traps.data(), sizeof(P) * phf.N,
+                                     cudaMemcpyHostToDevice, s_exec));
+        _CUDA_CHECK_(cudaMemcpyAsync(d_hashes, hashes.data(),
+                                     sizeof(HashT) * phf.N,
+                                     cudaMemcpyHostToDevice, s_exec));
+        searching_kernel<S, P><<<block_num, thread_num, 0, s_exec>>>(
+            d_done, d_found_id, d_hashes, d_traps, d_txs, d_xs, phf, d_sl, d_pl,
+            l_len, d_g, d_h, d_bound, check_mask);
+        _CUDA_CHECK_(cudaDeviceSynchronize());
+
+        switch (cudaGetLastError()) {
+        case cudaErrorLaunchFailure: // success
+            cudaMemcpy(&found_id, d_found_id, sizeof(size_t),
+                       cudaMemcpyDeviceToHost);
+            cudaMemcpy(&x, d_xs + found_id, sizeof(S), cudaMemcpyDeviceToHost);
+            goto clean_up;
+        case cudaSuccess: // failed
+            break;
+        default: // error
+            goto clean_up;
+        }
+    }
+
+clean_up:
+    cudaFree(d_buckets);
+    cudaFree(d_hashes);
+    cudaFree(d_sl);
+    cudaFree(d_pl);
+    cudaFree(d_rng);
+    cudaFree(d_xs);
+    cudaFree(d_txs);
+    cudaFree(d_traps);
+    cudaFree(d_found_id);
+    cudaFree(d_done);
+
+    cudaStreamDestroy(s_data);
+clean_s_data:
+    cudaStreamDestroy(s_exec);
+clean_s_exec:
+    return cu_err;
+#undef CUDA_CHECK
+}
+
+#endif // __CUDACC__
 
 } // namespace dlp
 

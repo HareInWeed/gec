@@ -45,7 +45,7 @@
 #elif defined(GEC_CLANG)
 // see:
 // <https://clang.llvm.org/docs/AttributeReference.html#always-inline-force-inline>
-#define GEC_INLINE __forceinline
+#define GEC_INLINE inline __attribute__((always_inline))
 
 #elif defined(GEC_GCC)
 // see:
