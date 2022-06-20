@@ -21,8 +21,9 @@ class AddSubMixin : protected CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>> {
      *
      * return the carry bit
      */
-    static bool add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                    const Core &GEC_RSTRCT c) {
+    __host__ __device__ static bool add(Core &GEC_RSTRCT a,
+                                        const Core &GEC_RSTRCT b,
+                                        const Core &GEC_RSTRCT c) {
         return utils::seq_add<LIMB_N>(a.array(), b.array(), c.array());
     }
 
@@ -30,7 +31,8 @@ class AddSubMixin : protected CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>> {
      *
      * return the carry bit
      */
-    static bool add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+    __host__ __device__ static bool add(Core &GEC_RSTRCT a,
+                                        const Core &GEC_RSTRCT b) {
         return utils::seq_add<LIMB_N>(a.array(), b.array());
     }
 
@@ -38,8 +40,9 @@ class AddSubMixin : protected CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>> {
      *
      * return the borrow bit
      */
-    static bool sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                    const Core &GEC_RSTRCT c) {
+    __host__ __device__ static bool sub(Core &GEC_RSTRCT a,
+                                        const Core &GEC_RSTRCT b,
+                                        const Core &GEC_RSTRCT c) {
         return utils::seq_sub<LIMB_N>(a.array(), b.array(), c.array());
     }
 
@@ -47,34 +50,37 @@ class AddSubMixin : protected CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>> {
      *
      * return the borrow bit
      */
-    static bool sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+    __host__ __device__ static bool sub(Core &GEC_RSTRCT a,
+                                        const Core &GEC_RSTRCT b) {
         return utils::seq_sub<LIMB_N>(a.array(), b.array());
     }
 
-    Core &add(const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+    __host__ __device__ Core &add(const Core &GEC_RSTRCT a,
+                                  const Core &GEC_RSTRCT b) {
         add(this->core(), a, b);
         return this->core();
     }
-    Core &add(const Core &GEC_RSTRCT a) {
+    __host__ __device__ Core &add(const Core &GEC_RSTRCT a) {
         add(this->core(), a);
         return this->core();
     }
 
-    Core &sub(const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+    __host__ __device__ Core &sub(const Core &GEC_RSTRCT a,
+                                  const Core &GEC_RSTRCT b) {
         sub(this->core(), a, b);
         return this->core();
     }
-    Core &sub(const Core &GEC_RSTRCT a) {
+    __host__ __device__ Core &sub(const Core &GEC_RSTRCT a) {
         sub(this->core(), a);
         return this->core();
     }
 
-    Core &operator+=(const Core &GEC_RSTRCT a) {
+    __host__ __device__ Core &operator+=(const Core &GEC_RSTRCT a) {
         add(a);
         return this->core();
     }
 
-    Core &operator-=(const Core &GEC_RSTRCT a) {
+    __host__ __device__ Core &operator-=(const Core &GEC_RSTRCT a) {
         sub(a);
         return this->core();
     }

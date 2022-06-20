@@ -432,6 +432,14 @@ d_uint_mul_lh<uint64_t>(uint64_t &GEC_RSTRCT l, uint64_t &GEC_RSTRCT h,
     l = a * b;
     h = __umul64hi(a, b);
 }
+// template <>
+// __device__ GEC_INLINE void
+// d_uint_mul_lh<uint32_t>(uint32_t &GEC_RSTRCT l, uint32_t &GEC_RSTRCT h,
+//                         const uint32_t &GEC_RSTRCT a,
+//                         const uint32_t &GEC_RSTRCT b) {
+//     l = a * b;
+//     h = __umulhi(a, b);
+// }
 #endif
 
 template <typename T>

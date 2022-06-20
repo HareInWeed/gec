@@ -355,6 +355,7 @@ cu_pollard_rho(S &c,
                unsigned int buffer_size = 0, unsigned int check_mask = 0xFF) {
 
     using namespace _pollard_rho_;
+    using uint = unsigned int;
     using F = typename P::Field;
 
     cudaError_t cu_err = cudaSuccess;
@@ -374,7 +375,7 @@ cu_pollard_rho(S &c,
 
     const size_t thread_n = block_num * thread_num;
 
-    GecRng<Rng> rng = make_gec_rng(Rng((unsigned int)(seed)));
+    GecRng<Rng> rng = make_gec_rng(Rng((uint)(seed)));
 
     std::vector<S> al(l);
     S *d_al = nullptr;
@@ -389,13 +390,13 @@ cu_pollard_rho(S &c,
     S *d_init_xs = nullptr, *d_init_ys = nullptr;
     P *d_init_ps = nullptr;
 
-    const unsigned int buf_size = buffer_size ? buffer_size : thread_n;
+    const uint buf_size = buffer_size ? buffer_size : uint(thread_n);
     std::unordered_multimap<P, Coefficient<S>, typename P::Hasher>
         candidates_map;
     std::vector<P> candidates(buf_size);
     std::vector<S> xs(buf_size);
     std::vector<S> ys(buf_size);
-    unsigned int *d_buf_cursor;
+    uint *d_buf_cursor;
     P *d_candidate = nullptr;
     S *d_xs = nullptr, *d_ys = nullptr;
 
@@ -417,7 +418,7 @@ cu_pollard_rho(S &c,
     _CUDA_CHECK_(cudaMalloc(&d_candidate, sizeof(P) * buf_size));
     _CUDA_CHECK_(cudaMalloc(&d_xs, sizeof(S) * buf_size));
     _CUDA_CHECK_(cudaMalloc(&d_ys, sizeof(S) * buf_size));
-    _CUDA_CHECK_(cudaMalloc(&d_buf_cursor, sizeof(unsigned int)));
+    _CUDA_CHECK_(cudaMalloc(&d_buf_cursor, sizeof(uint)));
     _CUDA_CHECK_(cudaMalloc(&d_done, sizeof(bool)));
 
     _CUDA_CHECK_(cudaMemcpyToSymbolAsync(d_g, &g, sizeof(P), 0,
@@ -450,7 +451,7 @@ cu_pollard_rho(S &c,
     for (;;) {
         cudaMemcpyAsync(d_done, &false_literal, sizeof(bool),
                         cudaMemcpyHostToDevice, stream1);
-        cudaMemcpyAsync(d_buf_cursor, &zero_literal, sizeof(unsigned int),
+        cudaMemcpyAsync(d_buf_cursor, &zero_literal, sizeof(uint),
                         cudaMemcpyHostToDevice, stream1);
         searching_kernel<S, P><<<block_num, thread_num, 0, stream1>>>(
             d_done, d_candidate, d_xs, d_ys, d_buf_cursor, buf_size, d_init_xs,
@@ -463,7 +464,7 @@ cu_pollard_rho(S &c,
                         cudaMemcpyDeviceToHost, stream1);
         _CUDA_CHECK_(cudaDeviceSynchronize());
         _CUDA_CHECK_(cudaGetLastError());
-        for (unsigned int k = 0; k < buf_size; ++k) {
+        for (uint k = 0; k < buf_size; ++k) {
             auto &p = candidates[k];
             auto &x = xs[k];
             auto &y = ys[k];

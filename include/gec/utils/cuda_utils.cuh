@@ -23,9 +23,6 @@ __device__ GEC_INLINE void set_cc_cf_(bool flag) {
 /**
  * @brief get the `CC.CF` flag register
  *
- * note that calling the function `get_cc_cf_` again immediately after calling
- * `get_cc_cf_` will lead to undefined behavior
- *
  * @return value of `CC.CF` flag register
  */
 __device__ GEC_INLINE bool get_cc_cf_() {
@@ -49,22 +46,22 @@ __device__ GEC_INLINE void add_cc_(T &a, const T &b, const T &c);
 template <>
 __device__ GEC_INLINE void add_cc_<uint32_t>(uint32_t &a, const uint32_t &b,
                                              const uint32_t &c) {
-    asm("add.cc.u32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
+    asm volatile("add.cc.u32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
 }
 template <>
 __device__ GEC_INLINE void add_cc_<uint64_t>(uint64_t &a, const uint64_t &b,
                                              const uint64_t &c) {
-    asm("add.cc.u64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
+    asm volatile("add.cc.u64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
 }
 template <>
 __device__ GEC_INLINE void add_cc_<int32_t>(int32_t &a, const int32_t &b,
                                             const int32_t &c) {
-    asm("add.cc.s32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
+    asm volatile("add.cc.s32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
 }
 template <>
 __device__ GEC_INLINE void add_cc_<int64_t>(int64_t &a, const int64_t &b,
                                             const int64_t &c) {
-    asm("add.cc.s64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
+    asm volatile("add.cc.s64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
 }
 
 /**
@@ -80,22 +77,22 @@ __device__ GEC_INLINE void addc_(T &a, const T &b, const T &c);
 template <>
 __device__ GEC_INLINE void addc_<uint32_t>(uint32_t &a, const uint32_t &b,
                                            const uint32_t &c) {
-    asm("addc.u32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
+    asm volatile("addc.u32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
 }
 template <>
 __device__ GEC_INLINE void addc_<uint64_t>(uint64_t &a, const uint64_t &b,
                                            const uint64_t &c) {
-    asm("addc.u64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
+    asm volatile("addc.u64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
 }
 template <>
 __device__ GEC_INLINE void addc_<int32_t>(int32_t &a, const int32_t &b,
                                           const int32_t &c) {
-    asm("addc.s32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
+    asm volatile("addc.s32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
 }
 template <>
 __device__ GEC_INLINE void addc_<int64_t>(int64_t &a, const int64_t &b,
                                           const int64_t &c) {
-    asm("addc.s64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
+    asm volatile("addc.s64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
 }
 
 /**
@@ -113,22 +110,22 @@ __device__ GEC_INLINE void addc_cc_(T &a, const T &b, const T &c);
 template <>
 __device__ GEC_INLINE void addc_cc_<uint32_t>(uint32_t &a, const uint32_t &b,
                                               const uint32_t &c) {
-    asm("addc.cc.u32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
+    asm volatile("addc.cc.u32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
 }
 template <>
 __device__ GEC_INLINE void addc_cc_<uint64_t>(uint64_t &a, const uint64_t &b,
                                               const uint64_t &c) {
-    asm("addc.cc.u64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
+    asm volatile("addc.cc.u64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
 }
 template <>
 __device__ GEC_INLINE void addc_cc_<int32_t>(int32_t &a, const int32_t &b,
                                              const int32_t &c) {
-    asm("addc.cc.s32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
+    asm volatile("addc.cc.s32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
 }
 template <>
 __device__ GEC_INLINE void addc_cc_<int64_t>(int64_t &a, const int64_t &b,
                                              const int64_t &c) {
-    asm("addc.cc.s64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
+    asm volatile("addc.cc.s64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
 }
 
 } // namespace utils

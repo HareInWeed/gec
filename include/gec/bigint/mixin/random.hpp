@@ -254,18 +254,13 @@ __host__ __device__ GEC_INLINE GecRng<Rng> make_gec_rng(Rng &&rng,
 
 namespace bigint {
 
-/** @brief mixin that enables exponentiation
+/** @brief mixin that enables random sampling
  */
 template <class Core, typename LIMB_T, size_t LIMB_N>
-class ModRandom : protected CRTP<Core, ModRandom<Core, LIMB_T, LIMB_N>> {
-    friend CRTP<Core, ModRandom<Core, LIMB_T, LIMB_N>>;
+class BasicRandom : protected CRTP<Core, BasicRandom<Core, LIMB_T, LIMB_N>> {
+    friend CRTP<Core, BasicRandom<Core, LIMB_T, LIMB_N>>;
 
   public:
-    template <typename Rng>
-    __host__ __device__ GEC_INLINE static void sample(Core &GEC_RSTRCT a,
-                                                      GecRng<Rng> &rng) {
-        sample_exclusive_raw(a, a.mod().array(), rng);
-    }
     template <typename Rng>
     __host__ __device__ GEC_INLINE static void
     sample(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT upper, GecRng<Rng> &rng) {
@@ -366,8 +361,37 @@ class ModRandom : protected CRTP<Core, ModRandom<Core, LIMB_T, LIMB_N>> {
     __host__ __device__ static void sample_non_zero(Core &GEC_RSTRCT a,
                                                     GecRng<Rng> &rng) {
         do {
-            sample(a, rng);
+            Core::sample(a, rng);
         } while (a.is_zero());
+    }
+};
+
+/** @brief mixin that enables bigint random sampling
+ */
+template <class Core, typename LIMB_T, size_t LIMB_N>
+class GEC_EMPTY_BASES BigintRandom : public BasicRandom<Core, LIMB_T, LIMB_N> {
+  public:
+    using BasicRandom<Core, LIMB_T, LIMB_N>::sample;
+    template <typename Rng>
+    __host__ __device__ GEC_INLINE static void sample(Core &GEC_RSTRCT a,
+                                                      GecRng<Rng> &rng) {
+        for (size_t k = 0; k < LIMB_N; ++k) {
+            a.array()[k] = rng.template sample<LIMB_T>();
+        }
+    }
+};
+
+/** @brief mixin that enables modular random sampling
+ */
+template <class Core, typename LIMB_T, size_t LIMB_N>
+class GEC_EMPTY_BASES ModRandom : public BasicRandom<Core, LIMB_T, LIMB_N> {
+  public:
+    using BasicRandom<Core, LIMB_T, LIMB_N>::sample;
+    template <typename Rng>
+    __host__ __device__ GEC_INLINE static void sample(Core &GEC_RSTRCT a,
+                                                      GecRng<Rng> &rng) {
+        BasicRandom<Core, LIMB_T, LIMB_N>::sample_exclusive_raw(
+            a, a.mod().array(), rng);
     }
 };
 
