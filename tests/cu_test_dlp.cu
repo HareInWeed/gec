@@ -1,5 +1,6 @@
 #include "cuda_common.cuh"
 
+#define GEC_DEBUG
 #include "curve.hpp"
 
 #include <gec/dlp.hpp>
@@ -83,7 +84,7 @@ TEST_CASE("cu_pollard_lambda", "[dlp][pollard_lambda][cuda]") {
     CAPTURE(g, lower, upper, x0, h);
 
     S x;
-    // the grid size here are for test only, typicial grid size should be much
+    // the grid size here are for test only, typical grid size should be much
     // larger
     CUDA_REQUIRE(cu_pollard_lambda(x, bound, lower, upper, g, h, seed, 4, 32));
 

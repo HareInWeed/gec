@@ -401,11 +401,6 @@ __global__ void searching_kernel(
     S x = xs[id], j, one(1);
 
     P::mul(*tmp, x, cd_g<P>, ctx);
-    if (id == 0) {
-        cd_g<P>.println();
-        x.println();
-        tmp->println();
-    }
     P::add(*u, cd_h<P>, *tmp, ctx);
     for (j.set_zero(); j < cd_bound<S>; S::add(j, one)) {
         if (!(j.array()[0] & check_mask) && *done)
@@ -602,6 +597,7 @@ __host__ cudaError_t cu_pollard_lambda(
 #endif // GEC_DEBUG
             phf.build(hashes.data());
 #ifdef GEC_DEBUG
+        printf("[host]: %zu hash collision in total\n", duplicates.size());
         for (auto &dup : duplicates) {
             printf("[host]: find hash collision: \n");
             printf("%zu: ", dup.first);

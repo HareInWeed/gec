@@ -511,9 +511,9 @@ __global__ static void test_montgomery_kernel(Int *d_x, Int *d_y, Int *d_mon_x,
                                               Int *d_prod) {
     Int x = *d_x, y = *d_y, mon_x, mon_y, mon_prod, prod;
     Int::to_montgomery(mon_x, x);
-    // Int::to_montgomery(mon_y, y);
-    // Int::mul(mon_prod, mon_x, mon_y);
-    // Int::from_montgomery(prod, mon_prod);
+    Int::to_montgomery(mon_y, y);
+    Int::mul(mon_prod, mon_x, mon_y);
+    Int::from_montgomery(prod, mon_prod);
     *d_mon_x = mon_x;
     *d_mon_y = mon_y;
     *d_mon_prod = mon_prod;
@@ -558,9 +558,9 @@ static void test_montgomery(std::random_device::result_type seed) {
     Int mon_x, mon_y, mon_prod, prod;
     printf("host: \n");
     Int::to_montgomery(mon_x, x);
-    // Int::to_montgomery(mon_y, y);
-    // Int::mul(mon_prod, mon_x, mon_y);
-    // Int::from_montgomery(prod, mon_prod);
+    Int::to_montgomery(mon_y, y);
+    Int::mul(mon_prod, mon_x, mon_y);
+    Int::from_montgomery(prod, mon_prod);
 
     REQUIRE(mon_x == r_mon_x);
     REQUIRE(mon_y == r_mon_y);
