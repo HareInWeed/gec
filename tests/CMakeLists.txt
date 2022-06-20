@@ -43,13 +43,22 @@ if(GEC_ENABLE_CUDA)
         PRIVATE "cuda_common.cu"
                 "common.cu"
                 "curve.cu"
+                "test_arithmetic.cu"
+                "cu_test_arithmetic.cu"
+                "test_bigint.cu"
+                "cu_test_bigint.cu"
                 "test_field.cu"
                 "cu_test_field.cu"
                 "test_dlp.cu"
                 "cu_test_dlp.cu")
     target_link_libraries(cu_unit_test PRIVATE unit_test_shared)
     set_target_properties(cu_unit_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-    # target_compile_options(cu_unit_test PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --display_error_number>)
+    target_compile_options(cu_unit_test PRIVATE
+        $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:CUDA>>:-g -G>)
+    target_compile_options(cu_unit_test PRIVATE
+        $<$<AND:$<CONFIG:RelWithDebInfo>,$<COMPILE_LANGUAGE:CUDA>>:-lineinfo>)
+    # target_compile_options(cu_unit_test PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--display-error-number>)
+    target_compile_options(cu_unit_test PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--no-display-error-number>)
 
     add_test(NAME gec_cuda_test COMMAND cu_unit_test ~[bench])
 endif()

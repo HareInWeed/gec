@@ -345,7 +345,7 @@ TEST_CASE("multithread_pollard_lambda", "[dlp][pollard_lambda][multithread]") {
 
     std::random_device rd;
     auto seed = rd();
-    INFO("seed: " << seed);
+    CAPTURE(seed);
     auto rng = make_gec_rng(std::mt19937(seed));
 
     C::Context<> ctx;
@@ -363,12 +363,7 @@ TEST_CASE("multithread_pollard_lambda", "[dlp][pollard_lambda][multithread]") {
     C::mul(h, x0, g, ctx);
     REQUIRE(C::on_curve(h, ctx));
 
-    size_t l = 15;
-    std::vector<S> sl(l);
-    std::vector<C> pl(l);
-
     S x;
-
     multithread_pollard_lambda(x, bound, 8, lower, upper, g, h, rng);
 
     C xg;
