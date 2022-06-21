@@ -407,9 +407,6 @@ __global__ void searching_kernel(
             return;
         auto hash = hasher(*u);
         auto idx = phf.get(hash);
-        if (id == 0)
-            printf("[worker %05llu]: %llx, (%llx) \n", id, hash,
-                   trap_hashes[idx]);
         if (trap_hashes[idx] == hash && P::eq(traps[idx], *u)) {
             *done = true;
             atomicCAS(found_id, thread_n, id);
