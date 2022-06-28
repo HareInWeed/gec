@@ -27,9 +27,10 @@ class Exponentiation : protected CRTP<Core, Exponentiation<Core>> {
 
         auto &ap = ctx_view.template get<0>();
 
-        bool need_copy = false;
-        Core *p1 = &a, *p2 = &ap;
-        p1->set_mul_id();
+        bool in_dist = true;
+#define GEC_DIST_ (in_dist ? ap : a)
+#define GEC_SRC_ (in_dist ? a : ap)
+        a.set_mul_id();
         constexpr size_t Bits = utils::type_bits<IntT>::value;
         int i = N - 1, j;
         for (; i >= 0; --i) {
@@ -42,20 +43,20 @@ class Exponentiation : protected CRTP<Core, Exponentiation<Core>> {
     exp:
         for (; i >= 0; --i) {
             for (; j >= 0; --j) {
-                Core::mul(*p2, *p1, *p1);
-                utils::swap(p1, p2);
-                need_copy = !need_copy;
+                Core::mul(GEC_DIST_, GEC_SRC_, GEC_SRC_);
+                in_dist = !in_dist;
                 if ((IntT(1) << j) & e[i]) {
-                    Core::mul(*p2, *p1, b);
-                    utils::swap(p1, p2);
-                    need_copy = !need_copy;
+                    Core::mul(GEC_DIST_, GEC_SRC_, b);
+                    in_dist = !in_dist;
                 }
             }
             j = Bits - 1;
         }
-        if (need_copy) {
+        if (!in_dist) {
             a = ap;
         }
+#undef GEC_DIST_
+#undef GEC_SRC_
     }
 
     template <typename CTX, typename IntT,

@@ -48,6 +48,7 @@ if(GEC_ENABLE_CUDA)
                 "test_bigint.cu"
                 "cu_test_bigint.cu"
                 "test_field.cu"
+                "test_curve.cu"
                 "cu_test_field.cu"
                 "test_dlp.cu"
                 "cu_test_dlp.cu")

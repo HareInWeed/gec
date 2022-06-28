@@ -57,6 +57,7 @@ TEST_CASE("cu_pollard_lambda", "[dlp][pollard_lambda][cuda]") {
     using C = Dlp3CurveA;
     const C &g = Dlp3Gen1;
     using S = Dlp3G1Scaler;
+    using F = C::Field;
 
     std::random_device rd;
     auto data_seed = rd();
@@ -75,7 +76,7 @@ TEST_CASE("cu_pollard_lambda", "[dlp][pollard_lambda][cuda]") {
         REQUIRE(h.is_inf());
     }
 
-    S x0, lower(1 << 3), upper((1 << 3) + (1 << 15)), bound(1 << 5);
+    S x0, lower(1 << 3), upper((1 << 3) + (1 << 15));
     S::sample_inclusive(x0, lower, upper, rng, ctx);
 
     C::mul(h, x0, g, ctx);
@@ -84,9 +85,10 @@ TEST_CASE("cu_pollard_lambda", "[dlp][pollard_lambda][cuda]") {
     CAPTURE(g, lower, upper, x0, h);
 
     S x;
+    F mask(0xF0000000, 0, 0, 0, 0, 0, 0, 0);
     // the grid size here are for test only, typical grid size should be much
     // larger
-    CUDA_REQUIRE(cu_pollard_lambda(x, bound, lower, upper, g, h, seed, 4, 32));
+    CUDA_REQUIRE(cu_pollard_lambda(x, lower, upper, g, h, mask, seed, 4, 32));
 
     C xg;
     C::mul(xg, x, g, ctx);

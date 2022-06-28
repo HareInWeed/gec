@@ -12,6 +12,7 @@ class AddG160 : public ArrayBE<LIMB_T, LN_160>,
                 public VtCompare<AddG160, LIMB_T, LN_160>,
                 public BitOps<AddG160, LIMB_T, LN_160>,
                 public AddSubMixin<AddG160, LIMB_T, LN_160>,
+                public BigintRandom<AddG160, LIMB_T, LN_160>,
                 public ArrayOstream<AddG160, LIMB_T, LN_160> {
   public:
     using ArrayBE::ArrayBE;
@@ -174,6 +175,52 @@ TEST_CASE("bigint shift", "[bigint]") {
     REQUIRE(e.is_zero());
 
     // e.shift_left<32 * 5 + 1>(); // don't do that
+}
+
+TEST_CASE("bigint runtime shift", "[bigint]") {
+    std::random_device rd;
+    auto seed = rd();
+    CAPTURE(seed);
+
+    auto rng = make_gec_rng(std::mt19937(seed));
+
+    AddG160 x, res, expected;
+    AddG160::sample(x, rng);
+
+#define test_helper(bit)                                                       \
+    do {                                                                       \
+        INFO("shift left: " << bit);                                           \
+        expected = x;                                                          \
+        expected.shift_left<(bit)>();                                          \
+        res = x;                                                               \
+        res.shift_left((bit));                                                 \
+        REQUIRE(expected == res);                                              \
+        INFO("shift right: " << bit);                                          \
+        expected = x;                                                          \
+        expected.shift_right<(bit)>();                                         \
+        res = x;                                                               \
+        res.shift_right((bit));                                                \
+        REQUIRE(expected == res);                                              \
+    } while (0)
+
+    for (int k = 0; k < 10000; ++k) {
+        test_helper(0);
+        test_helper(1);
+        test_helper(7);
+        test_helper(31);
+        test_helper(32);
+        test_helper(33);
+        test_helper(64);
+        test_helper(65);
+        test_helper(66);
+        test_helper(32 * 4 - 3);
+        test_helper(32 * 4);
+        test_helper(32 * 4 + 7);
+        test_helper(32 * 5 - 1);
+        test_helper(32 * 5);
+    }
+
+#undef test_helper
 }
 
 TEST_CASE("bigint add", "[bigint]") {

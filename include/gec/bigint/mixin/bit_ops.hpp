@@ -69,8 +69,26 @@ class BitOps : protected CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>> {
         utils::seq_shift_right<LIMB_N, B>(this->core().array());
     }
 
-    // TODO: runtime shift_right
-    // void shift_right(size_t n) {}
+    __host__ __device__ void shift_right(size_t n) {
+        constexpr size_t l_bits = utils::type_bits<LIMB_T>::value;
+        const size_t LS = n / l_bits;
+        if (LS < LIMB_N) {
+            const size_t BS = n % l_bits;
+            const size_t CBS = l_bits - BS;
+            LIMB_T *arr = this->core().array();
+            for (size_t k = LS; k < LIMB_N - 1; ++k) {
+                arr[k - LS] =
+                    (BS ? ((arr[k] >> BS) | (arr[k + 1] << CBS)) : arr[k]);
+            }
+            arr[LIMB_N - 1 - LS] =
+                (BS ? ((arr[LIMB_N - 1] >> BS)) : arr[LIMB_N - 1]);
+            for (size_t k = LIMB_N - LS; k < LIMB_N; ++k) {
+                arr[k] = 0;
+            }
+        } else {
+            this->core().set_zero();
+        }
+    }
 
     /** @brief shift element by `B` bit */
     template <size_t B,
@@ -80,8 +98,26 @@ class BitOps : protected CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>> {
         utils::seq_shift_left<LIMB_N, B>(this->core().array());
     }
 
-    // TODO: runtime shift_right
-    // void shift_left(size_t n) {}
+    __host__ __device__ void shift_left(size_t n) {
+        constexpr size_t l_bits = utils::type_bits<LIMB_T>::value;
+        const size_t LS = n / l_bits;
+        if (LS < LIMB_N) {
+            const size_t BS = n % l_bits;
+            const size_t CBS = l_bits - BS;
+            LIMB_T *arr = this->core().array();
+
+            for (size_t k = LIMB_N - LS - 1; k > 0; --k) {
+                arr[k + LS] =
+                    (BS ? ((arr[k] << BS) | (arr[k - 1] >> CBS)) : arr[k]);
+            }
+            arr[LS] = (BS ? ((arr[0] << BS)) : arr[0]);
+            for (size_t k = 0; k < LS; ++k) {
+                arr[k] = 0;
+            }
+        } else {
+            this->core().set_zero();
+        }
+    }
 
     __host__ __device__ size_t most_significant_bit() {
         constexpr size_t limb_digits = utils::type_bits<LIMB_T>::value;

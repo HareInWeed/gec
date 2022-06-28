@@ -27,9 +27,10 @@ class ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
         auto &ctx_view = ctx.template view_as<Core>();
 
         auto &ap = ctx_view.template get<0>();
-        bool need_copy = false;
-        Core *p1 = &a, *p2 = &ap;
-        p1->set_inf();
+        bool in_dist = true;
+#define GEC_DIST_ (in_dist ? ap : a)
+#define GEC_SRC_ (in_dist ? a : ap)
+        a.set_inf();
         constexpr size_t Bits = utils::type_bits<IntT>::value;
         int i = N - 1, j;
         for (; i >= 0; --i) {
@@ -42,20 +43,20 @@ class ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
     mul:
         for (; i >= 0; --i) {
             for (; j >= 0; --j) {
-                Core::add(*p2, *p1, *p1, ctx_view.rest());
-                utils::swap(p1, p2);
-                need_copy = !need_copy;
+                Core::add(GEC_DIST_, GEC_SRC_, GEC_SRC_, ctx_view.rest());
+                in_dist = !in_dist;
                 if ((IntT(1) << j) & e[i]) {
-                    Core::add(*p2, *p1, b, ctx_view.rest());
-                    utils::swap(p1, p2);
-                    need_copy = !need_copy;
+                    Core::add(GEC_DIST_, GEC_SRC_, b, ctx_view.rest());
+                    in_dist = !in_dist;
                 }
             }
             j = Bits - 1;
         }
-        if (need_copy) {
+        if (!in_dist) {
             a = ap;
         }
+#undef GEC_DIST_
+#undef GEC_SRC_
     }
 
     template <typename CTX, typename IntT,

@@ -55,13 +55,25 @@ class CHD {
 
     __host__ __device__ GEC_INLINE constexpr CHD(size_t *buckets,
                                                  size_t M) noexcept
-        : CHD(buckets, M, next_prime(M * 123 / 100)) {}
+        : buckets(buckets) {
+        set_params(M);
+    }
     __host__ __device__ GEC_INLINE constexpr CHD(size_t *buckets, size_t M,
                                                  size_t N) noexcept
-        : CHD(buckets, M, N, next_prime(N / 10)) {}
+        : buckets(buckets) {
+        set_params(M, N);
+    }
     __host__ __device__ GEC_INLINE constexpr CHD(size_t *buckets, size_t M,
                                                  size_t N, size_t B) noexcept
-        : buckets(buckets), M(M), N(N), B(B) {}
+        : buckets(buckets) {
+        set_params(M, N, B);
+    }
+    __host__ __device__ GEC_INLINE void set_params(size_t M, size_t N = 0,
+                                                   size_t B = 0) {
+        this->M = M;
+        this->N = N ? N : next_prime(this->M * 123 / 100);
+        this->B = B ? B : next_prime(this->N / 10);
+    }
 
     __host__ std::vector<std::pair<size_t, size_t>>
     build(const size_t *hashes) {
