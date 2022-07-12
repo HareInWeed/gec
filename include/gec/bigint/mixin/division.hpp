@@ -171,7 +171,6 @@ __host__ __device__ static void cast_div_mod(T *GEC_RSTRCT q, T *GEC_RSTRCT a,
     using namespace gec::utils;
 
     constexpr size_t bits = type_bits<T>::value;
-    constexpr size_t half_bits = bits / 2;
     constexpr T max_limb = TypeMax<T>::value;
 
     bool flag;
@@ -193,8 +192,7 @@ __host__ __device__ static void cast_div_mod(T *GEC_RSTRCT q, T *GEC_RSTRCT a,
 
     // ----- normalization -----
 
-    size_t lz = count_leading_zeros(b[n - 1]);
-    size_t shift = lz >= half_bits ? 1 + lz - half_bits : 0;
+    size_t shift = count_leading_zeros(b[n - 1]);
     T a_last = a[N - 1] >> (bits - shift);
     a_last = shift ? a_last : T(0);
     seq_shift_left<N>(a, shift);
@@ -236,12 +234,16 @@ __host__ __device__ static void cast_div_mod(T *GEC_RSTRCT q, T *GEC_RSTRCT a,
 
     // a[...] < 0
     if (flag) {
-        --q_est;
+        if (NeedQ) {
+            --q_est;
+        }
         // a[...] += b[...]
         uint_sub_with_borrow(a_last, T(0), seq_add(a + i, b, n));
     }
 
-    q[i] = q_est;
+    if (NeedQ) {
+        q[i] = q_est;
+    }
 
     // ----- i = m - 1 to 0 -----
     if (i > 0) {
@@ -276,12 +278,16 @@ __host__ __device__ static void cast_div_mod(T *GEC_RSTRCT q, T *GEC_RSTRCT a,
 
             // a[...] < 0
             if (flag) {
-                --q_est;
+                if (NeedQ) {
+                    --q_est;
+                }
                 // a[...] += b[...]
                 uint_sub_with_borrow(a[in], T(0), seq_add(a + i, b, n));
             }
 
-            q[i] = q_est;
+            if (NeedQ) {
+                q[i] = q_est;
+            }
         } while (i > 0);
     }
 
@@ -538,7 +544,8 @@ struct DivModHelper<N, T, Method::Split> {
         auto &hr = ctx_view.template get<1>();
         auto &ha = ctx_view.template get<2>();
         auto &hb = ctx_view.template get<3>();
-        split_div_mod<true, false, HT, N>(q, nullptr, a, b, hq, hr, ha, hb);
+        split_div_mod<true, false, HT, N>(q, (T *)(nullptr), a, b, hq, hr, ha,
+                                          hb);
     }
 
     template <typename CTX>
@@ -557,7 +564,8 @@ struct DivModHelper<N, T, Method::Split> {
         auto &hr = ctx_view.template get<1>();
         auto &ha = ctx_view.template get<2>();
         auto &hb = ctx_view.template get<3>();
-        split_div_mod<false, true, HT, N>(nullptr, r, a, b, hq, hr, ha, hb);
+        split_div_mod<false, true, HT, N>((T *)(nullptr), r, a, b, hq, hr, ha,
+                                          hb);
     }
 };
 
@@ -804,8 +812,8 @@ class GEC_EMPTY_BASES Division
      */
     template <typename CTX>
     __host__ __device__ GEC_INLINE static void
-    mod(const Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
-        const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+    mod(Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+        CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
         using namespace _division_;
         DivModHelper<LIMB_N, LIMB_T,

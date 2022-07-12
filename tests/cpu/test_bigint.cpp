@@ -439,33 +439,29 @@ TEST_CASE("bigint sub limb", "[bigint]") {
     }
 }
 
-TEST_CASE("bigint division", "[bigint]") {
+template <typename Int>
+static void test_division(std::random_device::result_type seed) {
     using namespace gec::utils;
-    std::random_device rd;
-    // auto seed = rd();
-    auto seed = 1609950655;
-    CAPTURE(seed);
-
-    auto rng = make_gec_rng(std::mt19937(seed));
-
-    using Int = AddG160;
-    using T = Int::LimbT;
+    using T = typename Int::LimbT;
     constexpr auto bits = type_bits<T>::value;
     constexpr auto N = Int::LimbN;
 
-    Int::Context<> ctx;
+    CAPTURE(seed);
+    auto rng = make_gec_rng(std::mt19937(seed));
+
+    typename Int::template Context<> ctx;
 
     T prod[2 * N];
 
-    Int a, b, q, r;
-    Int upper;
+    Int a, b, q, r, q1, r1;
+    Int lower(1), upper;
     for (size_t j = 0; j < 2 * N; ++j) {
         upper.array()[j / 2] =
             j & 1 ? LowerKMask<T, bits>::value : LowerKMask<T, bits / 2>::value;
         CAPTURE(upper);
         for (int k = 0; k < 1000; ++k) {
             Int::sample(a, rng);
-            Int::sample(b, upper, rng);
+            Int::sample(b, lower, upper, rng, ctx);
             CAPTURE(a, b);
 
             Int::div_mod(q, r, a, b, ctx);
@@ -490,6 +486,17 @@ TEST_CASE("bigint division", "[bigint]") {
             for (size_t k = 0; k < N; ++k) {
                 REQUIRE(prod[k] == a.array()[k]);
             }
+
+            Int::div(q1, a, b, ctx);
+            REQUIRE(q == q1);
+            Int::mod(r1, a, b, ctx);
+            REQUIRE(r == r1);
         }
     }
+}
+
+TEST_CASE("bigint division", "[bigint]") {
+    std::random_device rd;
+    test_division<AddG160>(rd());
+    test_division<AddG160_2>(rd());
 }
