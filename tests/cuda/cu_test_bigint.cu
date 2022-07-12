@@ -1,9 +1,9 @@
-#include "common.hpp"
+#include <common.hpp>
 
 #include <gec/bigint.hpp>
 
-#include "configured_catch.hpp"
 #include "cuda_common.cuh"
+#include <configured_catch.hpp>
 
 #include <thrust/random.h>
 

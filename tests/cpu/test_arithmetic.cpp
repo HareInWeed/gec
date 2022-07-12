@@ -1,12 +1,12 @@
-#include "common.hpp"
-#include "utils.hpp"
+#include <common.hpp>
+#include <utils.hpp>
 
 #include <gec/utils/arithmetic.hpp>
 
 #include <limits>
 #include <random>
 
-#include "configured_catch.hpp"
+#include <configured_catch.hpp>
 
 using namespace gec;
 

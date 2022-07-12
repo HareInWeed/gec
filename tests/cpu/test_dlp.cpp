@@ -1,10 +1,10 @@
-#include "common.hpp"
-#include "utils.hpp"
+#include <common.hpp>
+#include <utils.hpp>
 
 // #define GEC_DEBUG
 #include <gec/dlp.hpp>
 
-#include "configured_catch.hpp"
+#include <configured_catch.hpp>
 
 #ifdef GEC_NVCC
 GEC_NV_DIAGNOSTIC_PUSH

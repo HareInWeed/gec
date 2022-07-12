@@ -1,7 +1,7 @@
-#include "common.hpp"
-#include "field.hpp"
+#include <common.hpp>
+#include <field.hpp>
 
-#include "configured_catch.hpp"
+#include <configured_catch.hpp>
 
 using namespace gec;
 using namespace bigint;
@@ -510,7 +510,6 @@ TEST_CASE("montgomery inv", "[field]") {
 
 TEST_CASE("montgomery exp", "[field]") {
     using F = Field160;
-    const F One(1);
 
     std::random_device rd;
     auto seed = rd();
@@ -522,7 +521,7 @@ TEST_CASE("montgomery exp", "[field]") {
 
     F::Context<> ctx;
     F mod_m, a, mon_a, mon_exp_a, exp_a;
-    F::sub(mod_m, F::mod(), One);
+    F::sub(mod_m, F::mod(), 1);
 
     for (int k = 0; k < 10000; ++k) {
         do {
@@ -539,14 +538,14 @@ TEST_CASE("montgomery exp", "[field]") {
 
         F::pow(mon_exp_a, mon_a, 0u, ctx);
         F::from_montgomery(exp_a, mon_exp_a);
-        REQUIRE(One == exp_a);
+        REQUIRE(exp_a.is_one());
 
         F::pow(mon_exp_a, mon_a, F::mod(), ctx);
         REQUIRE(mon_exp_a == mon_a); // Fermat's Little Theorem
 
         F::pow(mon_exp_a, mon_a, mod_m, ctx);
         F::from_montgomery(exp_a, mon_exp_a);
-        REQUIRE(One == exp_a); // Fermat's Little Theorem
+        REQUIRE(exp_a.is_one()); // Fermat's Little Theorem
     }
 }
 

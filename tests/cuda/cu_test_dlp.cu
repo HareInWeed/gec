@@ -1,7 +1,7 @@
 #include "cuda_common.cuh"
 
 #define GEC_DEBUG
-#include "curve.hpp"
+#include <curve.hpp>
 
 #include <gec/dlp.hpp>
 
@@ -62,6 +62,8 @@ TEST_CASE("cu_pollard_lambda", "[dlp][pollard_lambda][cuda]") {
     std::random_device rd;
     auto data_seed = rd();
     auto seed = rd();
+    // auto data_seed = 1882371591;
+    // auto seed = 399752428;
     CAPTURE(data_seed, seed);
     auto rng = make_gec_rng(std::mt19937(data_seed));
 
@@ -85,10 +87,10 @@ TEST_CASE("cu_pollard_lambda", "[dlp][pollard_lambda][cuda]") {
     CAPTURE(g, lower, upper, x0, h);
 
     S x;
-    F mask(0xF0000000, 0, 0, 0, 0, 0, 0, 0);
+    F mask(0xFFFF0000, 0, 0, 0, 0, 0, 0, 0);
     // the grid size here are for test only, typical grid size should be much
     // larger
-    CUDA_REQUIRE(cu_pollard_lambda(x, lower, upper, g, h, mask, seed, 4, 32));
+    CUDA_REQUIRE(cu_pollard_lambda(x, lower, upper, g, h, mask, seed, 80, 32));
 
     C xg;
     C::mul(xg, x, g, ctx);

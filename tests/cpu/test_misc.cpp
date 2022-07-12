@@ -1,5 +1,5 @@
-#include "common.hpp"
-#include "utils.hpp"
+#include <common.hpp>
+#include <utils.hpp>
 
 #include <gec/utils/hash.hpp>
 #include <gec/utils/misc.hpp>
@@ -10,10 +10,40 @@
 #include <unordered_set>
 #include <vector>
 
-#include "configured_catch.hpp"
+#include <configured_catch.hpp>
 
 using namespace gec;
 using namespace utils;
+
+TEST_CASE("leading_zeros", "[utils][misc]") {
+    std::random_device rd;
+    auto seed = rd();
+    INFO("seed: " << seed);
+    std::mt19937 rng(seed);
+
+    using T = uint64_t;
+
+    constexpr size_t hb = utils::type_bits<T>::value - 1;
+    std::uniform_int_distribution<> gen;
+    std::uniform_int_distribution<> gen_bit(0, hb);
+
+    for (size_t k = 0; k <= hb; ++k) {
+        T x = T(1) << k;
+        CAPTURE(x);
+        REQUIRE(hb - k == count_leading_zeros(x));
+        REQUIRE(k == most_significant_bit(x));
+    }
+
+    for (int k = 0; k < 1000; ++k) {
+        size_t b = gen_bit(rng);
+        T r = gen(rng);
+        T x = (r >> b) | (T(1) << (hb - b));
+        CAPTURE(x);
+
+        REQUIRE(b == count_leading_zeros(x));
+        REQUIRE(hb - b == most_significant_bit(x));
+    }
+}
 
 TEST_CASE("trailing_zeros", "[utils][misc]") {
     std::random_device rd;
@@ -21,30 +51,34 @@ TEST_CASE("trailing_zeros", "[utils][misc]") {
     INFO("seed: " << seed);
     std::mt19937 rng(seed);
 
-    std::uniform_int_distribution<> gen;
+    using T = uint64_t;
 
-    for (size_t k = 0; k < 32; ++k) {
-        size_t x = size_t(1) << k;
-        REQUIRE(k == trailing_zeros(x));
+    constexpr size_t hb = utils::type_bits<T>::value - 1;
+    std::uniform_int_distribution<> gen;
+    std::uniform_int_distribution<> gen_bit(0, hb);
+
+    for (size_t k = 0; k <= hb; ++k) {
+        T x = size_t(1) << k;
+        CAPTURE(x);
+        REQUIRE(k == count_trailing_zeros(x));
+        REQUIRE(k == least_significant_bit(x));
     }
 
     for (int k = 0; k < 1000; ++k) {
-        int x = gen(rng);
-        auto n = trailing_zeros(x);
-        CAPTURE(x, n);
-        REQUIRE((x & -x) == (1 << n));
+        size_t b = gen_bit(rng);
+        T r = gen(rng);
+        T x = (r << b) | (T(1) << b);
+        CAPTURE(x);
 
-        unsigned int ux = x;
-        auto un = trailing_zeros(ux);
-        CAPTURE(ux, un);
-        REQUIRE((x & -x) == (1 << un));
+        REQUIRE(b == count_trailing_zeros(x));
+        REQUIRE(b == least_significant_bit(x));
     }
 }
 
 template <typename Int>
-void test_is_prime(vector<int> &primes, int bound) {
-    Int init_x =
-        Int(std::is_signed<Int>::value ? -primes[primes.size() - 1] : 0);
+static void test_is_prime(vector<int> &primes, int bound) {
+    Int init_x = Int(
+        std::numeric_limits<Int>::is_signed ? -primes[primes.size() - 1] : 0);
     for (Int x = init_x; x < 2; ++x) {
         CAPTURE(+x);
         REQUIRE(!is_prime(x));

@@ -1,4 +1,4 @@
-#include "configured_catch.hpp"
+#include <configured_catch.hpp>
 
 class CudaErrorMatcher : public Catch::MatcherBase<cudaError> {
     cudaError expect_code;

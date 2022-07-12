@@ -1,4 +1,4 @@
-#include "configured_catch.hpp"
+#include <configured_catch.hpp>
 
 #include <cinttypes>
 #include <gec/curve/data/point.hpp>

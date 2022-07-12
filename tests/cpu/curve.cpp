@@ -1,4 +1,4 @@
-#include "curve.hpp"
+#include <curve.hpp>
 
 def_field(AR_160, Field160, //
           0x821006a8u, 0x420792f5u, 0x3a8009a5u, 0xd1ddf060u, 0x5d2d2098u);

@@ -1,5 +1,5 @@
 #define ARRAY_DEF
-#include "common.hpp"
+#include <common.hpp>
 
 def_aligned_array(MOD_160, LIMB_T, LN_160, 8, //
                   0x5e3b0969u, 0x5c17ef6cu, 0xf5d7cecau, 0xd8db9627u,

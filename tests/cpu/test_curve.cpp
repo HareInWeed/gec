@@ -1,11 +1,11 @@
-#include "common.hpp"
+#include <common.hpp>
 
 #include <gec/bigint.hpp>
 #include <gec/curve.hpp>
 
-#include "curve.hpp"
+#include <curve.hpp>
 
-#include "configured_catch.hpp"
+#include <configured_catch.hpp>
 
 using namespace gec;
 using namespace bigint;
@@ -241,7 +241,6 @@ TEST_CASE("jacobian scaler_mul", "[curve][jacobian][scaler_mul]") {
     using C = Dlp1CurveJ;
     using F = Dlp1Field;
     using S = Dlp1Scaler;
-    S sOne(1);
 
     std::random_device rd;
     auto seed = rd();
@@ -290,7 +289,7 @@ TEST_CASE("jacobian scaler_mul", "[curve][jacobian][scaler_mul]") {
         CAPTURE(sum);
         REQUIRE(sum.is_inf());
 
-        S::add(s1, s2, sOne);
+        S::add(s1, s2, 1);
         C::mul(prod2, s1, p, ctx);
         CAPTURE(prod2);
         C::add(sum, prod1, prod2, ctx);

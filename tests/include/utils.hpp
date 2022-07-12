@@ -8,9 +8,8 @@ template <typename T>
 struct OpaqueNum {
     T num;
 
-    __host__ __device__ constexpr OpaqueNum() : num() {}
-    __host__ __device__ constexpr OpaqueNum(T num) : num(num) {}
-    __host__ __device__ constexpr operator T() { return num; }
+    __host__ __device__ inline constexpr OpaqueNum() : num() {}
+    __host__ __device__ inline constexpr OpaqueNum(T num) : num(num) {}
 
     __host__ __device__ constexpr OpaqueNum(const OpaqueNum &others)
         : num(others.num) {}
@@ -124,6 +123,11 @@ struct OpaqueNum {
     __host__ __device__ constexpr friend bool operator>=(const OpaqueNum &a,
                                                          const OpaqueNum &b) {
         return a.num >= b.num;
+    }
+
+    template <typename U>
+    constexpr operator U() {
+        return U(this->num);
     }
 };
 

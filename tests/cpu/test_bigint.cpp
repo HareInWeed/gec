@@ -1,8 +1,8 @@
-#include "common.hpp"
+#include <common.hpp>
 
 #include <gec/bigint.hpp>
 
-#include "configured_catch.hpp"
+#include <configured_catch.hpp>
 
 using namespace gec;
 using namespace bigint;
@@ -13,7 +13,22 @@ class AddG160 : public ArrayBE<LIMB_T, LN_160>,
                 public BitOps<AddG160, LIMB_T, LN_160>,
                 public AddSubMixin<AddG160, LIMB_T, LN_160>,
                 public BigintRandom<AddG160, LIMB_T, LN_160>,
+                public Division<AddG160, LIMB_T, LN_160>,
+                public WithBigintContext<AddG160>,
                 public ArrayOstream<AddG160, LIMB_T, LN_160> {
+  public:
+    using ArrayBE::ArrayBE;
+};
+
+class AddG160_2 : public ArrayBE<LIMB2_T, LN2_160>,
+                  public Constants<AddG160_2, LIMB2_T, LN2_160>,
+                  public VtCompare<AddG160_2, LIMB2_T, LN2_160>,
+                  public BitOps<AddG160_2, LIMB2_T, LN2_160>,
+                  public AddSubMixin<AddG160_2, LIMB2_T, LN2_160>,
+                  public BigintRandom<AddG160_2, LIMB2_T, LN2_160>,
+                  public Division<AddG160_2, LIMB2_T, LN2_160>,
+                  public WithBigintContext<AddG160_2>,
+                  public ArrayOstream<AddG160_2, LIMB2_T, LN2_160> {
   public:
     using ArrayBE::ArrayBE;
 };
@@ -93,33 +108,6 @@ TEST_CASE("bigint comparison", "[bigint]") {
     REQUIRE(!(e5 >= e6));
 }
 
-TEST_CASE("bigint bit operations", "[bigint]") {
-    using F = AddG160;
-    F a(0x0ffff000u, 0x0000ffffu, 0xffffffffu, 0xffffffffu, 0x00000000u);
-    F b(0x000ffff0u, 0xffff0000u, 0x00000000u, 0xffffffffu, 0x00000000u);
-    F c;
-
-    c.bit_and(a, b);
-    REQUIRE(F(0x000ff000u, 0x00000000u, 0x00000000u, 0xffffffffu,
-              0x00000000u) == c);
-    c.bit_or(a, b);
-    REQUIRE(F(0x0ffffff0u, 0xffffffffu, 0xffffffffu, 0xffffffffu,
-              0x00000000u) == c);
-    c.bit_not(a);
-    REQUIRE(F(0xf0000fffu, 0xffff0000u, 0x00000000u, 0x00000000u,
-              0xffffffffu) == c);
-    c.bit_xor(a, b);
-    REQUIRE(F(0x0ff00ff0u, 0xffffffffu, 0xffffffffu, 0x00000000u,
-              0x00000000u) == c);
-
-    REQUIRE(156 == a.most_significant_bit());
-    REQUIRE(148 == b.most_significant_bit());
-    c.set_zero();
-    REQUIRE(0 == c.most_significant_bit());
-    c.set_one();
-    REQUIRE(1 == c.most_significant_bit());
-}
-
 TEST_CASE("bigint shift", "[bigint]") {
     AddG160 e(0xf005000fu, 0xf004000fu, 0xf003000fu, 0xf002000fu, 0xf001000fu);
 
@@ -175,6 +163,47 @@ TEST_CASE("bigint shift", "[bigint]") {
     REQUIRE(e.is_zero());
 
     // e.shift_left<32 * 5 + 1>(); // don't do that
+}
+
+TEST_CASE("bigint bit operations", "[bigint]") {
+    using F = AddG160;
+    F a(0x0ffff000u, 0x0000ffffu, 0xffffffffu, 0xffffffffu, 0x00000000u);
+    F b(0x000ffff0u, 0xffff0000u, 0x00000000u, 0xffff0000u, 0x00000000u);
+    F c;
+
+    c.bit_and(a, b);
+    REQUIRE(F(0x000ff000u, 0x00000000u, 0x00000000u, 0xffff0000u,
+              0x00000000u) == c);
+    c.bit_or(a, b);
+    REQUIRE(F(0x0ffffff0u, 0xffffffffu, 0xffffffffu, 0xffffffffu,
+              0x00000000u) == c);
+    c.bit_not(a);
+    REQUIRE(F(0xf0000fffu, 0xffff0000u, 0x00000000u, 0x00000000u,
+              0xffffffffu) == c);
+    c.bit_xor(a, b);
+    REQUIRE(F(0x0ff00ff0u, 0xffffffffu, 0xffffffffu, 0x0000ffffu,
+              0x00000000u) == c);
+
+    REQUIRE(155 == a.most_significant_bit());
+    REQUIRE(4 == a.leading_zeros());
+    REQUIRE(32 == a.least_significant_bit());
+    REQUIRE(32 == a.trailing_zeros());
+
+    REQUIRE(147 == b.most_significant_bit());
+    REQUIRE(12 == b.leading_zeros());
+    REQUIRE(48 == b.least_significant_bit());
+    REQUIRE(48 == b.trailing_zeros());
+
+    c.set_zero();
+    REQUIRE(160 == c.most_significant_bit());
+    REQUIRE(160 == c.leading_zeros());
+    REQUIRE(160 == c.least_significant_bit());
+    REQUIRE(160 == c.trailing_zeros());
+    c.set_one();
+    REQUIRE(0 == c.most_significant_bit());
+    REQUIRE(159 == c.leading_zeros());
+    REQUIRE(0 == c.least_significant_bit());
+    REQUIRE(0 == c.trailing_zeros());
 }
 
 TEST_CASE("bigint runtime shift", "[bigint]") {
@@ -342,4 +371,125 @@ TEST_CASE("bigint sub", "[bigint]") {
     REQUIRE(AddG160(0xacc8b157u, 0xcf46d443u, 0x6bbccc70u, 0xc11f97b6u,
                     0x8b4c2ef5u) == e);
     REQUIRE(borrow);
+}
+
+TEST_CASE("bigint add limb", "[bigint]") {
+    std::random_device rd;
+    auto seed = rd();
+    CAPTURE(seed);
+
+    using Int = AddG160;
+
+    std::uniform_int_distribution<Int::LimbT> gen;
+    auto rng = make_gec_rng(std::mt19937(seed));
+
+    Int x;
+    bool e_carry, carry;
+    for (int k = 0; k < 1000; ++k) {
+        Int::sample(x, rng);
+        Int::LimbT y = gen(rng.get_rng());
+        Int yp(y);
+        CAPTURE(x, y, yp);
+
+        Int ex, res;
+        carry = Int::add(res, x, y);
+        e_carry = Int::add(ex, x, yp);
+        REQUIRE(ex == res);
+        REQUIRE(e_carry == carry);
+
+        ex = x;
+        res = x;
+        carry = Int::add(res, y);
+        e_carry = Int::add(ex, yp);
+        REQUIRE(ex == res);
+        REQUIRE(e_carry == carry);
+    }
+}
+
+TEST_CASE("bigint sub limb", "[bigint]") {
+    std::random_device rd;
+    auto seed = rd();
+    CAPTURE(seed);
+
+    using Int = AddG160;
+
+    std::uniform_int_distribution<Int::LimbT> gen;
+    auto rng = make_gec_rng(std::mt19937(seed));
+
+    Int x;
+    bool e_borrow, borrow;
+    for (int k = 0; k < 1000; ++k) {
+        Int::sample(x, rng);
+        Int::LimbT y = gen(rng.get_rng());
+        Int yp(y);
+        CAPTURE(x, y, yp);
+
+        Int ex, res;
+        borrow = Int::sub(res, x, y);
+        e_borrow = Int::sub(ex, x, yp);
+        REQUIRE(ex == res);
+        REQUIRE(e_borrow == borrow);
+
+        ex = x;
+        res = x;
+        borrow = Int::sub(res, y);
+        e_borrow = Int::sub(ex, yp);
+        REQUIRE(ex == res);
+        REQUIRE(e_borrow == borrow);
+    }
+}
+
+TEST_CASE("bigint division", "[bigint]") {
+    using namespace gec::utils;
+    std::random_device rd;
+    // auto seed = rd();
+    auto seed = 1609950655;
+    CAPTURE(seed);
+
+    auto rng = make_gec_rng(std::mt19937(seed));
+
+    using Int = AddG160;
+    using T = Int::LimbT;
+    constexpr auto bits = type_bits<T>::value;
+    constexpr auto N = Int::LimbN;
+
+    Int::Context<> ctx;
+
+    T prod[2 * N];
+
+    Int a, b, q, r;
+    Int upper;
+    for (size_t j = 0; j < 2 * N; ++j) {
+        upper.array()[j / 2] =
+            j & 1 ? LowerKMask<T, bits>::value : LowerKMask<T, bits / 2>::value;
+        CAPTURE(upper);
+        for (int k = 0; k < 1000; ++k) {
+            Int::sample(a, rng);
+            Int::sample(b, upper, rng);
+            CAPTURE(a, b);
+
+            Int::div_mod(q, r, a, b, ctx);
+            CAPTURE(q, r);
+
+            // product
+            fill_seq_limb<2 * N>(prod, T(0));
+            T l;
+            for (size_t k = 0; k < N; ++k) {
+                l = seq_add_mul_limb<N>(prod + k, q.array(), b.array()[k]);
+                for (size_t j = N + k; j < 2 * N; ++j) {
+                    l = T(uint_add_with_carry(prod[j], l, false));
+                }
+            }
+
+            // add remainder
+            seq_add_limb<N>(prod + N, T(seq_add<N>(prod, r.array())));
+
+            for (size_t k = 0; k < N; ++k) {
+                REQUIRE(0 == prod[N + k]);
+            }
+            for (size_t k = 0; k < N; ++k) {
+                REQUIRE(prod[k] == a.array()[k]);
+            }
+        }
+    }
 }

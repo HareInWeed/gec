@@ -3,13 +3,13 @@
 #include <gec/utils/cuda_utils.cuh>
 #include <gec/utils/hash.hpp>
 
-#include "common.hpp"
+#include <common.hpp>
 
-#include "field.hpp"
+#include <field.hpp>
 
 #include "cuda_common.cuh"
 
-#include "configured_catch.hpp"
+#include <configured_catch.hpp>
 
 #include <thrust/random.h>
 
@@ -57,7 +57,7 @@ __global__ static void test_add_cc_(uint32_t *vals, bool *carries) {
 
 #define test_helper(carry, a, b)                                               \
     set_cc_cf_((carry));                                                       \
-    add_cc_<uint32_t>(vals[i], (a), (b));                                      \
+    add_cc_(vals[i], (a), (b));                                                \
     carries[i] = get_cc_cf_();                                                 \
     ++i
 
@@ -76,13 +76,15 @@ TEST_CASE("add_cc_", "[cuda][intrinsics]") {
     constexpr size_t N = 8;
 
     using T = uint32_t;
-    T *vals, *d_vals;
+    T vals[N];
+    T *d_vals;
     size_t vals_size = sizeof(T) * N;
-    bool *carries, *d_carries;
+
+    bool *d_carries;
     size_t carries_size = sizeof(bool) * N;
-    CUDA_REQUIRE(cudaMallocHost(&vals, vals_size));
+    bool carries[N];
+
     CUDA_REQUIRE(cudaMalloc(&d_vals, vals_size));
-    CUDA_REQUIRE(cudaMallocHost(&carries, carries_size));
     CUDA_REQUIRE(cudaMalloc(&d_carries, carries_size));
 
     test_add_cc_<<<1, 1>>>(d_vals, d_carries);
@@ -109,9 +111,7 @@ TEST_CASE("add_cc_", "[cuda][intrinsics]") {
     test_helper(true, 0x0);
 #undef test_helper
 
-    CUDA_REQUIRE(cudaFreeHost(vals));
     CUDA_REQUIRE(cudaFree(d_vals));
-    CUDA_REQUIRE(cudaFreeHost(carries));
     CUDA_REQUIRE(cudaFree(d_carries));
 }
 
@@ -120,7 +120,7 @@ __global__ static void test_addc_(uint32_t *vals, bool *carries) {
 
 #define test_helper(carry, a, b)                                               \
     set_cc_cf_((carry));                                                       \
-    addc_<uint32_t>(vals[i], (a), (b));                                        \
+    addc_(vals[i], (a), (b));                                                  \
     carries[i] = get_cc_cf_();                                                 \
     ++i
 
@@ -184,7 +184,7 @@ __global__ static void test_addc_cc_(uint32_t *vals, bool *carries) {
 
 #define test_helper(carry, a, b)                                               \
     set_cc_cf_((carry));                                                       \
-    addc_cc_<uint32_t>(vals[i], (a), (b));                                     \
+    addc_cc_(vals[i], (a), (b));                                               \
     carries[i] = get_cc_cf_();                                                 \
     ++i
 
