@@ -13,7 +13,7 @@ namespace curve {
 /** @brief test if two points are equal by components
  */
 template <typename Core>
-class CompWiseEq : protected CRTP<Core, CompWiseEq<Core>> {
+class GEC_EMPTY_BASES CompWiseEq : protected CRTP<Core, CompWiseEq<Core>> {
     friend CRTP<Core, CompWiseEq<Core>>;
 
   public:

@@ -10,7 +10,7 @@ namespace bigint {
 
 template <class Core, typename LIMB_T, size_t LIMB_N,
           const LIMB_T (*MOD)[LIMB_N], const LIMB_T (*d_MOD)[LIMB_N] = nullptr>
-class AddGroupParams
+class GEC_EMPTY_BASES AddGroupParams
     : protected CRTP<Core, AddGroupParams<Core, LIMB_T, LIMB_N, MOD, d_MOD>> {
     friend CRTP<Core, AddGroupParams<Core, LIMB_T, LIMB_N, MOD, d_MOD>>;
 
@@ -28,7 +28,7 @@ template <class Core, typename LIMB_T, size_t LIMB_N, LIMB_T MOD_P,
           const LIMB_T (*RR)[LIMB_N], const LIMB_T (*OneR)[LIMB_N],
           const LIMB_T (*d_RR)[LIMB_N] = nullptr,
           const LIMB_T (*d_OneR)[LIMB_N] = nullptr>
-class MontgomeryParams
+class GEC_EMPTY_BASES MontgomeryParams
     : protected CRTP<Core, MontgomeryParams<Core, LIMB_T, LIMB_N, MOD_P, RR,
                                             OneR, d_RR, d_OneR>> {
     friend CRTP<Core, MontgomeryParams<Core, LIMB_T, LIMB_N, MOD_P, RR, OneR,

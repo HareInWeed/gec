@@ -12,7 +12,8 @@ namespace bigint {
 /** @brief mixin that add a hasher
  */
 template <typename Core>
-class WithArrayHasher : protected CRTP<Core, WithArrayHasher<Core>> {
+class GEC_EMPTY_BASES WithArrayHasher
+    : protected CRTP<Core, WithArrayHasher<Core>> {
     friend CRTP<Core, WithArrayHasher<Core>>;
 
   public:

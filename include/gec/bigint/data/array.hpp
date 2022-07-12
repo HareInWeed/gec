@@ -11,7 +11,7 @@ namespace bigint {
 /** @brief TODO:
  */
 template <class LIMB_T, size_t LIMB_N>
-class Array {
+class GEC_EMPTY_BASES Array {
   public:
     using LimbT = LIMB_T;
     const static size_t LimbN = LIMB_N;
@@ -49,7 +49,7 @@ class Array {
 /** @brief TODO:
  */
 template <class LIMB_T, size_t LIMB_N>
-class ArrayBE : public Array<LIMB_T, LIMB_N> {
+class GEC_EMPTY_BASES ArrayBE : public Array<LIMB_T, LIMB_N> {
     using Base = Array<LIMB_T, LIMB_N>;
 
   public:
@@ -69,7 +69,7 @@ class ArrayBE : public Array<LIMB_T, LIMB_N> {
 /** @brief TODO:
  */
 template <class LIMB_T, size_t LIMB_N>
-class ArrayLE : public Array<LIMB_T, LIMB_N> {
+class GEC_EMPTY_BASES ArrayLE : public Array<LIMB_T, LIMB_N> {
     using Base = Array<LIMB_T, LIMB_N>;
 
   public:

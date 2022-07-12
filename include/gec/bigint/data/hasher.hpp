@@ -11,7 +11,7 @@ namespace gec {
 namespace bigint {
 
 template <typename ARRAY>
-struct ArrayHasher {
+struct GEC_EMPTY_BASES ArrayHasher {
     using argument_type = ARRAY;
     using result_type = size_t;
 

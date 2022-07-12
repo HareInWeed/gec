@@ -14,7 +14,8 @@ namespace bigint {
 /** @brief mixin that enables output array() with ostream
  */
 template <class Core, class LIMB_T, size_t LIMB_N>
-class ArrayOstream : protected CRTP<Core, ArrayOstream<Core, LIMB_T, LIMB_N>> {
+class GEC_EMPTY_BASES ArrayOstream
+    : protected CRTP<Core, ArrayOstream<Core, LIMB_T, LIMB_N>> {
     friend CRTP<Core, ArrayOstream<Core, LIMB_T, LIMB_N>>;
 
   public:

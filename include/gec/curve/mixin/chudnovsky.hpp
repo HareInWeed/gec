@@ -11,7 +11,8 @@ namespace curve {
 /** @brief mixin that enables ...
  */
 template <typename Core, typename FIELD_T, const FIELD_T &A, const FIELD_T &B>
-class Chudnovsky : protected CRTP<Core, Chudnovsky<Core, FIELD_T, A, B>> {
+class GEC_EMPTY_BASES Chudnovsky
+    : protected CRTP<Core, Chudnovsky<Core, FIELD_T, A, B>> {
     friend CRTP<Core, Chudnovsky<Core, FIELD_T, A, B>>;
 
   public:

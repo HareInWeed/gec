@@ -12,7 +12,8 @@ namespace curve {
  * coordinate
  */
 template <typename Core, typename FIELD_T>
-class Projective : protected CRTP<Core, Projective<Core, FIELD_T>> {
+class GEC_EMPTY_BASES Projective
+    : protected CRTP<Core, Projective<Core, FIELD_T>> {
     friend CRTP<Core, Projective<Core, FIELD_T>>;
     using F = FIELD_T;
 

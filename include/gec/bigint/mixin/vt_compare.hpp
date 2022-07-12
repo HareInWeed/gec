@@ -12,7 +12,8 @@ namespace bigint {
 /** @brief TODO:
  */
 template <class Core, class LIMB_T, size_t LIMB_N>
-struct VtCompare : protected CRTP<Core, VtCompare<Core, LIMB_T, LIMB_N>> {
+struct GEC_EMPTY_BASES VtCompare
+    : protected CRTP<Core, VtCompare<Core, LIMB_T, LIMB_N>> {
     friend CRTP<Core, VtCompare<Core, LIMB_T, LIMB_N>>;
 
     __host__ __device__ GEC_INLINE utils::CmpEnum cmp(const Core &other) const {

@@ -9,7 +9,7 @@
 namespace gec {
 
 template <typename Core, typename Mixin>
-struct CRTP {
+struct GEC_EMPTY_BASES CRTP {
   public:
     __host__ __device__ GEC_INLINE Core const &core() const {
         return static_cast<const Core &>(*this);

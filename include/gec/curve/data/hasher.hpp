@@ -13,7 +13,7 @@ namespace gec {
 namespace curve {
 
 template <typename POINT>
-struct PointHasher {
+struct GEC_EMPTY_BASES PointHasher {
     using argument_type = POINT;
     using result_type = size_t;
 

@@ -31,7 +31,7 @@
 #if defined(_MSC_VER)
 #define GEC_MSVC _MSC_VER
 #elif defined(__GNUC__)
-#define GEC_GCC _MSC_VER
+#define GEC_GCC __GNUC__
 #endif
 #endif
 

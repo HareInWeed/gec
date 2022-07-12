@@ -219,11 +219,11 @@ struct SeqShiftRightInplace<0, LS, 0, T> {
 };
 /** @brief inplace right shift
  *
- * @param LEN limb number
- * @param B   the bit length to shift
- * @param a   the sequence to be shifted
- *
  * Beware, if `LEN * limb_bits < B`, the compiler may hang forever
+ *
+ * @tparam LEN limb number
+ * @tparam B the bit length to shift
+ * @param a the sequence to be shifted
  */
 template <size_t LEN, size_t B, typename T>
 __host__ __device__ GEC_INLINE void seq_shift_right(T *a) {
@@ -232,6 +232,31 @@ __host__ __device__ GEC_INLINE void seq_shift_right(T *a) {
     constexpr size_t N = LEN - LS;
     SeqShiftRightInplace<N, LS, BS, T>::call(a);
     fill_seq_limb<LS, T>(a + N, 0);
+}
+
+/** @brief inplace right shift with runtime shift bit length
+ *
+ * @tparam LEN limb number
+ * @param a the sequence to be shifted
+ * @param n the bit length to shift
+ */
+template <size_t LEN, typename T>
+__host__ __device__ GEC_INLINE void seq_shift_right(T *a, size_t n) {
+    constexpr size_t l_bits = utils::type_bits<T>::value;
+    const size_t LS = n / l_bits;
+    if (LS < LEN) {
+        const size_t BS = n % l_bits;
+        const size_t CBS = l_bits - BS;
+        for (size_t k = LS; k < LEN - 1; ++k) {
+            a[k - LS] = (BS ? ((a[k] >> BS) | (a[k + 1] << CBS)) : a[k]);
+        }
+        a[LEN - 1 - LS] = (BS ? ((a[LEN - 1] >> BS)) : a[LEN - 1]);
+        for (size_t k = LEN - LS; k < LEN; ++k) {
+            a[k] = 0;
+        }
+    } else {
+        fill_seq_limb<LEN, T>(a, 0);
+    }
 }
 
 /** @brief inplace left shift
@@ -273,13 +298,14 @@ struct SeqShiftLeftInplace<0, LS, 0, T> {
         // do nothing
     }
 };
+
 /** @brief inplace left shift
  *
- * @param LEN limb number
- * @param B   the bit length to shift
- * @param a   the sequence to be shifted
- *
  * Beware, if `LEN * limb_bits < B`, the compiler may hang forever
+ *
+ * @tparam LEN limb number
+ * @tparam B the bit length to shift
+ * @param a the sequence to be shifted
  */
 template <size_t LEN, size_t B, typename T>
 __host__ __device__ GEC_INLINE void seq_shift_left(T *a) {
@@ -288,6 +314,34 @@ __host__ __device__ GEC_INLINE void seq_shift_left(T *a) {
     constexpr size_t N = LEN - LS;
     SeqShiftLeftInplace<N, LS, BS, T>::call(a);
     fill_seq_limb<LS, T>(a, 0);
+}
+
+/** @brief inplace left shift with runtime shift bit length
+ *
+ * Beware, if `LEN * limb_bits < B`, the compiler may hang forever
+ *
+ * @tparam LEN limb number
+ * @param a the sequence to be shifted
+ * @param n the bit length to shift
+ */
+template <size_t LEN, typename T>
+__host__ __device__ GEC_INLINE void seq_shift_left(T *a, size_t n) {
+    constexpr size_t l_bits = utils::type_bits<T>::value;
+    const size_t LS = n / l_bits;
+    if (LS < LEN) {
+        const size_t BS = n % l_bits;
+        const size_t CBS = l_bits - BS;
+
+        for (size_t k = LEN - LS - 1; k > 0; --k) {
+            a[k + LS] = (BS ? ((a[k] << BS) | (a[k - 1] >> CBS)) : a[k]);
+        }
+        a[LS] = (BS ? ((a[0] << BS)) : a[0]);
+        for (size_t k = 0; k < LS; ++k) {
+            a[k] = 0;
+        }
+    } else {
+        fill_seq_limb<LEN, T>(a, 0);
+    }
 }
 
 } // namespace utils

@@ -36,7 +36,8 @@ struct MulPow2Helper<Core, 0, LIMB_T, LIMB_N> {
  * require `Core::is_zero`, `Core::set_zero` methods
  */
 template <class Core, typename LIMB_T, size_t LIMB_N>
-class ModAddSub : protected CRTP<Core, ModAddSub<Core, LIMB_T, LIMB_N>> {
+class GEC_EMPTY_BASES ModAddSub
+    : protected CRTP<Core, ModAddSub<Core, LIMB_T, LIMB_N>> {
     friend CRTP<Core, ModAddSub<Core, LIMB_T, LIMB_N>>;
 
   public:
@@ -139,7 +140,7 @@ struct CarryFreeMulPow2Helper<Core, 0, LIMB_T, LIMB_N, MOD> {
  * require `Core::is_zero`, `Core::set_zero` methods
  */
 template <class Core, typename LIMB_T, size_t LIMB_N>
-class ModAddSubMixinCarryFree
+class GEC_EMPTY_BASES ModAddSubMixinCarryFree
     : protected CRTP<Core, ModAddSubMixinCarryFree<Core, LIMB_T, LIMB_N>> {
     friend CRTP<Core, ModAddSubMixinCarryFree<Core, LIMB_T, LIMB_N>>;
 
@@ -161,6 +162,29 @@ class ModAddSubMixinCarryFree
     __host__ __device__ static void add(Core &GEC_RSTRCT a,
                                         const Core &GEC_RSTRCT b) {
         utils::seq_add<LIMB_N>(a.array(), b.array());
+        if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), a.mod().array()) !=
+            utils::CmpEnum::Lt) {
+            utils::seq_sub<LIMB_N>(a.array(), a.mod().array());
+        }
+    }
+
+    /** @brief a = b + limb (mod MOD)
+     */
+    __host__ __device__ static void add(Core &GEC_RSTRCT a,
+                                        const Core &GEC_RSTRCT b,
+                                        const LIMB_T &GEC_RSTRCT c) {
+        utils::seq_add_limb<LIMB_N>(a.array(), b.array(), c);
+        if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), a.mod().array()) !=
+            utils::CmpEnum::Lt) {
+            utils::seq_sub<LIMB_N>(a.array(), a.mod().array());
+        }
+    }
+
+    /** @brief a = a + limb (mod MOD)
+     */
+    __host__ __device__ static void add(Core &GEC_RSTRCT a,
+                                        const LIMB_T &GEC_RSTRCT b) {
+        utils::seq_add_limb<LIMB_N>(a.array(), b);
         if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), a.mod().array()) !=
             utils::CmpEnum::Lt) {
             utils::seq_sub<LIMB_N>(a.array(), a.mod().array());
@@ -194,6 +218,27 @@ class ModAddSubMixinCarryFree
     __host__ __device__ static void sub(Core &GEC_RSTRCT a,
                                         const Core &GEC_RSTRCT b) {
         bool borrow = utils::seq_sub<LIMB_N>(a.array(), b.array());
+        if (borrow) {
+            utils::seq_add<LIMB_N>(a.array(), a.mod().array());
+        }
+    }
+
+    /** @brief a = b - limb (mod MOD)
+     */
+    __host__ __device__ static void sub(Core &GEC_RSTRCT a,
+                                        const Core &GEC_RSTRCT b,
+                                        const LIMB_T &GEC_RSTRCT c) {
+        bool borrow = utils::seq_sub_limb<LIMB_N>(a.array(), b.array(), c);
+        if (borrow) {
+            utils::seq_add<LIMB_N>(a.array(), a.mod().array());
+        }
+    }
+
+    /** @brief a = a - limb (mod MOD)
+     */
+    __host__ __device__ static void sub(Core &GEC_RSTRCT a,
+                                        const LIMB_T &GEC_RSTRCT b) {
+        bool borrow = utils::seq_sub_limb<LIMB_N>(a.array(), b);
         if (borrow) {
             utils::seq_add<LIMB_N>(a.array(), a.mod().array());
         }

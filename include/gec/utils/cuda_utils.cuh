@@ -4,8 +4,6 @@
 
 #include "basic.hpp"
 
-#ifdef __CUDACC__
-
 namespace gec {
 
 namespace utils {
@@ -13,7 +11,7 @@ namespace utils {
 /**
  * @brief set the `CC.CF` flag register
  *
- * @param flag: flag to set
+ * @param flag flag to set
  */
 __device__ GEC_INLINE void set_cc_cf_(bool flag) {
     uint32_t x = uint32_t(flag);
@@ -36,62 +34,48 @@ __device__ GEC_INLINE bool get_cc_cf_() {
  *
  * carry will be written to flag `CC.CF`
  *
- * @tparam T: one of `uint32_t`, `uint64_t`, `int32_t` or `int64_t`
- * @param a: b + c
- * @param b: first addend
- * @param c: second addend
+ * @param a b + c
+ * @param b first addend
+ * @param c second addend
  */
-template <typename T>
-__device__ GEC_INLINE void add_cc_(T &a, const T &b, const T &c);
-template <>
-__device__ GEC_INLINE void add_cc_<uint32_t>(uint32_t &a, const uint32_t &b,
-                                             const uint32_t &c) {
+__device__ GEC_INLINE void add_cc_(uint32_t &a, const uint32_t &b,
+                                   const uint32_t &c) {
     asm volatile("add.cc.u32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
 }
-template <>
-__device__ GEC_INLINE void add_cc_<uint64_t>(uint64_t &a, const uint64_t &b,
-                                             const uint64_t &c) {
+__device__ GEC_INLINE void add_cc_(uint64_t &a, const uint64_t &b,
+                                   const uint64_t &c) {
     asm volatile("add.cc.u64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
 }
-template <>
-__device__ GEC_INLINE void add_cc_<int32_t>(int32_t &a, const int32_t &b,
-                                            const int32_t &c) {
+__device__ GEC_INLINE void add_cc_(int32_t &a, const int32_t &b,
+                                   const int32_t &c) {
     asm volatile("add.cc.s32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
 }
-template <>
-__device__ GEC_INLINE void add_cc_<int64_t>(int64_t &a, const int64_t &b,
-                                            const int64_t &c) {
+__device__ GEC_INLINE void add_cc_(int64_t &a, const int64_t &b,
+                                   const int64_t &c) {
     asm volatile("add.cc.s64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
 }
 
 /**
  * @brief `addc` ptx instruction
  *
- * @tparam T: one of `uint32_t`, `uint64_t`, `int32_t` or `int64_t`
- * @param a: b + c + CC.CF
- * @param b: first addend
- * @param c: second addend
+ * @param a b + c + CC.CF
+ * @param b first addend
+ * @param c second addend
  */
-template <typename T>
-__device__ GEC_INLINE void addc_(T &a, const T &b, const T &c);
-template <>
-__device__ GEC_INLINE void addc_<uint32_t>(uint32_t &a, const uint32_t &b,
-                                           const uint32_t &c) {
+__device__ GEC_INLINE void addc_(uint32_t &a, const uint32_t &b,
+                                 const uint32_t &c) {
     asm volatile("addc.u32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
 }
-template <>
-__device__ GEC_INLINE void addc_<uint64_t>(uint64_t &a, const uint64_t &b,
-                                           const uint64_t &c) {
+__device__ GEC_INLINE void addc_(uint64_t &a, const uint64_t &b,
+                                 const uint64_t &c) {
     asm volatile("addc.u64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
 }
-template <>
-__device__ GEC_INLINE void addc_<int32_t>(int32_t &a, const int32_t &b,
-                                          const int32_t &c) {
+__device__ GEC_INLINE void addc_(int32_t &a, const int32_t &b,
+                                 const int32_t &c) {
     asm volatile("addc.s32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
 }
-template <>
-__device__ GEC_INLINE void addc_<int64_t>(int64_t &a, const int64_t &b,
-                                          const int64_t &c) {
+__device__ GEC_INLINE void addc_(int64_t &a, const int64_t &b,
+                                 const int64_t &c) {
     asm volatile("addc.s64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
 }
 
@@ -100,38 +84,29 @@ __device__ GEC_INLINE void addc_<int64_t>(int64_t &a, const int64_t &b,
  *
  * carry will be written to flag `CC.CF`
  *
- * @tparam T: one of `uint32_t`, `uint64_t`, `int32_t` or `int64_t`
- * @param a: b + c + CC.CF
- * @param b: first addend
- * @param c: second addend
+ * @param a b + c + CC.CF
+ * @param b first addend
+ * @param c second addend
  */
-template <typename T>
-__device__ GEC_INLINE void addc_cc_(T &a, const T &b, const T &c);
-template <>
-__device__ GEC_INLINE void addc_cc_<uint32_t>(uint32_t &a, const uint32_t &b,
-                                              const uint32_t &c) {
+__device__ GEC_INLINE void addc_cc_(uint32_t &a, const uint32_t &b,
+                                    const uint32_t &c) {
     asm volatile("addc.cc.u32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
 }
-template <>
-__device__ GEC_INLINE void addc_cc_<uint64_t>(uint64_t &a, const uint64_t &b,
-                                              const uint64_t &c) {
+__device__ GEC_INLINE void addc_cc_(uint64_t &a, const uint64_t &b,
+                                    const uint64_t &c) {
     asm volatile("addc.cc.u64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
 }
-template <>
-__device__ GEC_INLINE void addc_cc_<int32_t>(int32_t &a, const int32_t &b,
-                                             const int32_t &c) {
+__device__ GEC_INLINE void addc_cc_(int32_t &a, const int32_t &b,
+                                    const int32_t &c) {
     asm volatile("addc.cc.s32 %0, %1, %2;" : "=r"(a) : "r"(b), "r"(c));
 }
-template <>
-__device__ GEC_INLINE void addc_cc_<int64_t>(int64_t &a, const int64_t &b,
-                                             const int64_t &c) {
+__device__ GEC_INLINE void addc_cc_(int64_t &a, const int64_t &b,
+                                    const int64_t &c) {
     asm volatile("addc.cc.s64 %0, %1, %2;" : "=l"(a) : "l"(b), "l"(c));
 }
 
 } // namespace utils
 
 } // namespace gec
-
-#endif // __CUDACC__
 
 #endif // !GEC_UTILS_CUDA_UTILS_H

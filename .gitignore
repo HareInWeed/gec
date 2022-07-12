@@ -4,6 +4,7 @@
 # clangd related
 .cache/
 compile_flags.txt
+.clangd
 
 # build folder
 build/

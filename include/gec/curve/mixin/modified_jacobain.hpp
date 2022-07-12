@@ -11,7 +11,8 @@ namespace curve {
 /** @brief mixin that enables ...
  */
 template <typename Core, typename FIELD_T, const FIELD_T &A, const FIELD_T &B>
-class JacobainM : protected CRTP<Core, JacobainM<Core, FIELD_T, A, B>> {
+class GEC_EMPTY_BASES JacobainM
+    : protected CRTP<Core, JacobainM<Core, FIELD_T, A, B>> {
     friend CRTP<Core, JacobainM<Core, FIELD_T, A, B>>;
 
   public:

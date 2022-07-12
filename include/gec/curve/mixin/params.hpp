@@ -10,7 +10,7 @@ namespace curve {
 
 template <class Core, typename FIELD_T, const FIELD_T *A, const FIELD_T *B,
           const FIELD_T *d_A = nullptr, const FIELD_T *d_B = nullptr>
-class CurveParams
+class GEC_EMPTY_BASES CurveParams
     : protected CRTP<Core, CurveParams<Core, FIELD_T, A, B, d_A, d_B>> {
     friend CRTP<Core, CurveParams<Core, FIELD_T, A, B, d_A, d_B>>;
 

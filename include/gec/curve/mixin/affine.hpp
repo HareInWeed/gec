@@ -14,7 +14,7 @@ namespace curve {
  * TODO: list `FIELD_T` requirement
  */
 template <typename Core, typename FIELD_T>
-class Affine : protected CRTP<Core, Affine<Core, FIELD_T>> {
+class GEC_EMPTY_BASES Affine : protected CRTP<Core, Affine<Core, FIELD_T>> {
     friend CRTP<Core, Affine<Core, FIELD_T>>;
 
     using F = FIELD_T;

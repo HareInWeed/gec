@@ -49,7 +49,7 @@ __host__ void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl,
 
         S::sub(x, b, a);
         // with `a` less than `b`, `m` would not underflow
-        size_t m = x.most_significant_bit() - 1;
+        size_t m = x.most_significant_bit();
         for (size_t i = 0; i < m; ++i) {
             sl[i].array()[0] = typename S::LimbT(i);
         }
@@ -148,7 +148,7 @@ void *worker(void *data_ptr) {
     const size_t m = shared.sl.size();
     P p1, p2;
     P *u = &p1, *tmp = &p2;
-    S x, j, one(1);
+    S x, j;
     typename P::template Context<> ctx;
     auto rng = make_gec_rng(Rng((unsigned int)(local.seed)));
 
@@ -180,7 +180,7 @@ void *worker(void *data_ptr) {
         S &t = shared.xs[local.id];
         S::sample_inclusive(t, shared.a, shared.b, rng, ctx);
         P::mul(*u, t, shared.g, ctx);
-        for (j.set_zero(); j < shared.bound; S::add(j, one)) {
+        for (j.set_zero(); j < shared.bound; S::add(j, 1)) {
             size_t i = u->x().array()[0] % m;
             S::add(t, shared.sl[i]);
             P::add(*tmp, *u, shared.pl[i], ctx);
@@ -223,7 +223,7 @@ void *worker(void *data_ptr) {
         S::sample_inclusive(x, shared.a, shared.b, rng, ctx);
         P::mul(*tmp, x, shared.g, ctx);
         P::add(*u, shared.h, *tmp, ctx);
-        for (j.set_zero(); j < shared.bound; S::add(j, one)) {
+        for (j.set_zero(); j < shared.bound; S::add(j, 1)) {
             if (shutdown) {
                 break;
             }
@@ -287,7 +287,7 @@ void multithread_pollard_lambda(S &GEC_RSTRCT x, const S &GEC_RSTRCT bound,
 
     S::sub(x, b, a);
     // with `a` less than `b`, `m` would not underflow
-    size_t m = x.most_significant_bit() - 1;
+    size_t m = x.most_significant_bit();
 
     Shared shared(worker_n, x, a, b, g, h, bound, m);
 
@@ -338,15 +338,19 @@ __global__ void init_wild_kernel(S *GEC_RSTRCT s, P *GEC_RSTRCT p, size_t n,
 
     typename P::template Context<> ctx;
     if (id < n) {
-        auto &ctx_view = ctx.template view_as<P, P>();
-        P &local_p = ctx_view.template get<0>();
-        P &natrual_p = ctx_view.template get<1>();
-        auto &rest_ctx = ctx_view.rest();
+        // auto &ctx_view = ctx.template view_as<P, P>();
+        // P &local_p = ctx_view.template get<0>();
+        // P &natrual_p = ctx_view.template get<1>();
+        // auto &rest_ctx = ctx_view.rest();
+        P local_p;
+        P natrual_p;
 
         S local_s(id * step);
 
-        P::mul(local_p, local_s, cd_g<P>, rest_ctx);
-        P::add(natrual_p, local_p, cd_h<P>, rest_ctx);
+        // P::mul(local_p, local_s, cd_g<P>, rest_ctx);
+        // P::add(natrual_p, local_p, cd_h<P>, rest_ctx);
+        P::mul(local_p, local_s, cd_g<P>, ctx);
+        P::add(natrual_p, local_p, cd_h<P>, ctx);
         s[id] = local_s;
         p[id] = natrual_p;
     }
@@ -396,33 +400,42 @@ searching_kernel(volatile bool *GEC_RSTRCT done, P *p_buffer, S *x_buffer,
     typename P::template Context<> ctx;
     typename P::Hasher hasher;
 
-    P p1, p2;
-    P *u = &p1, *tmp = &p2;
     S x = xs[id];
+    P p1(ps[id]), p2;
 
-    *u = ps[id];
+    bool in_p1 = true;
+#define GEC_DIST_ (in_p1 ? p2 : p1)
+#define GEC_SRC_ (in_p1 ? p1 : p2)
+#define GEC_RELOAD_ (in_p1 = !in_p1)
+
     for (unsigned int k = 0;; ++k) {
         if (!(k & check_mask) && *done)
             goto shutdown;
         if (utils::VtSeqAll<F::LimbN, LT, MaskZero<LT>>::call(
-                u->x().array(), cd_mask<F>.array())) {
+                GEC_SRC_.x().array(), cd_mask<F>.array())) {
             unsigned int idx = atomicAdd(len, 1);
             if (idx < buffer_len) {
-                p_buffer[idx] = *u;
                 x_buffer[idx] = x;
+                p_buffer[idx] = GEC_SRC_;
             } else {
                 *done = true;
                 goto shutdown;
             }
         }
-        size_t i = u->x().array()[0] % l_len;
+        // size_t i = hasher(GEC_SRC_) & 0x1F;
+        // size_t i = GEC_SRC_.x().array()[0] & 0x1F;
+        size_t i = GEC_SRC_.x().array()[0] % l_len;
         S::add(x, sl[i]);
-        P::add(*tmp, *u, pl[i], ctx);
-        utils::swap(u, tmp);
+        P::add(GEC_DIST_, GEC_SRC_, pl[i], ctx);
+        GEC_RELOAD_;
     }
 shutdown:
     xs[id] = x;
-    ps[id] = *u;
+    ps[id] = GEC_SRC_;
+
+#undef GEC_DIST_
+#undef GEC_SRC_
+#undef GEC_RELOAD_
 }
 
 } // namespace _pollard_lambda_
@@ -432,18 +445,18 @@ shutdown:
  *
  * Note that this function is not thread safe
  *
- * @tparam S: TODO
- * @tparam P: TODO
- * @tparam Rng: TODO
- * @param x: TODO
- * @param bound: TODO
- * @param lower: TODO
- * @param upper: TODO
- * @param g: TODO
- * @param h: TODO
- * @param seed: TODO
- * @param block_num: TODO
- * @param thread_num: TODO
+ * @tparam S TODO
+ * @tparam P TODO
+ * @tparam Rng TODO
+ * @param x TODO
+ * @param bound TODO
+ * @param lower TODO
+ * @param upper TODO
+ * @param g TODO
+ * @param h TODO
+ * @param seed TODO
+ * @param block_num TODO
+ * @param thread_num TODO
  */
 template <typename S, typename P, typename Rng = std::mt19937>
 __host__ cudaError_t cu_pollard_lambda(
@@ -461,18 +474,31 @@ __host__ cudaError_t cu_pollard_lambda(
     using Map = std::unordered_multimap<P, S, typename P::Hasher>;
 
     cudaError_t cu_err = cudaSuccess;
+#ifdef GEC_DEBUG
+#define _CUDA_CHECK_TO_(code, label)                                           \
+    do {                                                                       \
+        cu_err = (code);                                                       \
+        if (cu_err != cudaSuccess) {                                           \
+            printf("%s(%d): %s, %s", __FILE__, __LINE__,                       \
+                   cudaGetErrorName(cu_err), cudaGetErrorString(cu_err));      \
+            goto label;                                                        \
+        }                                                                      \
+    } while (0)
+#else
 #define _CUDA_CHECK_TO_(code, label)                                           \
     do {                                                                       \
         cu_err = (code);                                                       \
         if (cu_err != cudaSuccess)                                             \
             goto label;                                                        \
     } while (0)
+#endif // GEC_DEBUG
 #define _CUDA_CHECK_(code) _CUDA_CHECK_TO_((code), clean_up)
     const size_t thread_n = block_num * thread_num;
     const bool true_literal = true;
 
     S::sub(x, b, a);
     const size_t l_len = x.most_significant_bit() - 1;
+    // const size_t l_len = 32;
 
     const size_t tame_n = thread_n & 1 ? thread_n : thread_n - 1;
     const size_t wild_n = tame_n - 2;
@@ -548,7 +574,6 @@ __host__ cudaError_t cu_pollard_lambda(
 
     // calculate jump table
     {
-        S base(step_size);
         for (size_t i = 0; i < l_len; ++i) {
             sl[i].array()[0] = typename S::LimbT(i);
         }
@@ -558,7 +583,7 @@ __host__ cudaError_t cu_pollard_lambda(
         }
         for (size_t i = 0; i < l_len; ++i) {
             size_t e = size_t(sl[i].array()[0]);
-            sl[i] = base;
+            sl[i].array()[0] = typename S::LimbT(step_size);
             sl[i].shift_left(e);
             P::mul(pl[i], sl[i], g, ctx);
         }
@@ -613,6 +638,29 @@ __host__ cudaError_t cu_pollard_lambda(
                 _CUDA_CHECK_(cudaStreamSynchronize(*s_data));
                 _CUDA_CHECK_(cudaGetLastError());
                 for (size_t k = 0; k < buffer_size; ++k) {
+                    P expected;
+                    if (wild) {
+                        P tmp1;
+                        P::mul(tmp1, x_buf[k], g, ctx);
+                        P::add(expected, h, tmp1, ctx);
+                    } else {
+                        P::mul(expected, x_buf[k], g, ctx);
+                    }
+                    if (!P::eq(expected, p_buf[k])) {
+                        printf("[host] in %zuth result: \n", k);
+                        if (wild) {
+                            h.print();
+                            printf(" + ");
+                        }
+                        printf("[");
+                        x_buf[k].print();
+                        printf("]\n");
+                        g.print();
+                        printf(" != ");
+                        p_buf[k].print();
+                        printf("\n");
+                    }
+
                     auto range = v_tracks->equal_range(p_buf[k]);
                     for (auto it = range.first; it != range.second; ++it) {
                         if (it->second == x_buf[k]) {

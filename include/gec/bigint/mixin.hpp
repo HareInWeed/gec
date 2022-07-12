@@ -6,6 +6,7 @@
 #include "mixin/bit_ops.hpp"
 #include "mixin/constants.hpp"
 #include "mixin/context.hpp"
+#include "mixin/division.hpp"
 #include "mixin/exp.hpp"
 #include "mixin/hasher.hpp"
 #include "mixin/mod_add_sub.hpp"

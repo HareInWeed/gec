@@ -14,7 +14,8 @@ namespace bigint {
  * require `Core::set_mul_id`, `Core::mul` methods
  */
 template <class Core>
-class Exponentiation : protected CRTP<Core, Exponentiation<Core>> {
+class GEC_EMPTY_BASES Exponentiation
+    : protected CRTP<Core, Exponentiation<Core>> {
     friend CRTP<Core, Exponentiation<Core>>;
 
   public:

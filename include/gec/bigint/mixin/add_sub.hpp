@@ -13,7 +13,8 @@ namespace bigint {
 /** @brief mixin that enables addition and substrcation operation
  */
 template <class Core, typename LIMB_T, size_t LIMB_N>
-class AddSubMixin : protected CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>> {
+class GEC_EMPTY_BASES AddSubMixin
+    : protected CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>> {
     friend CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>>;
 
   public:

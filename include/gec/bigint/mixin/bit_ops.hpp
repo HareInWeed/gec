@@ -4,6 +4,7 @@
 
 #include <gec/utils/basic.hpp>
 #include <gec/utils/crtp.hpp>
+#include <gec/utils/misc.hpp>
 #include <gec/utils/sequence.hpp>
 
 namespace gec {
@@ -13,7 +14,8 @@ namespace bigint {
 /** @brief mixin that enables bit operations
  */
 template <class Core, class LIMB_T, size_t LIMB_N>
-class BitOps : protected CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>> {
+class GEC_EMPTY_BASES BitOps
+    : protected CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>> {
     friend CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>>;
 
   public:
@@ -70,24 +72,7 @@ class BitOps : protected CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>> {
     }
 
     __host__ __device__ void shift_right(size_t n) {
-        constexpr size_t l_bits = utils::type_bits<LIMB_T>::value;
-        const size_t LS = n / l_bits;
-        if (LS < LIMB_N) {
-            const size_t BS = n % l_bits;
-            const size_t CBS = l_bits - BS;
-            LIMB_T *arr = this->core().array();
-            for (size_t k = LS; k < LIMB_N - 1; ++k) {
-                arr[k - LS] =
-                    (BS ? ((arr[k] >> BS) | (arr[k + 1] << CBS)) : arr[k]);
-            }
-            arr[LIMB_N - 1 - LS] =
-                (BS ? ((arr[LIMB_N - 1] >> BS)) : arr[LIMB_N - 1]);
-            for (size_t k = LIMB_N - LS; k < LIMB_N; ++k) {
-                arr[k] = 0;
-            }
-        } else {
-            this->core().set_zero();
-        }
+        utils::seq_shift_right<LIMB_N>(this->core().array(), n);
     }
 
     /** @brief shift element by `B` bit */
@@ -99,44 +84,69 @@ class BitOps : protected CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>> {
     }
 
     __host__ __device__ void shift_left(size_t n) {
-        constexpr size_t l_bits = utils::type_bits<LIMB_T>::value;
-        const size_t LS = n / l_bits;
-        if (LS < LIMB_N) {
-            const size_t BS = n % l_bits;
-            const size_t CBS = l_bits - BS;
-            LIMB_T *arr = this->core().array();
-
-            for (size_t k = LIMB_N - LS - 1; k > 0; --k) {
-                arr[k + LS] =
-                    (BS ? ((arr[k] << BS) | (arr[k - 1] >> CBS)) : arr[k]);
-            }
-            arr[LS] = (BS ? ((arr[0] << BS)) : arr[0]);
-            for (size_t k = 0; k < LS; ++k) {
-                arr[k] = 0;
-            }
-        } else {
-            this->core().set_zero();
-        }
+        utils::seq_shift_left<LIMB_N>(this->core().array(), n);
     }
 
     __host__ __device__ size_t most_significant_bit() {
         constexpr size_t limb_digits = utils::type_bits<LIMB_T>::value;
+        constexpr size_t is_zero = limb_digits * LIMB_N;
 
         size_t i = LIMB_N;
         do {
             --i;
-            if (this->core().array()[i]) {
-                size_t j = limb_digits;
-                do {
-                    --j;
-                    if ((LIMB_T(1) << j) & this->core().array()[i]) {
-                        return i * limb_digits + j + 1;
-                    }
-                } while (j != 0);
+            LIMB_T limb = this->core().array()[i];
+            if (limb) {
+                return i * limb_digits + utils::most_significant_bit(limb);
             }
         } while (i != 0);
 
-        return 0;
+        return is_zero;
+    }
+
+    __host__ __device__ size_t leading_zeros() {
+        constexpr size_t limb_n_m_1 = LIMB_N - 1;
+        constexpr size_t limb_digits = utils::type_bits<LIMB_T>::value;
+        constexpr size_t is_zero = limb_digits * LIMB_N;
+
+        size_t i = LIMB_N;
+        do {
+            --i;
+            LIMB_T limb = this->core().array()[i];
+            if (limb) {
+                return (limb_n_m_1 - i) * limb_digits +
+                       utils::count_leading_zeros(limb);
+            }
+        } while (i != 0);
+
+        return is_zero;
+    }
+
+    __host__ __device__ size_t least_significant_bit() {
+        constexpr size_t limb_digits = utils::type_bits<LIMB_T>::value;
+        constexpr size_t is_zero = limb_digits * LIMB_N;
+
+        for (size_t i = 0; i < LIMB_N; ++i) {
+            LIMB_T limb = this->core().array()[i];
+            if (limb) {
+                return i * limb_digits + utils::least_significant_bit(limb);
+            }
+        }
+
+        return is_zero;
+    }
+
+    __host__ __device__ size_t trailing_zeros() {
+        constexpr size_t limb_digits = utils::type_bits<LIMB_T>::value;
+        constexpr size_t is_zero = limb_digits * LIMB_N;
+
+        for (size_t i = 0; i < LIMB_N; ++i) {
+            LIMB_T limb = this->core().array()[i];
+            if (limb) {
+                return i * limb_digits + utils::count_trailing_zeros(limb);
+            }
+        }
+
+        return is_zero;
     }
 };
 

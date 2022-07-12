@@ -12,7 +12,8 @@ namespace curve {
 /** @brief mixin that add a hasher
  */
 template <typename Core>
-class WithPointHasher : protected CRTP<Core, WithPointHasher<Core>> {
+class GEC_EMPTY_BASES WithPointHasher
+    : protected CRTP<Core, WithPointHasher<Core>> {
     friend CRTP<Core, WithPointHasher<Core>>;
 
   public:

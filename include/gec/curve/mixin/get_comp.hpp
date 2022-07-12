@@ -9,9 +9,9 @@ namespace gec {
 namespace curve {
 
 template <typename Point, size_t I>
-struct GetCompHelper {};
+struct GEC_EMPTY_BASES GetCompHelper {};
 template <typename Point>
-struct GetCompHelper<Point, 0> {
+struct GEC_EMPTY_BASES GetCompHelper<Point, 0> {
     __host__ __device__ GEC_INLINE static typename Point::CompT &
     call(Point &p) {
         return p.x();
@@ -22,7 +22,7 @@ struct GetCompHelper<Point, 0> {
     }
 };
 template <typename Point>
-struct GetCompHelper<Point, 1> {
+struct GEC_EMPTY_BASES GetCompHelper<Point, 1> {
     __host__ __device__ GEC_INLINE static typename Point::CompT &
     call(Point &p) {
         return p.y();
@@ -33,7 +33,7 @@ struct GetCompHelper<Point, 1> {
     }
 };
 template <typename Point>
-struct GetCompHelper<Point, 2> {
+struct GEC_EMPTY_BASES GetCompHelper<Point, 2> {
     __host__ __device__ GEC_INLINE static typename Point::CompT &
     call(Point &p) {
         return p.z();
@@ -44,7 +44,7 @@ struct GetCompHelper<Point, 2> {
     }
 };
 template <typename Point>
-struct GetCompHelper<Point, 3> {
+struct GEC_EMPTY_BASES GetCompHelper<Point, 3> {
     __host__ __device__ GEC_INLINE static typename Point::CompT &
     call(Point &p) {
         return p.z1();
@@ -55,7 +55,7 @@ struct GetCompHelper<Point, 3> {
     }
 };
 template <typename Point>
-struct GetCompHelper<Point, 4> {
+struct GEC_EMPTY_BASES GetCompHelper<Point, 4> {
     __host__ __device__ GEC_INLINE static typename Point::CompT &
     call(Point &p) {
         return p.z2();
@@ -69,7 +69,7 @@ struct GetCompHelper<Point, 4> {
 /** @brief mixin that enables ...
  */
 template <typename Core>
-class GetComp : protected CRTP<Core, GetComp<Core>> {
+class GEC_EMPTY_BASES GetComp : protected CRTP<Core, GetComp<Core>> {
     friend CRTP<Core, GetComp<Core>>;
 
   public:

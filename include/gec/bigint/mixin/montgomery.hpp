@@ -19,7 +19,7 @@ namespace bigint {
  * require `Core::set_zero`, `Core::set_one`, `Core::set_pow2` methods
  */
 template <class Core, typename LIMB_T, size_t LIMB_N>
-class MontgomeryOps
+class GEC_EMPTY_BASES MontgomeryOps
     : protected CRTP<Core, MontgomeryOps<Core, LIMB_T, LIMB_N>> {
     friend CRTP<Core, MontgomeryOps<Core, LIMB_T, LIMB_N>>;
 
@@ -184,7 +184,7 @@ class MontgomeryOps
  * require `Core::set_zero`, `Core::set_one`, `Core::set_pow2` methods
  */
 template <class Core, typename LIMB_T, size_t LIMB_N>
-class CarryFreeMontgomeryOps
+class GEC_EMPTY_BASES CarryFreeMontgomeryOps
     : protected CRTP<Core, CarryFreeMontgomeryOps<Core, LIMB_T, LIMB_N>> {
     friend CRTP<Core, CarryFreeMontgomeryOps<Core, LIMB_T, LIMB_N>>;
 
@@ -336,13 +336,13 @@ class CarryFreeMontgomeryOps
 /** @brief mixin that enables Montgomery Multiplication with AVX2
  */
 template <class Core, typename LIMB_T, size_t LIMB_N>
-class AVX2MontgomeryOps
+class GEC_EMPTY_BASES AVX2MontgomeryOps
     : protected CRTP<Core, AVX2MontgomeryOps<Core, LIMB_T, LIMB_N>> {};
 
 /** @brief mixin that enables Montgomery Multiplication with AVX2
  */
 template <class Core>
-class AVX2MontgomeryOps<Core, uint32_t, 8>
+class GEC_EMPTY_BASES AVX2MontgomeryOps<Core, uint32_t, 8>
     : protected CRTP<Core, AVX2MontgomeryOps<Core, uint32_t, 8>> {
     using LIMB_T = uint32_t;
     constexpr static size_t LIMB_N = 8;

@@ -88,7 +88,8 @@ namespace bigint {
 /** @brief mixin that enables output array() with stdio
  */
 template <class Core, class LIMB_T, size_t LIMB_N>
-class ArrayPrint : protected CRTP<Core, ArrayPrint<Core, LIMB_T, LIMB_N>> {
+class GEC_EMPTY_BASES ArrayPrint
+    : protected CRTP<Core, ArrayPrint<Core, LIMB_T, LIMB_N>> {
     friend CRTP<Core, ArrayPrint<Core, LIMB_T, LIMB_N>>;
 
   public:

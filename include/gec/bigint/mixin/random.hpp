@@ -109,7 +109,7 @@ struct is_thrust_rng<
 } // namespace _gec_rng_
 
 template <typename Rng, typename Enable = void>
-struct GecRng {
+struct GEC_EMPTY_BASES GecRng {
     template <typename T>
     __host__ __device__ GEC_INLINE T sample(const T &lower, const T &higher);
     template <typename T>
@@ -118,7 +118,8 @@ struct GecRng {
 };
 
 template <typename Rng>
-class GecRng<Rng, std::enable_if_t<_gec_rng_::is_std_rng<Rng>::value>> {
+class GEC_EMPTY_BASES
+    GecRng<Rng, std::enable_if_t<_gec_rng_::is_std_rng<Rng>::value>> {
     Rng rng;
 
     template <typename T>
@@ -163,7 +164,8 @@ class GecRng<Rng, std::enable_if_t<_gec_rng_::is_std_rng<Rng>::value>> {
 #ifdef __CUDACC__
 
 template <typename Rng>
-class GecRng<Rng, std::enable_if_t<_gec_rng_::is_cu_rand_rng<Rng>::value>> {
+class GEC_EMPTY_BASES
+    GecRng<Rng, std::enable_if_t<_gec_rng_::is_cu_rand_rng<Rng>::value>> {
     Rng rng;
 
     template <typename T>
@@ -221,7 +223,8 @@ class GecRng<Rng, std::enable_if_t<_gec_rng_::is_cu_rand_rng<Rng>::value>> {
 };
 
 template <typename Rng>
-class GecRng<Rng, std::enable_if_t<_gec_rng_::is_thrust_rng<Rng>::value>> {
+class GEC_EMPTY_BASES
+    GecRng<Rng, std::enable_if_t<_gec_rng_::is_thrust_rng<Rng>::value>> {
     Rng rng;
 
   public:
@@ -257,7 +260,8 @@ namespace bigint {
 /** @brief mixin that enables random sampling
  */
 template <class Core, typename LIMB_T, size_t LIMB_N>
-class BasicRandom : protected CRTP<Core, BasicRandom<Core, LIMB_T, LIMB_N>> {
+class GEC_EMPTY_BASES BasicRandom
+    : protected CRTP<Core, BasicRandom<Core, LIMB_T, LIMB_N>> {
     friend CRTP<Core, BasicRandom<Core, LIMB_T, LIMB_N>>;
 
   public:

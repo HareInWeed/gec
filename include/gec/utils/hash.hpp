@@ -293,7 +293,7 @@ __host__ __device__ size_t hash_value(T *const &v) {
 }
 
 template <class T>
-struct Hash {
+struct GEC_EMPTY_BASES Hash {
     using argument_type = T;
     using result_type = size_t;
 

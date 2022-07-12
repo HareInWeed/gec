@@ -10,7 +10,7 @@ namespace gec {
 namespace curve {
 
 template <typename Point, size_t I, size_t N>
-struct PointPrintHelper {
+struct GEC_EMPTY_BASES PointPrintHelper {
     __host__ __device__ GEC_INLINE static void call(const Point &point) {
         printf(",\n ");
         point.template get<I>().print();
@@ -18,25 +18,25 @@ struct PointPrintHelper {
     }
 };
 template <typename Point, size_t N>
-struct PointPrintHelper<Point, 0, N> {
+struct GEC_EMPTY_BASES PointPrintHelper<Point, 0, N> {
     __host__ __device__ GEC_INLINE static void call(const Point &point) {
         point.template get<0>().print();
         PointPrintHelper<Point, 1, N>::call(point);
     }
 };
 template <typename Point, size_t N>
-struct PointPrintHelper<Point, N, N> {
+struct GEC_EMPTY_BASES PointPrintHelper<Point, N, N> {
     __host__ __device__ GEC_INLINE static void call(const Point &) {}
 };
 template <typename Point>
-struct PointPrintHelper<Point, 0, 0> {
+struct GEC_EMPTY_BASES PointPrintHelper<Point, 0, 0> {
     __host__ __device__ GEC_INLINE static void call(const Point &) {}
 };
 
 /** @brief mixin that enables output x() and y() with stdio
  */
 template <typename Core>
-class PointPrint : protected CRTP<Core, PointPrint<Core>> {
+class GEC_EMPTY_BASES PointPrint : protected CRTP<Core, PointPrint<Core>> {
     friend CRTP<Core, PointPrint<Core>>;
 
   public:

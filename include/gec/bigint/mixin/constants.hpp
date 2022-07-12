@@ -13,7 +13,8 @@ namespace bigint {
 /** @brief mixin that enables test and assignment of common constants
  */
 template <class Core, typename LIMB_T, size_t LIMB_N>
-class Constants : protected CRTP<Core, Constants<Core, LIMB_T, LIMB_N>> {
+class GEC_EMPTY_BASES Constants
+    : protected CRTP<Core, Constants<Core, LIMB_T, LIMB_N>> {
     friend CRTP<Core, Constants<Core, LIMB_T, LIMB_N>>;
 
   public:

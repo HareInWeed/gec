@@ -22,12 +22,13 @@ constexpr size_t MIN_BIGINT_NUM = 5;
  * size if only a subset of function in GEC is used.
  */
 template <typename Core, size_t N = MIN_BIGINT_NUM>
-class WithBigintContext : protected CRTP<Core, WithBigintContext<Core, N>> {
+class GEC_EMPTY_BASES WithBigintContext
+    : protected CRTP<Core, WithBigintContext<Core, N>> {
     friend CRTP<Core, WithBigintContext<Core, N>>;
 
   public:
-    template <typename P = Core>
-    using Context = utils::Context<N * sizeof(P), alignof(P), 0>;
+    template <typename Int = Core>
+    using Context = utils::Context<N * sizeof(Int), alignof(Int), 0>;
 };
 
 } // namespace bigint

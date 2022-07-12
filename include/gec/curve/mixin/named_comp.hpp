@@ -11,7 +11,7 @@ namespace curve {
 /** @brief mixin that enables ...
  */
 template <typename Core>
-class NamedComp : protected CRTP<Core, NamedComp<Core>> {
+class GEC_EMPTY_BASES NamedComp : protected CRTP<Core, NamedComp<Core>> {
     friend CRTP<Core, NamedComp<Core>>;
 
   public:

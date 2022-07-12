@@ -87,8 +87,6 @@ __host__ __device__ void pollard_rho(S &c,
     S::sub(d2, d);
 }
 
-#ifdef GEC_ENABLE_PTHREADS
-
 namespace _pollard_rho_ {
 
 template <typename T>
@@ -103,6 +101,12 @@ struct Coefficient {
     S x;
     S y;
 };
+
+} // namespace _pollard_rho_
+
+#ifdef GEC_ENABLE_PTHREADS
+
+namespace _pollard_rho_ {
 
 template <typename S, typename P>
 struct SharedData {
@@ -359,12 +363,24 @@ cu_pollard_rho(S &c,
     using F = typename P::Field;
 
     cudaError_t cu_err = cudaSuccess;
+#ifdef GEC_DEBUG
+#define _CUDA_CHECK_TO_(code, label)                                           \
+    do {                                                                       \
+        cu_err = (code);                                                       \
+        if (cu_err != cudaSuccess) {                                           \
+            printf("%s(%d): %s, %s", __FILE__, __LINE__,                       \
+                   cudaGetErrorName(cu_err), cudaGetErrorString(cu_err));      \
+            goto label;                                                        \
+        }                                                                      \
+    } while (0)
+#else
 #define _CUDA_CHECK_TO_(code, label)                                           \
     do {                                                                       \
         cu_err = (code);                                                       \
         if (cu_err != cudaSuccess)                                             \
             goto label;                                                        \
     } while (0)
+#endif // GEC_DEBUG
 #define _CUDA_CHECK_(code) _CUDA_CHECK_TO_((code), clean_up)
 
     const bool false_literal = false;

@@ -75,7 +75,7 @@ struct CtxGetEndOffset<0, occupied> {
 };
 
 template <size_t N, size_t align, size_t occupied, typename... Types>
-class alignas(align) Context {
+class GEC_EMPTY_BASES alignas(align) Context {
   public:
     static const size_t capacity = N - occupied;
     uint8_t mem[N];

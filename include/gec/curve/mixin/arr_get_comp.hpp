@@ -11,7 +11,7 @@ namespace curve {
 /** @brief mixin that enables ...
  */
 template <typename Core>
-class ArrGetCompLE : protected CRTP<Core, ArrGetCompLE<Core>> {
+class GEC_EMPTY_BASES ArrGetCompLE : protected CRTP<Core, ArrGetCompLE<Core>> {
     friend CRTP<Core, ArrGetCompLE<Core>>;
 
   public:
@@ -31,7 +31,7 @@ class ArrGetCompLE : protected CRTP<Core, ArrGetCompLE<Core>> {
 /** @brief mixin that enables ...
  */
 template <typename Core>
-class ArrGetCompBE : protected CRTP<Core, ArrGetCompBE<Core>> {
+class GEC_EMPTY_BASES ArrGetCompBE : protected CRTP<Core, ArrGetCompBE<Core>> {
     friend CRTP<Core, ArrGetCompBE<Core>>;
 
   public:

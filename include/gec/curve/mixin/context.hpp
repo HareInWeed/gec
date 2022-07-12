@@ -19,7 +19,8 @@ constexpr size_t MIN_POINT_NUM = 7;
  */
 template <typename Core, size_t FN = bigint::MIN_BIGINT_NUM,
           size_t PN = MIN_POINT_NUM>
-class WithPointContext : protected CRTP<Core, WithPointContext<Core, FN, PN>> {
+class GEC_EMPTY_BASES WithPointContext
+    : protected CRTP<Core, WithPointContext<Core, FN, PN>> {
     friend CRTP<Core, WithPointContext<Core, FN, PN>>;
 
   public:

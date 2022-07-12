@@ -3,7 +3,11 @@
 #define GEC_UTILS_ARITHMETIC_HPP
 
 #include "basic.hpp"
+#include "misc.hpp"
+
+#ifdef __CUDACC__
 #include "cuda_utils.cuh"
+#endif // __CUDACC__
 
 #if defined(_WIN32) &&                                                         \
     (defined(GEC_CLANG) || defined(GEC_MSVC) || defined(GEC_GCC))
@@ -17,6 +21,93 @@
 namespace gec {
 
 namespace utils {
+
+namespace _cast_uint_ {
+
+template <typename T>
+struct Enable {
+    static const bool value = true;
+    using type = T;
+};
+
+template <typename T>
+struct is_uint {
+    const static bool value =
+        std::is_integral<T>::value && std::is_unsigned<T>::value;
+};
+
+} // namespace _cast_uint_
+
+template <typename T, typename Enable = void>
+struct Cast2Uint {
+    static const bool value = false;
+};
+// clang-format off
+// TODO: add convertible test
+template <typename T>
+struct Cast2Uint<T, std::enable_if_t<
+    (_cast_uint_::is_uint<T>::value &&                             type_bits<T>::value <=  8)
+    >> : public _cast_uint_::Enable<uint16_t> {};
+template <typename T>
+struct Cast2Uint<T, std::enable_if_t<
+    (_cast_uint_::is_uint<T>::value && type_bits<T>::value >  8 && type_bits<T>::value <= 16)
+    >> : public _cast_uint_::Enable<uint32_t> {};
+template <typename T>
+struct Cast2Uint<T, std::enable_if_t<
+    (_cast_uint_::is_uint<T>::value && type_bits<T>::value > 16 && type_bits<T>::value <= 32)
+    >> : public _cast_uint_::Enable<uint64_t> {};
+// clang-format on
+
+template <typename T, typename Enable = void>
+struct CastHalfUint {
+    static const bool value = false;
+};
+// clang-format off
+// TODO: add convertible test
+template <typename T>
+struct CastHalfUint<T, std::enable_if_t<
+    (_cast_uint_::is_uint<T>::value &&                             type_bits<T>::value <= 16)
+    >> : public _cast_uint_::Enable<uint8_t> {};
+template <typename T>
+struct CastHalfUint<T, std::enable_if_t<
+    (_cast_uint_::is_uint<T>::value && type_bits<T>::value > 16 && type_bits<T>::value <= 32)
+    >> : public _cast_uint_::Enable<uint16_t> {};
+template <typename T>
+struct CastHalfUint<T, std::enable_if_t<
+    (_cast_uint_::is_uint<T>::value && type_bits<T>::value > 32 && type_bits<T>::value <= 64)
+    >> : public _cast_uint_::Enable<uint32_t> {};
+template <typename T>
+struct CastHalfUint<T, std::enable_if_t<
+    (_cast_uint_::is_uint<T>::value && type_bits<T>::value > 64 && type_bits<T>::value <= 128)
+    >> : public _cast_uint_::Enable<uint64_t> {};
+// clang-format on
+
+template <typename T, typename Enable = void>
+struct DeviceCast2Uint : public Cast2Uint<T> {};
+template <typename T, typename Enable = void>
+struct DeviceCastHalfUint : public CastHalfUint<T> {};
+template <typename T, typename Enable = void>
+struct HostCast2Uint : public Cast2Uint<T> {};
+template <typename T, typename Enable = void>
+struct HostCastHalfUint : public CastHalfUint<T> {};
+
+// clang-format off
+
+#if defined(__CUDACC_RTC_INT128__)
+__extension__ template <typename T>
+struct DeviceCast2Uint<T, std::enable_if_t<
+    (_cast_uint_::is_uint<T>::value && type_bits<T>::value > 32 && type_bits<T>::value <= 64)
+    >> : public _cast_uint_::Enable<unsigned __int128> {};
+#endif
+
+#if (defined(GEC_GCC) || defined(GEC_CLANG)) && defined(__SIZEOF_INT128__)
+__extension__ template <typename T>
+struct HostCast2Uint<T, std::enable_if_t<
+    (_cast_uint_::is_uint<T>::value && type_bits<T>::value > 32 && type_bits<T>::value <= 64)
+    >> : public _cast_uint_::Enable< unsigned __int128> {};
+#endif
+
+// clang-format on
 
 template <typename T>
 __host__ __device__ GEC_INLINE bool
@@ -252,6 +343,99 @@ __host__ __device__ GEC_INLINE bool seq_add(T *GEC_RSTRCT a,
     return SeqAddInplace<N, T>::call(a, b, false);
 }
 
+/** @brief add a single bit carry to the sequence
+ */
+template <size_t N, typename T>
+struct SeqAddCarry {
+    __host__ __device__ GEC_INLINE static bool
+    call(T *GEC_RSTRCT a, const T *GEC_RSTRCT b, bool carry) {
+        bool new_carry = uint_add_with_carry(*a, *b, 0, carry);
+        return SeqAddCarry<N - 1, T>::call(a + 1, new_carry);
+    }
+};
+template <typename T>
+struct SeqAddCarry<1, T> {
+    __host__ __device__ GEC_INLINE static bool
+    call(T *GEC_RSTRCT a, const T *GEC_RSTRCT b, bool carry) {
+        return uint_add_with_carry(*a, *b, 0, carry);
+    }
+};
+template <typename T>
+struct SeqAddCarry<0, T> {
+    __host__ __device__ GEC_INLINE static bool
+    call(T *GEC_RSTRCT, const T *GEC_RSTRCT, bool carry) {
+        return carry;
+    }
+};
+
+/** @brief add a single bit carry to the sequence inplace
+ */
+template <size_t N, typename T>
+struct SeqAddCarryInplace {
+    __host__ __device__ GEC_INLINE static bool call(T *GEC_RSTRCT a,
+                                                    bool carry) {
+        bool new_carry = uint_add_with_carry(*a, T(0), carry);
+        return SeqAddCarryInplace<N - 1, T>::call(a + 1, new_carry);
+    }
+};
+template <typename T>
+struct SeqAddCarryInplace<1, T> {
+    __host__ __device__ GEC_INLINE static bool call(T *GEC_RSTRCT a,
+                                                    bool carry) {
+        return uint_add_with_carry(*a, T(0), carry);
+    }
+};
+template <typename T>
+struct SeqAddCarryInplace<0, T> {
+    __host__ __device__ GEC_INLINE static bool call(T *GEC_RSTRCT, bool carry) {
+        return carry;
+    }
+};
+
+/** @brief add sequence and limb with a single bit carry
+ */
+template <size_t N, typename T>
+struct SeqAddLimb {
+    __host__ __device__ GEC_INLINE static bool call(T *GEC_RSTRCT a,
+                                                    const T *GEC_RSTRCT b,
+                                                    const T &GEC_RSTRCT c,
+                                                    bool carry) {
+        bool new_carry = uint_add_with_carry(*a, *b, c, carry);
+        return SeqAddCarry<N - 1, T>::call(a + 1, b + 1, new_carry);
+    }
+};
+
+/** @brief add sequence and limb with a single bit carry
+ */
+template <size_t N, typename T>
+struct SeqAddLimbInplace {
+    __host__ __device__ GEC_INLINE static bool
+    call(T *GEC_RSTRCT a, const T &GEC_RSTRCT b, bool carry) {
+        bool new_carry = uint_add_with_carry(*a, b, carry);
+        return SeqAddCarryInplace<N - 1, T>::call(a + 1, new_carry);
+    }
+};
+
+/** @brief add a single limb to sequence
+ *
+ * @return bool a single bit carry
+ */
+template <size_t N, typename T>
+__host__ __device__ GEC_INLINE bool
+seq_add_limb(T *GEC_RSTRCT a, const T *GEC_RSTRCT b, const T &GEC_RSTRCT c) {
+    return SeqAddLimb<N, T>::call(a, b, c, false);
+}
+
+/** @brief add a single limb to sequence inplace
+ *
+ * @return bool a single bit carry
+ */
+template <size_t N, typename T>
+__host__ __device__ GEC_INLINE bool seq_add_limb(T *GEC_RSTRCT a,
+                                                 const T &GEC_RSTRCT b) {
+    return SeqAddLimbInplace<N, T>::call(a, b, false);
+}
+
 template <typename T>
 __host__ __device__ GEC_INLINE bool
 dh_uint_sub_with_borrow(T &GEC_RSTRCT a, const T &GEC_RSTRCT b,
@@ -375,51 +559,154 @@ __host__ __device__ GEC_INLINE bool seq_sub(T *GEC_RSTRCT a,
     return SeqSubInplace<N, T>::call(a, b, false);
 }
 
+/** @brief subtract a single bit borrow from the sequence
+ */
+template <size_t N, typename T>
+struct SeqSubBorrow {
+    __host__ __device__ GEC_INLINE static bool
+    call(T *GEC_RSTRCT a, const T *GEC_RSTRCT b, bool borrow) {
+        bool new_borrow = uint_sub_with_borrow(*a, *b, 0, borrow);
+        return SeqSubBorrow<N - 1, T>::call(a + 1, new_borrow);
+    }
+};
+template <typename T>
+struct SeqSubBorrow<1, T> {
+    __host__ __device__ GEC_INLINE static bool
+    call(T *GEC_RSTRCT a, const T *GEC_RSTRCT b, bool borrow) {
+        return uint_sub_with_borrow(*a, *b, 0, borrow);
+    }
+};
+template <typename T>
+struct SeqSubBorrow<0, T> {
+    __host__ __device__ GEC_INLINE static bool
+    call(T *GEC_RSTRCT, const T *GEC_RSTRCT, bool borrow) {
+        return borrow;
+    }
+};
+
+/** @brief subtract a single bit borrow from the sequence inplace
+ */
+template <size_t N, typename T>
+struct SeqSubBorrowInplace {
+    __host__ __device__ GEC_INLINE static bool call(T *GEC_RSTRCT a,
+                                                    bool borrow) {
+        bool new_borrow = uint_sub_with_borrow(*a, 0, borrow);
+        return SeqSubBorrowInplace<N - 1, T>::call(a + 1, new_borrow);
+    }
+};
+template <typename T>
+struct SeqSubBorrowInplace<1, T> {
+    __host__ __device__ GEC_INLINE static bool call(T *GEC_RSTRCT a,
+                                                    bool borrow) {
+        return uint_sub_with_borrow(*a, 0, borrow);
+    }
+};
+template <typename T>
+struct SeqSubBorrowInplace<0, T> {
+    __host__ __device__ GEC_INLINE static bool call(T *GEC_RSTRCT,
+                                                    bool borrow) {
+        return borrow;
+    }
+};
+
+/** @brief subtract a limb from the sequence with a single bit borrow
+ */
+template <size_t N, typename T>
+struct SeqSubLimb {
+    __host__ __device__ GEC_INLINE static bool call(T *GEC_RSTRCT a,
+                                                    const T *GEC_RSTRCT b,
+                                                    const T &GEC_RSTRCT c,
+                                                    bool borrow) {
+        bool new_borrow = uint_sub_with_borrow(*a, *b, c, borrow);
+        return SeqSubBorrow<N - 1, T>::call(a + 1, b + 1, new_borrow);
+    }
+};
+
+/** @brief subtract a limb from the sequence inplace with a single bit borrow
+ */
+template <size_t N, typename T>
+struct SeqSubLimbInplace {
+    __host__ __device__ GEC_INLINE static bool
+    call(T *GEC_RSTRCT a, T &GEC_RSTRCT b, bool borrow) {
+        bool new_borrow = uint_sub_with_borrow(*a, b, borrow);
+        return SeqSubBorrowInplace<N - 1, T>::call(a + 1, new_borrow);
+    }
+};
+
+/** @brief subtract a single limb from the sequence
+ *
+ * @return bool a single bit borrow
+ */
+template <size_t N, typename T>
+__host__ __device__ GEC_INLINE bool
+seq_sub_limb(T *GEC_RSTRCT a, const T *GEC_RSTRCT b, const T &GEC_RSTRCT c) {
+    return SeqSubLimb<N, T>::call(a, b, c, false);
+}
+
+/** @brief subtract a single limb from the sequence inplace
+ *
+ * @return bool a single bit borrow
+ */
+template <size_t N, typename T>
+__host__ __device__ GEC_INLINE bool seq_sub_limb(T *GEC_RSTRCT a,
+                                                 const T &GEC_RSTRCT b) {
+    return SeqSubLimbInplace<N, T>::call(a, b, false);
+}
+
+// TODO: refactor mul_lh to incorporate with Cast2Uint
+
+namespace _dh_uint_mul_lh_ {
+
+template <typename T, typename Enable = void>
+struct DHUintMulLH {
+    __host__ __device__ static void call(T &GEC_RSTRCT l, T &GEC_RSTRCT h,
+                                         const T &GEC_RSTRCT a,
+                                         const T &GEC_RSTRCT b) {
+        constexpr size_t len = utils::type_bits<T>::value / 2;
+        constexpr T lower_mask = (T(1) << len) - T(1);
+
+        T al = a & lower_mask;
+        T bl = b & lower_mask;
+        T ah = a >> len;
+        T bh = b >> len;
+
+        T al_bl = al * bl;
+        T ah_bl = ah * bl;
+        T al_bh = al * bh;
+        T ah_bh = ah * bh;
+
+        T lh;
+        T carry1 = T(uint_add_with_carry(lh, al_bh, ah_bl, false));
+        T carry2 = T(uint_add_with_carry(l, al_bl, (lh << len), false));
+        h = ah_bh + (lh >> len) + carry2 + (carry1 << len);
+    }
+};
+
+template <typename T>
+struct DHUintMulLH<T, std::enable_if_t<Cast2Uint<T>::value>> {
+    __host__ __device__ static void call(T &GEC_RSTRCT l, T &GEC_RSTRCT h,
+                                         const T &GEC_RSTRCT a,
+                                         const T &GEC_RSTRCT b) {
+        using TT = typename Cast2Uint<T>::type;
+        TT product = TT(a) * TT(b);
+        l = T(product);
+        h = product >> utils::type_bits<T>::value;
+    }
+};
+
+} // namespace _dh_uint_mul_lh_
+
 template <typename T>
 __host__ __device__ GEC_INLINE void
 dh_uint_mul_lh(T &GEC_RSTRCT l, T &GEC_RSTRCT h, const T &GEC_RSTRCT a,
                const T &GEC_RSTRCT b) {
-    constexpr size_t len = utils::type_bits<T>::value / 2;
-    constexpr T lower_mask = (T(1) << len) - T(1);
-
-    T al = a & lower_mask;
-    T bl = b & lower_mask;
-    T ah = a >> len;
-    T bh = b >> len;
-
-    T al_bl = al * bl;
-    T ah_bl = ah * bl;
-    T al_bh = al * bh;
-    T ah_bh = ah * bh;
-
-    T lh;
-    T carry1 = T(uint_add_with_carry(lh, al_bh, ah_bl, false));
-    T carry2 = T(uint_add_with_carry(l, al_bl, (lh << len), false));
-    h = ah_bh + (lh >> len) + carry2 + (carry1 << len);
+    _dh_uint_mul_lh_::DHUintMulLH<T>::call(l, h, a, b);
 }
 
-#define GEC_specialized_dh_uint_mul_lh(U, DU)                                  \
-    template <>                                                                \
-    __host__ __device__ GEC_INLINE void dh_uint_mul_lh<U>(                     \
-        U & GEC_RSTRCT l, U & GEC_RSTRCT h, const U &GEC_RSTRCT a,             \
-        const U &GEC_RSTRCT b) {                                               \
-        DU product = DU(a) * DU(b);                                            \
-        l = U(product);                                                        \
-        h = product >> utils::type_bits<U>::value;                             \
-    }
-// clang-format off
-GEC_specialized_dh_uint_mul_lh(uint32_t, uint64_t)
-GEC_specialized_dh_uint_mul_lh(uint16_t, uint32_t)
-GEC_specialized_dh_uint_mul_lh(uint8_t, uint16_t)
-// clang-format on
-#undef GEC_specialized_dh_uint_mul_lh
-
-    // clang-format off
 template <typename T>
 __device__ GEC_INLINE void d_uint_mul_lh(T &GEC_RSTRCT l, T &GEC_RSTRCT h,
                                          const T &GEC_RSTRCT a,
                                          const T &GEC_RSTRCT b) {
-    // clang-format on
     return dh_uint_mul_lh(l, h, a, b);
 }
 

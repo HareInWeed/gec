@@ -11,7 +11,7 @@ namespace curve {
 /** @brief mixin that enables elliptic curve arithmetic with Jacobian coordinate
  */
 template <typename Core, typename FIELD_T>
-class Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
+class GEC_EMPTY_BASES Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
     friend CRTP<Core, Jacobain<Core, FIELD_T>>;
 
     using F = FIELD_T;

@@ -11,32 +11,32 @@ namespace gec {
 namespace curve {
 
 template <typename Point, size_t I, size_t N>
-struct PointOstreamHelper {
+struct GEC_EMPTY_BASES PointOstreamHelper {
     __host__ GEC_INLINE static void call(std::ostream &o, const Point &point) {
         o << ',' << std::endl << ' ' << point.template get<I>();
         PointOstreamHelper<Point, I + 1, N>::call(o, point);
     }
 };
 template <typename Point, size_t N>
-struct PointOstreamHelper<Point, 0, N> {
+struct GEC_EMPTY_BASES PointOstreamHelper<Point, 0, N> {
     __host__ GEC_INLINE static void call(std::ostream &o, const Point &point) {
         o << point.template get<0>();
         PointOstreamHelper<Point, 1, N>::call(o, point);
     }
 };
 template <typename Point, size_t N>
-struct PointOstreamHelper<Point, N, N> {
+struct GEC_EMPTY_BASES PointOstreamHelper<Point, N, N> {
     __host__ GEC_INLINE static void call(std::ostream &, const Point &) {}
 };
 template <typename Point>
-struct PointOstreamHelper<Point, 0, 0> {
+struct GEC_EMPTY_BASES PointOstreamHelper<Point, 0, 0> {
     __host__ GEC_INLINE static void call(std::ostream &, const Point &) {}
 };
 
 /** @brief mixin that enables output x() and y() with ostream
  */
 template <typename Core>
-class PointOstream : protected CRTP<Core, PointOstream<Core>> {
+class GEC_EMPTY_BASES PointOstream : protected CRTP<Core, PointOstream<Core>> {
     friend CRTP<Core, PointOstream<Core>>;
 
   public:
