@@ -161,13 +161,21 @@ class GEC_EMPTY_BASES MontgomeryOps
 
             mul(s, t, a.r_sqr());
 
-            r.set_pow2(2 * Bits - k);
-            mul(a, s, r);
+            if (k == Bits) {
+                a = s;
+            } else {
+                r.set_pow2(2 * Bits - k);
+                mul(a, s, r);
+            }
         } else {
             mul(t, s, a.r_sqr());
 
-            r.set_pow2(2 * Bits - k);
-            mul(a, t, r);
+            if (k == Bits) {
+                a = t;
+            } else {
+                r.set_pow2(2 * Bits - k);
+                mul(a, t, r);
+            }
         }
     }
 };
