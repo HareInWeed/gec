@@ -265,12 +265,12 @@ __global__ void sampling_scaler_kernel(S *GEC_RSTRCT s,
     auto r = rng[id];
     S::sample(tmp, r);
     s[id] = tmp;
+    rng[id] = r;
 }
 template <typename S, typename P>
 __global__ void init_ps_kernel(P *GEC_RSTRCT init_ps,
                                const S *GEC_RSTRCT init_xs,
-                               const S *GEC_RSTRCT init_ys,
-                               const P &GEC_RSTRCT g, const P &GEC_RSTRCT h) {
+                               const S *GEC_RSTRCT init_ys) {
 
     size_t id = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -285,13 +285,18 @@ __global__ void init_ps_kernel(P *GEC_RSTRCT init_ps,
 
     x = init_xs[id];
     y = init_ys[id];
-    p = init_ps[id];
 
-    P::mul(xg, x, g, rest_ctx);
-    P::mul(yh, y, h, rest_ctx);
+    P::mul(xg, x, cd_g<P>, rest_ctx);
+    P::mul(yh, y, cd_h<P>, rest_ctx);
     P::add(p, xg, yh, rest_ctx);
 
     init_ps[id] = p;
+}
+
+template <typename SizeT>
+__global__ static void reset_flags_kernel(bool *done, SizeT *buf_cursor) {
+    *done = false;
+    *buf_cursor = SizeT(0);
 }
 template <typename S, typename P>
 __global__ void searching_kernel(volatile bool *GEC_RSTRCT done,
@@ -301,7 +306,6 @@ __global__ void searching_kernel(volatile bool *GEC_RSTRCT done,
                                  S *GEC_RSTRCT init_ys, P *GEC_RSTRCT init_ps,
                                  const S *GEC_RSTRCT al, const S *GEC_RSTRCT bl,
                                  const P *GEC_RSTRCT pl, size_t l,
-                                 const typename P::Field &GEC_RSTRCT mask,
                                  const unsigned int check_mask) {
     size_t id = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -313,50 +317,60 @@ __global__ void searching_kernel(volatile bool *GEC_RSTRCT done,
     auto &p1 = ctx_view.template get<0>();
     auto &p2 = ctx_view.template get<1>();
     auto &rest_ctx = ctx_view.rest();
-    P *p = &p1, *tmp = &p2;
 
     S x = init_xs[id], y = init_ys[id];
-    *p = init_ps[id];
+    p1 = init_ps[id];
+
+    bool in_p1 = true;
+#define GEC_DEST_ (in_p1 ? p2 : p1)
+#define GEC_SRC_ (in_p1 ? p1 : p2)
+#define GEC_RELOAD_ (in_p1 = !in_p1)
 
     int i;
     for (unsigned int k = 0;; ++k) {
         if (!(k & check_mask) && *done)
             goto shutdown;
-        if (utils::VtSeqAll<F::LimbN, LT, MaskZero<LT>>::call(p->x().array(),
-                                                              mask.array())) {
+        if (utils::VtSeqAll<F::LimbN, LT, MaskZero<LT>>::call(
+                GEC_SRC_.x().array(), cd_mask<F>.array())) {
             size_t idx = atomicAdd(len, 1);
-            if (idx >= max_len) {
-                *done = true;
-                candidate[idx] = *p;
+            if (idx < max_len) {
+                candidate[idx] = GEC_SRC_;
                 xs[idx] = x;
                 ys[idx] = y;
+            } else {
+                *done = true;
                 goto shutdown;
             }
         }
-        i = p->x().array()[0] % l;
+        i = GEC_SRC_.x().array()[0] % l;
         S::add(x, al[i]);
         S::add(y, bl[i]);
-        P::add(*tmp, *p, pl[i], rest_ctx);
-        utils::swap(p, tmp);
+        P::add(GEC_DEST_, GEC_SRC_, pl[i], rest_ctx);
+        GEC_RELOAD_;
     }
 
 shutdown:
     init_xs[id] = x;
     init_ys[id] = y;
-    init_ps[id] = *p;
+    init_ps[id] = GEC_SRC_;
     return;
+
+#undef GEC_DEST_
+#undef GEC_SRC_
+#undef GEC_RELOAD_
 }
 
 } // namespace _pollard_rho_
 
 template <typename S, typename P, typename Rng = std::mt19937,
           typename cuRng = thrust::random::ranlux24>
-cudaError_t
-cu_pollard_rho(S &c,
-               S &d2, // TODO: require general int inv
-               size_t l, const typename P::Field &mask, const P &g, const P &h,
-               size_t seed, unsigned int block_num, unsigned int thread_num,
-               unsigned int buffer_size = 0, unsigned int check_mask = 0xFF) {
+cudaError_t cu_pollard_rho(S &c,
+                           S &d2, // TODO: require general int inv
+                           size_t l, const typename P::Field &mask, const P &g,
+                           const P &h, size_t seed, unsigned int block_num,
+                           unsigned int thread_num,
+                           unsigned int buffer_size = 0x1000,
+                           unsigned int check_mask = 0xFF) {
 
     using namespace _pollard_rho_;
     using uint = unsigned int;
@@ -382,13 +396,6 @@ cu_pollard_rho(S &c,
     } while (0)
 #endif // GEC_DEBUG
 #define _CUDA_CHECK_(code) _CUDA_CHECK_TO_((code), clean_up)
-
-    const bool false_literal = false;
-    const unsigned int zero_literal = 0;
-
-    const P &d_g = cd_g<P>, &d_h = cd_h<P>;
-    const F &d_mask = cd_mask<F>;
-
     const size_t thread_n = block_num * thread_num;
 
     GecRng<Rng> rng = make_gec_rng(Rng((uint)(seed)));
@@ -406,12 +413,11 @@ cu_pollard_rho(S &c,
     S *d_init_xs = nullptr, *d_init_ys = nullptr;
     P *d_init_ps = nullptr;
 
-    const uint buf_size = buffer_size ? buffer_size : uint(thread_n);
     std::unordered_multimap<P, Coefficient<S>, typename P::Hasher>
         candidates_map;
-    std::vector<P> candidates(buf_size);
-    std::vector<S> xs(buf_size);
-    std::vector<S> ys(buf_size);
+    std::vector<P> candidates(buffer_size);
+    std::vector<S> xs(buffer_size);
+    std::vector<S> ys(buffer_size);
     uint *d_buf_cursor;
     P *d_candidate = nullptr;
     S *d_xs = nullptr, *d_ys = nullptr;
@@ -428,20 +434,21 @@ cu_pollard_rho(S &c,
     _CUDA_CHECK_(cudaMalloc(&d_al, sizeof(S) * l));
     _CUDA_CHECK_(cudaMalloc(&d_bl, sizeof(S) * l));
     _CUDA_CHECK_(cudaMalloc(&d_pl, sizeof(P) * l));
+    _CUDA_CHECK_(cudaMalloc(&d_rng, sizeof(GecRng<cuRng>) * thread_n));
     _CUDA_CHECK_(cudaMalloc(&d_init_xs, sizeof(S) * thread_n));
     _CUDA_CHECK_(cudaMalloc(&d_init_ys, sizeof(S) * thread_n));
     _CUDA_CHECK_(cudaMalloc(&d_init_ps, sizeof(P) * thread_n));
-    _CUDA_CHECK_(cudaMalloc(&d_candidate, sizeof(P) * buf_size));
-    _CUDA_CHECK_(cudaMalloc(&d_xs, sizeof(S) * buf_size));
-    _CUDA_CHECK_(cudaMalloc(&d_ys, sizeof(S) * buf_size));
+    _CUDA_CHECK_(cudaMalloc(&d_candidate, sizeof(P) * buffer_size));
+    _CUDA_CHECK_(cudaMalloc(&d_xs, sizeof(S) * buffer_size));
+    _CUDA_CHECK_(cudaMalloc(&d_ys, sizeof(S) * buffer_size));
     _CUDA_CHECK_(cudaMalloc(&d_buf_cursor, sizeof(uint)));
     _CUDA_CHECK_(cudaMalloc(&d_done, sizeof(bool)));
 
-    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(d_g, &g, sizeof(P), 0,
+    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(cd_g<P>, &g, sizeof(P), 0,
                                          cudaMemcpyHostToDevice, stream1));
-    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(d_h, &h, sizeof(P), 0,
+    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(cd_h<P>, &h, sizeof(P), 0,
                                          cudaMemcpyHostToDevice, stream1));
-    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(d_mask, &mask, sizeof(F), 0,
+    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(cd_mask<F>, &mask, sizeof(F), 0,
                                          cudaMemcpyHostToDevice, stream1));
 
     init_rng_kernel<cuRng><<<block_num, thread_num, 0, stream2>>>(d_rng, seed);
@@ -451,7 +458,7 @@ cu_pollard_rho(S &c,
         <<<block_num, thread_num, 0, stream2>>>(d_init_ys, d_rng);
 
     init_ps_kernel<S, P>
-        <<<block_num, thread_num>>>(d_init_ps, d_init_xs, d_init_ys, g, h);
+        <<<block_num, thread_num>>>(d_init_ps, d_init_xs, d_init_ys);
 
     for (size_t k = 0; k < l; ++k) {
         S::sample(al[k], rng);
@@ -461,26 +468,30 @@ cu_pollard_rho(S &c,
         P::add(pl[k], ag, bh, ctx);
     }
 
+    _CUDA_CHECK_(cudaMemcpyAsync(d_al, al.data(), sizeof(S) * l,
+                                 cudaMemcpyHostToDevice, stream1));
+    _CUDA_CHECK_(cudaMemcpyAsync(d_bl, bl.data(), sizeof(S) * l,
+                                 cudaMemcpyHostToDevice, stream1));
+    _CUDA_CHECK_(cudaMemcpyAsync(d_pl, pl.data(), sizeof(P) * l,
+                                 cudaMemcpyHostToDevice, stream1));
+
     _CUDA_CHECK_(cudaDeviceSynchronize());
     _CUDA_CHECK_(cudaGetLastError());
 
     for (;;) {
-        cudaMemcpyAsync(d_done, &false_literal, sizeof(bool),
-                        cudaMemcpyHostToDevice, stream1);
-        cudaMemcpyAsync(d_buf_cursor, &zero_literal, sizeof(uint),
-                        cudaMemcpyHostToDevice, stream1);
+        reset_flags_kernel<<<1, 1, 0, stream1>>>(d_done, d_buf_cursor);
         searching_kernel<S, P><<<block_num, thread_num, 0, stream1>>>(
-            d_done, d_candidate, d_xs, d_ys, d_buf_cursor, buf_size, d_init_xs,
-            d_init_ys, d_init_ps, d_al, d_bl, d_pl, l, d_mask, check_mask);
-        cudaMemcpyAsync(candidates.data(), d_candidate, sizeof(P) * buf_size,
+            d_done, d_candidate, d_xs, d_ys, d_buf_cursor, buffer_size,
+            d_init_xs, d_init_ys, d_init_ps, d_al, d_bl, d_pl, l, check_mask);
+        cudaMemcpyAsync(candidates.data(), d_candidate, sizeof(P) * buffer_size,
                         cudaMemcpyDeviceToHost, stream1);
-        cudaMemcpyAsync(xs.data(), d_xs, sizeof(S) * buf_size,
+        cudaMemcpyAsync(xs.data(), d_xs, sizeof(S) * buffer_size,
                         cudaMemcpyDeviceToHost, stream1);
-        cudaMemcpyAsync(ys.data(), d_ys, sizeof(S) * buf_size,
+        cudaMemcpyAsync(ys.data(), d_ys, sizeof(S) * buffer_size,
                         cudaMemcpyDeviceToHost, stream1);
         _CUDA_CHECK_(cudaDeviceSynchronize());
         _CUDA_CHECK_(cudaGetLastError());
-        for (uint k = 0; k < buf_size; ++k) {
+        for (uint k = 0; k < buffer_size; ++k) {
             auto &p = candidates[k];
             auto &x = xs[k];
             auto &y = ys[k];
@@ -496,12 +507,16 @@ cu_pollard_rho(S &c,
             }
             candidates_map.insert(std::make_pair(p, Coefficient<S>{x, y}));
         }
+#ifdef GEC_DEBUG
+        printf("[host] number of candidates: %zu\n", candidates_map.size());
+#endif // GEC_DEBUG
     }
 
 clean_up:
     cudaFree(d_al);
     cudaFree(d_bl);
     cudaFree(d_pl);
+    cudaFree(d_rng);
     cudaFree(d_init_xs);
     cudaFree(d_init_ys);
     cudaFree(d_init_ps);

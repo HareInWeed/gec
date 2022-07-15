@@ -116,6 +116,23 @@ struct CLZ {
     }
 };
 
+#if defined(__CUDACC__)
+
+template <>
+struct DeviceCLZ<unsigned int> {
+    __device__ GEC_INLINE static size_t call(unsigned int x) {
+        return size_t(__clz((int)x));
+    }
+};
+template <>
+struct DeviceCLZ<unsigned long long int> {
+    __device__ GEC_INLINE static size_t call(unsigned long long int x) {
+        return size_t(__clzll((long long int)x));
+    }
+};
+
+#endif
+
 #if defined(GEC_GCC) || defined(GEC_CLANG)
 
 template <>
@@ -323,6 +340,23 @@ struct CTZ {
 #endif // __CUDA_ARCH__
     }
 };
+
+#ifdef __CUDACC__
+
+template <>
+struct DeviceCTZ<unsigned int> {
+    __device__ GEC_INLINE static size_t call(unsigned int x) {
+        return size_t(__ffs((int)x));
+    }
+};
+template <>
+struct DeviceCTZ<unsigned long long int> {
+    __device__ GEC_INLINE static size_t call(unsigned long long int x) {
+        return size_t(__ffsll((unsigned long long int)x));
+    }
+};
+
+#endif
 
 #if defined(GEC_GCC) || defined(GEC_CLANG)
 
