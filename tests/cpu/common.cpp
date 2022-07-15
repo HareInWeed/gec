@@ -12,11 +12,11 @@ def_aligned_array(OneR_160, LIMB_T, LN_160, 8, //
                   0x4886fd54u);
 
 def_aligned_array(MOD2_160, LIMB2_T, LN2_160, 8, //
-                  0x5c17ef6c5e3b0969u, 0xd8db9627f5d7cecau, 0xb77902abu);
+                  0x5c17ef6c5e3b0969llu, 0xd8db9627f5d7cecallu, 0xb77902abllu);
 def_aligned_array(RR2_160, LIMB2_T, LN2_160, 8, //
-                  0x399ce6a561260cf2u, 0x8aec751946c1c15au, 0x7cd393b3u);
+                  0x87ada0ed26f392f0llu, 0xcf41f1cd75ad34a8llu, 0x158d01edllu);
 def_aligned_array(OneR2_160, LIMB2_T, LN2_160, 8, //
-                  0xa3e81093a1c4f697llu, 0x272469d80a283135llu, 0x4886fd54llu);
+                  0xad68a50f4a90f52allu, 0x73a542628a520aeellu, 0x3e45aeb8llu);
 
 def_aligned_array(MOD_256, LIMB_T, LN_256, 32, //
                   0xfffffc2fu, 0xfffffffeu, 0xffffffffu, 0xffffffffu,

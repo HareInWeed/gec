@@ -127,26 +127,26 @@ d_uint_add_with_carry(T &GEC_RSTRCT a, const T &GEC_RSTRCT b,
     return dh_uint_add_with_carry(a, b, c, carry);
 }
 
-#ifdef __CUDACC__
-template <>
-__device__ GEC_INLINE bool
-d_uint_add_with_carry<uint32_t>(uint32_t &GEC_RSTRCT a,
-                                const uint32_t &GEC_RSTRCT b,
-                                const uint32_t &GEC_RSTRCT c, bool carry) {
-    set_cc_cf_(carry);
-    addc_cc_(a, b, c);
-    return get_cc_cf_();
-}
-template <>
-__device__ GEC_INLINE bool
-d_uint_add_with_carry<uint64_t>(uint64_t &GEC_RSTRCT a,
-                                const uint64_t &GEC_RSTRCT b,
-                                const uint64_t &GEC_RSTRCT c, bool carry) {
-    set_cc_cf_(carry);
-    addc_cc_(a, b, c);
-    return get_cc_cf_();
-}
-#endif // __CUDACC__
+// #ifdef __CUDACC__
+// template <>
+// __device__ GEC_INLINE bool
+// d_uint_add_with_carry<uint32_t>(uint32_t &GEC_RSTRCT a,
+//                                 const uint32_t &GEC_RSTRCT b,
+//                                 const uint32_t &GEC_RSTRCT c, bool carry) {
+//     set_cc_cf_(carry);
+//     addc_cc_(a, b, c);
+//     return get_cc_cf_();
+// }
+// template <>
+// __device__ GEC_INLINE bool
+// d_uint_add_with_carry<uint64_t>(uint64_t &GEC_RSTRCT a,
+//                                 const uint64_t &GEC_RSTRCT b,
+//                                 const uint64_t &GEC_RSTRCT c, bool carry) {
+//     set_cc_cf_(carry);
+//     addc_cc_(a, b, c);
+//     return get_cc_cf_();
+// }
+// #endif // __CUDACC__
 
 // TODO: specialization
 
@@ -349,15 +349,15 @@ template <size_t N, typename T>
 struct SeqAddCarry {
     __host__ __device__ GEC_INLINE static bool
     call(T *GEC_RSTRCT a, const T *GEC_RSTRCT b, bool carry) {
-        bool new_carry = uint_add_with_carry(*a, *b, 0, carry);
-        return SeqAddCarry<N - 1, T>::call(a + 1, new_carry);
+        bool new_carry = uint_add_with_carry(*a, *b, T(0), carry);
+        return SeqAddCarry<N - 1, T>::call(a + 1, b + 1, new_carry);
     }
 };
 template <typename T>
 struct SeqAddCarry<1, T> {
     __host__ __device__ GEC_INLINE static bool
     call(T *GEC_RSTRCT a, const T *GEC_RSTRCT b, bool carry) {
-        return uint_add_with_carry(*a, *b, 0, carry);
+        return uint_add_with_carry(*a, *b, T(0), carry);
     }
 };
 template <typename T>
@@ -565,15 +565,15 @@ template <size_t N, typename T>
 struct SeqSubBorrow {
     __host__ __device__ GEC_INLINE static bool
     call(T *GEC_RSTRCT a, const T *GEC_RSTRCT b, bool borrow) {
-        bool new_borrow = uint_sub_with_borrow(*a, *b, 0, borrow);
-        return SeqSubBorrow<N - 1, T>::call(a + 1, new_borrow);
+        bool new_borrow = uint_sub_with_borrow(*a, *b, T(0), borrow);
+        return SeqSubBorrow<N - 1, T>::call(a + 1, b + 1, new_borrow);
     }
 };
 template <typename T>
 struct SeqSubBorrow<1, T> {
     __host__ __device__ GEC_INLINE static bool
     call(T *GEC_RSTRCT a, const T *GEC_RSTRCT b, bool borrow) {
-        return uint_sub_with_borrow(*a, *b, 0, borrow);
+        return uint_sub_with_borrow(*a, *b, T(0), borrow);
     }
 };
 template <typename T>
@@ -590,7 +590,7 @@ template <size_t N, typename T>
 struct SeqSubBorrowInplace {
     __host__ __device__ GEC_INLINE static bool call(T *GEC_RSTRCT a,
                                                     bool borrow) {
-        bool new_borrow = uint_sub_with_borrow(*a, 0, borrow);
+        bool new_borrow = uint_sub_with_borrow(*a, T(0), borrow);
         return SeqSubBorrowInplace<N - 1, T>::call(a + 1, new_borrow);
     }
 };
@@ -598,7 +598,7 @@ template <typename T>
 struct SeqSubBorrowInplace<1, T> {
     __host__ __device__ GEC_INLINE static bool call(T *GEC_RSTRCT a,
                                                     bool borrow) {
-        return uint_sub_with_borrow(*a, 0, borrow);
+        return uint_sub_with_borrow(*a, T(0), borrow);
     }
 };
 template <typename T>
@@ -627,7 +627,7 @@ struct SeqSubLimb {
 template <size_t N, typename T>
 struct SeqSubLimbInplace {
     __host__ __device__ GEC_INLINE static bool
-    call(T *GEC_RSTRCT a, T &GEC_RSTRCT b, bool borrow) {
+    call(T *GEC_RSTRCT a, const T &GEC_RSTRCT b, bool borrow) {
         bool new_borrow = uint_sub_with_borrow(*a, b, borrow);
         return SeqSubBorrowInplace<N - 1, T>::call(a + 1, new_borrow);
     }
