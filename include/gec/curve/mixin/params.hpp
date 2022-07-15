@@ -15,19 +15,19 @@ class GEC_EMPTY_BASES CurveParams
     friend CRTP<Core, CurveParams<Core, FIELD_T, A, B, d_A, d_B>>;
 
   public:
-    __host__ __device__ GEC_INLINE static const FIELD_T &a() {
+    __host__ __device__ GEC_INLINE static constexpr const FIELD_T *a() {
 #ifdef __CUDA_ARCH__
-        return *d_A;
+        return d_A;
 #else
-        return *A;
+        return A;
 #endif // __CUDA_ARCH__
     }
 
-    __host__ __device__ GEC_INLINE static const FIELD_T &b() {
+    __host__ __device__ GEC_INLINE static constexpr const FIELD_T *b() {
 #ifdef __CUDA_ARCH__
-        return *d_B;
+        return d_B;
 #else
-        return *B;
+        return B;
 #endif // __CUDA_ARCH__
     }
 };

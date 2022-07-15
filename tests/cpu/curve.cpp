@@ -17,8 +17,8 @@ def_array(Dlp1P_RR, LIMB_T, LN_160, //
 def_array(Dlp1P_OneR, LIMB_T, LN_160, //
           0x6481277du, 0xe220abebu, 0xbb78a909u, 0x2a5f128du, 0x7fb65cdau);
 
-def_field(Dlp1A, Dlp1Field, //
-          0);
+// def_field(Dlp1A, Dlp1Field, //
+//           0);
 def_field(Dlp1B, Dlp1Field, //
           0x7baf70c8u, 0x7b92164du, 0xfc11e794u, 0x3fea12cau, 0xe3915053u);
 
@@ -32,8 +32,8 @@ def_aligned_array(Dlp1P2_RR, LIMB2_T, LN2_160, 32, //
 def_aligned_array(Dlp1P2_OneR, LIMB2_T, LN2_160, 32, //
                   0x912d3bbe10d1a50fllu, 0xe9e1701be85df2ccllu, 0x00f7f560llu);
 
-def_field(Dlp1A2, Dlp1Field2, //
-          0);
+// def_field(Dlp1A2, Dlp1Field2, //
+//           0);
 def_field(Dlp1B2, Dlp1Field2, //
           0x07bfab07llu, 0x4f0b80df42ef9664llu, 0x8969ddf0868d2878llu);
 
@@ -69,12 +69,12 @@ def_aligned_array(Dlp3P_OneR, LIMB_T, Dlp3N, 32, //
                   0x000003d1u, 0x00000001u, 0x00000000u, 0x00000000u,
                   0x00000000u, 0x00000000u, 0x00000000u, 0x00000000u);
 
-def_field(Dlp3A, Dlp3Field, //
-          0, 0, 0, 0, 0, 0, 0, 0);
+// def_field(Dlp3A, Dlp3Field, //
+//           0, 0, 0, 0, 0, 0, 0, 0);
 def_field(Dlp3B, Dlp3Field, //
           0, 0, 0, 0, 0, 0, 0x0000000du, 0x0000319du);
 #ifdef GEC_ENABLE_AVX2
-const AVX2Dlp3Field AVX2Dlp3A(0, 0, 0, 0, 0, 0, 0, 0);
+// const AVX2Dlp3Field AVX2Dlp3A(0, 0, 0, 0, 0, 0, 0, 0);
 const AVX2Dlp3Field AVX2Dlp3B(0, 0, 0, 0, 0, 0, 0x0000000du, 0x0000319du);
 #endif // GEC_ENABLE_AVX2
 
@@ -112,8 +112,8 @@ def_aligned_array(Dlp3P2_OneR, LIMB2_T, Dlp3N2, 32, //
                   0x00000001000003d1llu, 0x0000000000000000llu,
                   0x0000000000000000llu, 0x0000000000000000llu);
 
-def_field(Dlp3A2, Dlp3Field2, //
-          0, 0, 0, 0);
+// def_field(Dlp3A2, Dlp3Field2, //
+//           0, 0, 0, 0);
 def_field(Dlp3B2, Dlp3Field2, //
           0, 0, 0, 0x0000000d0000319dllu);
 

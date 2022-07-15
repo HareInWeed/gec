@@ -80,7 +80,7 @@ class GEC_EMPTY_BASES alignas(align) Context {
     static const size_t capacity = N - occupied;
     uint8_t mem[N];
 
-    __host__ __device__ GEC_INLINE Context() {}
+    __host__ __device__ GEC_INLINE constexpr Context() {}
 
     template <size_t I>
     __host__ __device__ GEC_INLINE static constexpr size_t get_offset() {
@@ -88,30 +88,31 @@ class GEC_EMPTY_BASES alignas(align) Context {
     }
 
     template <size_t I, std::enable_if_t<(I < sizeof...(Types))> * = nullptr>
-    __host__ __device__ GEC_INLINE typename CtxTypeI<I, Types...>::type &get() {
+    __host__ __device__ GEC_INLINE constexpr
+        typename CtxTypeI<I, Types...>::type &
+        get() {
         return *reinterpret_cast<typename CtxTypeI<I, Types...>::type *>(
             this->mem + get_offset<I>());
     }
     template <size_t I, std::enable_if_t<(I < sizeof...(Types))> * = nullptr>
-    __host__ __device__ GEC_INLINE const typename CtxTypeI<I, Types...>::type &
-    get() const {
+    __host__ __device__
+        GEC_INLINE constexpr const typename CtxTypeI<I, Types...>::type &
+        get() const {
         return *reinterpret_cast<typename CtxTypeI<I, Types...>::type *>(
             this->mem + get_offset<I>());
     }
 
-    __host__ __device__ GEC_INLINE
-        Context<N, align,
-                CtxGetEndOffset<sizeof...(Types), occupied, Types...>::call()> &
-        rest() {
+    __host__ __device__ GEC_INLINE constexpr Context<
+        N, align, CtxGetEndOffset<sizeof...(Types), occupied, Types...>::call()>
+        &rest() {
         return *reinterpret_cast<Context<
             N, align,
             CtxGetEndOffset<sizeof...(Types), occupied, Types...>::call()> *>(
             this);
     }
-    __host__ __device__ GEC_INLINE const
-        Context<N, align,
-                CtxGetEndOffset<sizeof...(Types), occupied, Types...>::call()> &
-        rest() const {
+    __host__ __device__ GEC_INLINE constexpr const Context<
+        N, align, CtxGetEndOffset<sizeof...(Types), occupied, Types...>::call()>
+        &rest() const {
         return *reinterpret_cast<const Context<
             N, align,
             CtxGetEndOffset<sizeof...(Types), occupied, Types...>::call()> *>(
@@ -119,8 +120,9 @@ class GEC_EMPTY_BASES alignas(align) Context {
     }
 
     template <typename... OtherTypes>
-    __host__ __device__ GEC_INLINE Context<N, align, occupied, OtherTypes...> &
-    view_as() {
+    __host__ __device__
+        GEC_INLINE constexpr Context<N, align, occupied, OtherTypes...> &
+        view_as() {
         static_assert(CtxAlignChecker<align, OtherTypes...>::call(),
                       "alignments of some components exceed context limit");
         static_assert(
@@ -131,8 +133,8 @@ class GEC_EMPTY_BASES alignas(align) Context {
             this);
     }
     template <typename... OtherTypes>
-    __host__ __device__ GEC_INLINE const
-        Context<N, align, occupied, OtherTypes...> &
+    __host__ __device__
+        GEC_INLINE constexpr const Context<N, align, occupied, OtherTypes...> &
         view_as() const {
         static_assert(CtxAlignChecker<align, OtherTypes...>::call(),
                       "alignments of some components exceed context limit");

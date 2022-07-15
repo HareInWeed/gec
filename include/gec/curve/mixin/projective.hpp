@@ -66,18 +66,36 @@ class GEC_EMPTY_BASES Projective
         auto &t1 = ctx_view.template get<2>();
         auto &t2 = ctx_view.template get<3>();
 
-        F::mul(t2, a.z(), a.z()); // z^2
-        F::mul(r, a.x(), t2);     // x z^2
-        F::mul(l, a.x(), a.x());  // x^2
-        F::mul(t1, a.a(), r);     // A x z^2
-        F::mul(r, l, a.x());      // x^3
-        F::add(r, t1);            // x^3 + A x z^2
-        F::mul(t1, t2, a.z());    // z^3
-        F::mul(t2, t1, a.b());    // B z^3
-        F::add(r, t2);            // right = x^3 + A x z^2 + B z^3
-        F::mul(t1, a.y(), a.y()); // y^2
-        F::mul(l, t1, a.z());     // left = y^2 z
+#ifdef __CUDACC__
+        // suppress false positive NULL reference warning
+        GEC_NV_DIAGNOSTIC_PUSH
+        GEC_NV_DIAG_SUPPRESS(284)
+#endif // __CUDACC__
+
+        if (a.a() != nullptr || a.b() != nullptr) {
+            F::mul(t2, a.z(), a.z()); // z^2
+        }                             //
+        F::mul(l, a.x(), a.x());      // x^2
+        if (a.a() != nullptr) {       //
+            F::mul(r, a.x(), t2);     // x z^2
+            F::mul(t1, *a.a(), r);    // A x z^2
+        }                             //
+        F::mul(r, l, a.x());          // x^3
+        if (a.a() != nullptr) {       //
+            F::add(r, t1);            // x^3 + A x z^2
+        }                             //
+        if (a.b() != nullptr) {       //
+            F::mul(t1, t2, a.z());    // z^3
+            F::mul(t2, t1, *a.b());   // B z^3
+            F::add(r, t2);            // right = x^3 + A x z^2 + B z^3
+        }                             //
+        F::mul(t1, a.y(), a.y());     // y^2
+        F::mul(l, t1, a.z());         // left = y^2 z
         return l == r;
+
+#ifdef __CUDACC__
+        GEC_NV_DIAGNOSTIC_POP
+#endif // __CUDACC__
     }
 
     template <typename F_CTX>
@@ -171,12 +189,20 @@ class GEC_EMPTY_BASES Projective
         auto &t2 = ctx_view.template get<1>();
         auto &t3 = ctx_view.template get<2>();
 
-        F::mul(t3, b.z(), b.z());       // z1^2
-        F::mul(t2, a.a(), t3);          // A z1^2
+#ifdef __CUDACC__
+        // suppress false positive NULL reference warning
+        GEC_NV_DIAGNOSTIC_PUSH
+        GEC_NV_DIAG_SUPPRESS(284)
+#endif // __CUDACC__
+
         F::mul(t3, b.x(), b.x());       // x1^2
-        F::add(a.z(), t3, t3);          // 2 x1^2
-        F::add(a.z(), t3);              // 3 x1^2
-        F::add(t2, a.z());              // a = A z1^2 + 3 x1^2
+        F::add(t2, t3, t3);             // 2 x1^2
+        F::add(t2, t3);                 // 3 x1^2
+        if (a.a() != nullptr) {         //
+            F::mul(t3, b.z(), b.z());   // z1^2
+            F::mul(a.z(), *a.a(), t3);  // A z1^2
+            F::add(t2, a.z());          // a = 3 x1^2 + A z1^2
+        }                               //
         F::mul(t1, b.y(), b.z());       // b = y1 z1
         F::mul(t3, b.x(), b.y());       // x1 y1
         F::mul(a.z(), t3, t1);          // c = x1 y1 b
@@ -194,6 +220,10 @@ class GEC_EMPTY_BASES Projective
         F::mul(t3, t2, a.z());          // 8 y1^2 b^2
         F::sub(a.y(), t3);              // y = a(4 c - d) - 8 y1^2 b^2
         F::mul(a.z(), t2, t1);          // z = 8 b^3
+
+#ifdef __CUDACC__
+        GEC_NV_DIAGNOSTIC_POP
+#endif // __CUDACC__
     }
 
     template <typename F_CTX>

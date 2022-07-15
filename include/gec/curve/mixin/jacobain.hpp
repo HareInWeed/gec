@@ -38,18 +38,40 @@ class GEC_EMPTY_BASES Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
         auto &t1 = ctx_view.template get<2>();
         auto &t2 = ctx_view.template get<3>();
 
-        F::mul(t1, a.z(), a.z()); // z^2
-        F::mul(t2, t1, t1);       // z^4
-        F::mul(r, t1, t2);        // z^6
-        F::mul(l, a.x(), t2);     // x z^4
-        F::mul(t2, a.a(), l);     // a x z^4
-        F::mul(t1, a.b(), r);     // b z^6
-        F::mul(l, a.x(), a.x());  // x^2
-        F::mul(r, l, a.x());      // x^3
-        F::add(r, t2);            // x^3 + a x z^4
-        F::add(r, t1);            // right = x^3 + a x z^4 + b z^6
-        F::mul(l, a.y(), a.y());  // left = y^2
+#ifdef __CUDACC__
+        // suppress false positive NULL reference warning in nvcc
+        GEC_NV_DIAGNOSTIC_PUSH
+        GEC_NV_DIAG_SUPPRESS(284)
+#endif // __CUDACC__
+
+        if (a.b() != nullptr || a.a() != nullptr) {
+            F::mul(t1, a.z(), a.z()); // z^2
+            F::mul(t2, t1, t1);       // z^4
+        }                             //
+        if (a.b() != nullptr) {       //
+            F::mul(r, t1, t2);        // z^6
+        }                             //
+        if (a.a() != nullptr) {       //
+            F::mul(l, a.x(), t2);     // x z^4
+            F::mul(t2, *a.a(), l);    // a x z^4
+        }                             //
+        if (a.b() != nullptr) {       //
+            F::mul(t1, *a.b(), r);    // b z^6
+        }                             //
+        F::mul(l, a.x(), a.x());      // x^2
+        F::mul(r, l, a.x());          // x^3
+        if (a.a() != nullptr) {       //
+            F::add(r, t2);            // x^3 + a x z^4
+        }                             //
+        if (a.b() != nullptr) {       //
+            F::add(r, t1);            // right = x^3 + a x z^4 + b z^6
+        }                             //
+        F::mul(l, a.y(), a.y());      // left = y^2
         return l == r;
+
+#ifdef __CUDACC__
+        GEC_NV_DIAGNOSTIC_POP
+#endif // __CUDACC__
     }
 
     template <typename F_CTX>
@@ -195,26 +217,38 @@ class GEC_EMPTY_BASES Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
         auto &t4 = ctx_view.template get<0>();
         auto &t5 = ctx_view.template get<1>();
 
-        F::mul(t5, b.z(), b.z());       // z1^2
-        F::mul(t4, t5, t5);             // z1^4
-        F::mul(t5, a.a(), t4);          // A z1^4
-        F::mul(t4, b.x(), b.x());       // x1^
-        F::add(t5, t4);                 // x1^2 + A z1^4
-        F::add(t5, t4);                 // 2 x1^2 + A z1^4
-        F::add(t5, t4);                 // b = 3 x1^2 + A z1^4
-        F::mul(a.z(), b.y(), b.y());    // y1^2
-        F::mul(t4, b.x(), a.z());       // x1 y1^2
-        F::template mul_pow2<2>(t4);    // a = 4 x1 y1^2
-        F::add(a.y(), t4, t4);          // 2 a
-        F::mul(a.x(), t5, t5);          // b^2
-        F::sub(a.x(), a.y());           // x = b^2 - 2 a
-        F::sub(t4, a.x());              // a - x
-        F::mul(a.y(), t5, t4);          // b (a - x)
-        F::mul(t4, a.z(), a.z());       // y1^4
-        F::template mul_pow2<3>(t4);    // 8 y1^4
-        F::sub(a.y(), t4);              // y = b(a - x) -8 y1^4
-        F::mul(a.z(), b.y(), b.z());    // y1 z1
-        F::template mul_pow2<1>(a.z()); // z = 2 y1 z1
+#ifdef __CUDACC__
+        // suppress false positive NULL reference warning in nvcc
+        GEC_NV_DIAGNOSTIC_PUSH
+        GEC_NV_DIAG_SUPPRESS(284)
+#endif // __CUDACC__
+
+        F::mul(t4, b.x(), b.x());        // x1^2
+        F::add(t5, t4, t4);              // 2 x1^2
+        F::add(t5, t4);                  // 3 x1^2
+        if (a.a() != nullptr) {          //
+            F::mul(a.z(), b.z(), b.z()); // z1^2
+            F::mul(t4, a.z(), a.z());    // z1^4
+            F::mul(a.z(), *a.a(), t4);   // A z1^4
+            F::add(t5, a.z());           // b = 3 x1^2 + A z1^4
+        }                                //
+        F::mul(a.z(), b.y(), b.y());     // y1^2
+        F::mul(t4, b.x(), a.z());        // x1 y1^2
+        F::template mul_pow2<2>(t4);     // a = 4 x1 y1^2
+        F::add(a.y(), t4, t4);           // 2 a
+        F::mul(a.x(), t5, t5);           // b^2
+        F::sub(a.x(), a.y());            // x = b^2 - 2 a
+        F::sub(t4, a.x());               // a - x
+        F::mul(a.y(), t5, t4);           // b (a - x)
+        F::mul(t4, a.z(), a.z());        // y1^4
+        F::template mul_pow2<3>(t4);     // 8 y1^4
+        F::sub(a.y(), t4);               // y = b(a - x) -8 y1^4
+        F::mul(a.z(), b.y(), b.z());     // y1 z1
+        F::template mul_pow2<1>(a.z());  // z = 2 y1 z1
+
+#ifdef __CUDACC__
+        GEC_NV_DIAGNOSTIC_POP
+#endif // __CUDACC__
     }
 
     template <typename F_CTX>

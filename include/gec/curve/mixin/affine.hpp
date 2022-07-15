@@ -54,13 +54,27 @@ class GEC_EMPTY_BASES Affine : protected CRTP<Core, Affine<Core, FIELD_T>> {
         auto &r = ctx_view.template get<1>();
         auto &t = ctx_view.template get<2>();
 
-        F::mul(l, a.y(), a.y()); // left = y^2
-        F::mul(t, a.x(), a.x()); // x^2
-        F::mul(r, t, a.x());     // x^3
-        F::mul(t, a.a(), a.x()); // A x
-        F::add(r, t);            // x^3 + A x
-        F::add(r, a.b());        // right x^3 + A x + B
+#ifdef __CUDACC__
+        // suppress false positive NULL reference warning
+        GEC_NV_DIAGNOSTIC_PUSH
+        GEC_NV_DIAG_SUPPRESS(284)
+#endif // __CUDACC__
+
+        F::mul(l, a.y(), a.y());      // left = y^2
+        F::mul(t, a.x(), a.x());      // x^2
+        F::mul(r, t, a.x());          // x^3
+        if (a.a() != nullptr) {       //
+            F::mul(t, *a.a(), a.x()); // A x
+            F::add(r, t);             // x^3 + A x
+        }                             //
+        if (a.b() != nullptr) {       //
+            F::add(r, *a.b());        // right = x^3 + A x + B
+        }
         return l == r;
+
+#ifdef __CUDACC__
+        GEC_NV_DIAGNOSTIC_POP
+#endif // __CUDACC__
     }
 
     template <typename F_CTX>
@@ -89,18 +103,29 @@ class GEC_EMPTY_BASES Affine : protected CRTP<Core, Affine<Core, FIELD_T>> {
     __host__ __device__ static void add_self(Core &GEC_RSTRCT a,
                                              const Core &GEC_RSTRCT b,
                                              F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F, F, F, F>();
-        auto &inv_ctx = ctx.template view_as<F>().rest();
-
+        if (b.y().is_zero()) {
+            a.set_inf();
+            return;
+        }
+        auto &ctx_view = ctx.template view_as<F>();
         auto &d = ctx_view.template get<0>();
-        auto &l = ctx_view.template get<1>();
+        auto &inv_ctx = ctx_view.rest();
+        auto &l = inv_ctx.template view_as<F>().template get<0>();
+
+#ifdef __CUDACC__
+        // suppress false positive NULL reference warning
+        GEC_NV_DIAGNOSTIC_PUSH
+        GEC_NV_DIAG_SUPPRESS(284)
+#endif // __CUDACC__
 
         F::add(d, b.y(), b.y());     // 2 y1
         F::inv(d, inv_ctx);          // (2 y1)^-1
         F::mul(a.y(), b.x(), b.x()); // x1^2
         F::add(a.x(), a.y(), a.y()); // 2 x1^2
         F::add(a.x(), a.y());        // 3 x1^2
-        F::add(a.x(), a.a());        // 3 x1^2 + A
+        if (a.a() != nullptr) {      //
+            F::add(a.x(), *a.a());   // 3 x1^2 + A
+        }                            //
         F::mul(l, a.x(), d);         // l = (3 x1^2 + A) / (2 y1)
         F::mul(a.x(), l, l);         // l^2
         F::add(a.y(), b.x(), b.x()); // 2 x1
@@ -108,12 +133,15 @@ class GEC_EMPTY_BASES Affine : protected CRTP<Core, Affine<Core, FIELD_T>> {
         F::sub(a.y(), b.x(), a.x()); // x1 - x
         F::mul(d, l, a.y());         // l (x1 - x)
         F::sub(a.y(), d, b.y());     // y = l (x1 - x) - y1
+
+#ifdef __CUDACC__
+        GEC_NV_DIAGNOSTIC_POP
+#endif // __CUDACC__
     }
 
     template <typename F_CTX>
-    __host__ __device__ static void
-    add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const Core &GEC_RSTRCT c,
-        F_CTX &GEC_RSTRCT ctx) {
+    __host__ __device__ static void add(Core &GEC_RSTRCT a, const Core &b,
+                                        const Core &c, F_CTX &GEC_RSTRCT ctx) {
         if (b.is_inf()) {
             a = c;
         } else if (c.is_inf()) {

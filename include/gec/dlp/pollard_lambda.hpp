@@ -338,21 +338,19 @@ __global__ void init_wild_kernel(S *GEC_RSTRCT s, P *GEC_RSTRCT p, size_t n,
 
     typename P::template Context<> ctx;
     if (id < n) {
-        // auto &ctx_view = ctx.template view_as<P, P>();
-        // P &local_p = ctx_view.template get<0>();
-        // P &natrual_p = ctx_view.template get<1>();
-        // auto &rest_ctx = ctx_view.rest();
-        P local_p;
-        P natrual_p;
+        auto &ctx_view = ctx.template view_as<P, P, S>();
+        P &local_p = ctx_view.template get<0>();
+        P &natural_p = ctx_view.template get<1>();
+        S &local_s = ctx_view.template get<2>();
+        auto &rest_ctx = ctx_view.rest();
 
-        S local_s(id * step);
+        local_s.set_zero();
+        local_s.array()[0] = id * step;
 
-        // P::mul(local_p, local_s, cd_g<P>, rest_ctx);
-        // P::add(natrual_p, local_p, cd_h<P>, rest_ctx);
-        P::mul(local_p, local_s, cd_g<P>, ctx);
-        P::add(natrual_p, local_p, cd_h<P>, ctx);
+        P::mul(local_p, local_s, cd_g<P>, rest_ctx);
+        P::add(natural_p, local_p, cd_h<P>, rest_ctx);
         s[id] = local_s;
-        p[id] = natrual_p;
+        p[id] = natural_p;
     }
 }
 template <typename S, typename P>
@@ -364,19 +362,22 @@ __global__ void init_tame_kernel(S *GEC_RSTRCT s, P *GEC_RSTRCT p, size_t n,
     typename P::template Context<> ctx;
     if (id < n) {
         S local_s;
+        P local_p;
 
         local_s = cd_bound<S>;
         local_s.template shift_right<1>();
         S::add(local_s, cd_a<S>);
-        S::add(local_s, S(id * step));
-        P::mul(p[id], local_s, cd_g<P>, ctx);
+        S::add(local_s, id * step);
+        P::mul(local_p, local_s, cd_g<P>, ctx);
+
         s[id] = local_s;
+        p[id] = local_p;
     }
 }
 
 template <typename SizeT>
-__global__ void reset_flag_kenel(volatile bool *GEC_RSTRCT done,
-                                 SizeT *GEC_RSTRCT len) {
+__global__ void reset_flag_kernel(volatile bool *GEC_RSTRCT done,
+                                  SizeT *GEC_RSTRCT len) {
     *done = false;
     *len = SizeT(0);
 }
@@ -390,6 +391,7 @@ searching_kernel(volatile bool *GEC_RSTRCT done, P *p_buffer, S *x_buffer,
 
     using F = typename P::Field;
     using LT = typename F::LimbT;
+    const typename F::LimbT jump_mask = l_len - 1;
 
     const size_t id = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -401,10 +403,10 @@ searching_kernel(volatile bool *GEC_RSTRCT done, P *p_buffer, S *x_buffer,
     typename P::Hasher hasher;
 
     S x = xs[id];
-    P p1(ps[id]), p2;
+    P p1 = ps[id], p2;
 
     bool in_p1 = true;
-#define GEC_DIST_ (in_p1 ? p2 : p1)
+#define GEC_DEST_ (in_p1 ? p2 : p1)
 #define GEC_SRC_ (in_p1 ? p1 : p2)
 #define GEC_RELOAD_ (in_p1 = !in_p1)
 
@@ -415,6 +417,12 @@ searching_kernel(volatile bool *GEC_RSTRCT done, P *p_buffer, S *x_buffer,
                 GEC_SRC_.x().array(), cd_mask<F>.array())) {
             unsigned int idx = atomicAdd(len, 1);
             if (idx < buffer_len) {
+                // if (x.array()[0] == 0xfd8c7f60015dee80llu) {
+                //     printf("[device %04llu]: k = %u, [", id, k);
+                //     x.print();
+                //     printf("]: \n");
+                //     GEC_SRC_.println();
+                // }
                 x_buffer[idx] = x;
                 p_buffer[idx] = GEC_SRC_;
             } else {
@@ -424,16 +432,23 @@ searching_kernel(volatile bool *GEC_RSTRCT done, P *p_buffer, S *x_buffer,
         }
         // size_t i = hasher(GEC_SRC_) & 0x1F;
         // size_t i = GEC_SRC_.x().array()[0] & 0x1F;
-        size_t i = GEC_SRC_.x().array()[0] % l_len;
+        // size_t i = GEC_SRC_.x().array()[0] % l_len;
+        size_t i = GEC_SRC_.x().array()[0] & jump_mask;
         S::add(x, sl[i]);
-        P::add(GEC_DIST_, GEC_SRC_, pl[i], ctx);
+        P::add(GEC_DEST_, GEC_SRC_, pl[i], ctx);
         GEC_RELOAD_;
     }
 shutdown:
+    // if (id == 4480) {
+    //     printf("x = ");
+    //     x.println();
+    //     printf("p = \n");
+    //     GEC_SRC_.println();
+    // }
     xs[id] = x;
     ps[id] = GEC_SRC_;
 
-#undef GEC_DIST_
+#undef GEC_DEST_
 #undef GEC_SRC_
 #undef GEC_RELOAD_
 }
@@ -497,11 +512,11 @@ __host__ cudaError_t cu_pollard_lambda(
     const bool true_literal = true;
 
     S::sub(x, b, a);
-    const size_t l_len = x.most_significant_bit() - 1;
-    // const size_t l_len = 32;
+    const size_t l_len =
+        1 << utils::most_significant_bit(x.most_significant_bit());
 
-    const size_t tame_n = thread_n & 1 ? thread_n : thread_n - 1;
-    const size_t wild_n = tame_n - 2;
+    const size_t tame_n = thread_n;
+    const size_t wild_n = thread_n - 1;
     const size_t step_size = tame_n * wild_n;
 
     VS sl(l_len);
@@ -610,7 +625,7 @@ __host__ cudaError_t cu_pollard_lambda(
         cudaStream_t *s_data = &s_wild, *v_s_data = &s_tame;
 
         for (bool collect = false, wild = true;;) {
-            reset_flag_kenel<uint><<<1, 1>>>(d_done, d_len);
+            reset_flag_kernel<uint><<<1, 1, 0, s_exec>>>(d_done, d_len);
             searching_kernel<S, P><<<block_num, thread_num, 0, s_exec>>>(
                 d_done, d_p_buf, d_x_buf, d_len, buffer_size, ps, xs, d_pl,
                 d_sl, l_len, n, check_mask);
@@ -638,28 +653,35 @@ __host__ cudaError_t cu_pollard_lambda(
                 _CUDA_CHECK_(cudaStreamSynchronize(*s_data));
                 _CUDA_CHECK_(cudaGetLastError());
                 for (size_t k = 0; k < buffer_size; ++k) {
-                    P expected;
-                    if (wild) {
-                        P tmp1;
-                        P::mul(tmp1, x_buf[k], g, ctx);
-                        P::add(expected, h, tmp1, ctx);
-                    } else {
-                        P::mul(expected, x_buf[k], g, ctx);
-                    }
-                    if (!P::eq(expected, p_buf[k])) {
-                        printf("[host] in %zuth result: \n", k);
-                        if (wild) {
-                            h.print();
-                            printf(" + ");
-                        }
-                        printf("[");
-                        x_buf[k].print();
-                        printf("]\n");
-                        g.print();
-                        printf(" != ");
-                        p_buf[k].print();
-                        printf("\n");
-                    }
+                    // P expected;
+                    // if (wild) {
+                    //     P tmp1;
+                    //     P::mul(tmp1, x_buf[k], g, ctx);
+                    //     P::add(expected, h, tmp1, ctx);
+                    // } else {
+                    //     P::mul(expected, x_buf[k], g, ctx);
+                    // }
+                    // if (!P::on_curve(p_buf[k], ctx)) {
+                    //     printf("[host] in %zuth result: \n", k);
+                    //     p_buf[k].print();
+                    //     printf("not on curve\n");
+                    // }
+                    // if (!P::eq(expected, p_buf[k])) {
+                    //     printf("[host] in %zuth result: \n", k);
+                    //     if (wild) {
+                    //         h.print();
+                    //         printf(" + ");
+                    //     }
+                    //     printf("[");
+                    //     x_buf[k].print();
+                    //     printf("]\n");
+                    //     g.print();
+                    //     printf(" == ");
+                    //     expected.print();
+                    //     printf(" != ");
+                    //     p_buf[k].print();
+                    //     printf("\n");
+                    // }
 
                     auto range = v_tracks->equal_range(p_buf[k]);
                     for (auto it = range.first; it != range.second; ++it) {
