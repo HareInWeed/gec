@@ -53,7 +53,7 @@ decl_aligned_array(OneR_160, LIMB_T, LN_160, 8);
 /// @brief number of limbs for 160 bits bigint with 64-bit limb
 constexpr size_t LN2_160 = 3;
 /// @brief -MOD^{-1} (mod 2^64)
-constexpr LIMB2_T MOD2_P_160 = 0x1c23727c96c9e927u;
+constexpr LIMB2_T MOD2_P_160 = 0x1c23727c96c9e927llu;
 /// @brief the modulus with 160 bits
 decl_aligned_array(MOD2_160, LIMB2_T, LN2_160, 8);
 /// @brief R^2 (mod MOD)
@@ -75,7 +75,7 @@ decl_aligned_array(OneR_256, LIMB_T, LN_256, 32);
 /// @brief number of limbs for 256 bits bigint with 64-bit limb
 constexpr size_t LN2_256 = 4;
 /// @brief -MOD^{-1} (mod 2^64)
-constexpr LIMB2_T MOD2_P_256 = 0xd838091dd2253531u;
+constexpr LIMB2_T MOD2_P_256 = 0xd838091dd2253531llu;
 /// @brief the modulus with 256 bits
 decl_aligned_array(MOD2_256, LIMB2_T, LN2_256, 32);
 /// @brief R^2 (mod MOD)

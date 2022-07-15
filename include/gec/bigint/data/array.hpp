@@ -18,7 +18,8 @@ class GEC_EMPTY_BASES Array {
     LIMB_T arr[LIMB_N];
 
     __host__ __device__ GEC_INLINE constexpr Array() noexcept : arr() {}
-    __host__ __device__ GEC_INLINE constexpr Array(const LIMB_T &limb) noexcept
+    __host__ __device__
+        GEC_INLINE constexpr explicit Array(const LIMB_T &limb) noexcept
         : arr() {
         *arr = limb;
     }

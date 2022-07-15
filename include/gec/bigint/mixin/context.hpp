@@ -10,7 +10,7 @@ namespace gec {
 namespace bigint {
 
 /// @brief Minimum context size for any function in GEC to work
-constexpr size_t MIN_BIGINT_NUM = 5;
+constexpr size_t MIN_BIGINT_NUM = 8;
 
 /** @brief mixin that add context type
  *

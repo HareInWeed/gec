@@ -14,6 +14,7 @@
 #include "mixin/ostream.hpp"
 #include "mixin/params.hpp"
 #include "mixin/print.hpp"
+#include "mixin/quadratic_residue.hpp"
 #include "mixin/random.hpp"
 #include "mixin/vt_compare.hpp"
 

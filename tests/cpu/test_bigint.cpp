@@ -15,6 +15,7 @@ class AddG160 : public ArrayBE<LIMB_T, LN_160>,
                 public BigintRandom<AddG160, LIMB_T, LN_160>,
                 public Division<AddG160, LIMB_T, LN_160>,
                 public WithBigintContext<AddG160>,
+                public ArrayPrint<AddG160, LIMB_T, LN_160>,
                 public ArrayOstream<AddG160, LIMB_T, LN_160> {
   public:
     using ArrayBE::ArrayBE;
@@ -28,6 +29,7 @@ class AddG160_2 : public ArrayBE<LIMB2_T, LN2_160>,
                   public BigintRandom<AddG160_2, LIMB2_T, LN2_160>,
                   public Division<AddG160_2, LIMB2_T, LN2_160>,
                   public WithBigintContext<AddG160_2>,
+                  public ArrayPrint<AddG160_2, LIMB2_T, LN2_160>,
                   public ArrayOstream<AddG160_2, LIMB2_T, LN2_160> {
   public:
     using ArrayBE::ArrayBE;
@@ -464,7 +466,7 @@ static void test_division(std::random_device::result_type seed) {
             Int::sample(b, lower, upper, rng, ctx);
             CAPTURE(a, b);
 
-            Int::div_mod(q, r, a, b, ctx);
+            Int::div_rem(q, r, a, b, ctx);
             CAPTURE(q, r);
 
             // product
@@ -489,7 +491,7 @@ static void test_division(std::random_device::result_type seed) {
 
             Int::div(q1, a, b, ctx);
             REQUIRE(q == q1);
-            Int::mod(r1, a, b, ctx);
+            Int::rem(r1, a, b, ctx);
             REQUIRE(r == r1);
         }
     }

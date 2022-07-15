@@ -64,6 +64,29 @@ class GEC_EMPTY_BASES ModAddSub
         }
     }
 
+    /** @brief a = b + limb (mod MOD)
+     */
+    __host__ __device__ static void add(Core &GEC_RSTRCT a,
+                                        const Core &GEC_RSTRCT b,
+                                        const LIMB_T &GEC_RSTRCT c) {
+        bool carry = utils::seq_add_limb<LIMB_N>(a.array(), b.array(), c);
+        if (carry || utils::VtSeqCmp<LIMB_N, LIMB_T>::call(
+                         a.array(), a.mod().array()) != utils::CmpEnum::Lt) {
+            utils::seq_sub<LIMB_N>(a.array(), a.mod().array());
+        }
+    }
+
+    /** @brief a = a + limb (mod MOD)
+     */
+    __host__ __device__ static void add(Core &GEC_RSTRCT a,
+                                        const LIMB_T &GEC_RSTRCT b) {
+        bool carry = utils::seq_add_limb<LIMB_N>(a.array(), b);
+        if (carry || utils::VtSeqCmp<LIMB_N, LIMB_T>::call(
+                         a.array(), a.mod().array()) != utils::CmpEnum::Lt) {
+            utils::seq_sub<LIMB_N>(a.array(), a.mod().array());
+        }
+    }
+
     /** @brief a = - b (mod MOD)
      */
     __host__ __device__ static void neg(Core &GEC_RSTRCT a,
@@ -91,6 +114,27 @@ class GEC_EMPTY_BASES ModAddSub
     __host__ __device__ static void sub(Core &GEC_RSTRCT a,
                                         const Core &GEC_RSTRCT b) {
         bool borrow = utils::seq_sub<LIMB_N>(a.array(), b.array());
+        if (borrow) {
+            utils::seq_add<LIMB_N>(a.array(), a.mod().array());
+        }
+    }
+
+    /** @brief a = b - limb (mod MOD)
+     */
+    __host__ __device__ static void sub(Core &GEC_RSTRCT a,
+                                        const Core &GEC_RSTRCT b,
+                                        const LIMB_T &GEC_RSTRCT c) {
+        bool borrow = utils::seq_sub_limb<LIMB_N>(a.array(), b.array(), c);
+        if (borrow) {
+            utils::seq_add<LIMB_N>(a.array(), a.mod().array());
+        }
+    }
+
+    /** @brief a = a - limb (mod MOD)
+     */
+    __host__ __device__ static void sub(Core &GEC_RSTRCT a,
+                                        const LIMB_T &GEC_RSTRCT b) {
+        bool borrow = utils::seq_sub_limb<LIMB_N>(a.array(), b);
         if (borrow) {
             utils::seq_add<LIMB_N>(a.array(), a.mod().array());
         }

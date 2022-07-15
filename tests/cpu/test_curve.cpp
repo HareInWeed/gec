@@ -30,41 +30,77 @@ TEST_CASE("affine", "[curve][affine]") {
     REQUIRE(!C::on_curve(test, ctx));
 
     C p1;
-    F::mul(p1.x(),
-           {0x0ee27967u, 0x5de1bde5u, 0xfaf553e9u, 0x2185fec7u, 0x43e7dd56u},
-           F::r_sqr());
-    F::mul(p1.y(),
-           {0xa43c088fu, 0xa471d05cu, 0x3d1bed80u, 0xb89428beu, 0x84e54faeu},
-           F::r_sqr());
+    F::to_montgomery(
+        p1.x(), //
+        {0x0ee27967u, 0x5de1bde5u, 0xfaf553e9u, 0x2185fec7u, 0x43e7dd56u});
+    F::to_montgomery(
+        p1.y(), //
+        {0xa43c088fu, 0xa471d05cu, 0x3d1bed80u, 0xb89428beu, 0x84e54faeu});
     CAPTURE(p1);
     REQUIRE(C::on_curve(p1, ctx));
 
     C p2;
-    F::mul(p2.x(),
-           {0x16b60634u, 0xe1d3e896u, 0x2879d7aau, 0x2c1672abu, 0xde0252bbu},
-           F::r_sqr());
-    F::mul(p2.y(),
-           {0x99056d94u, 0xe6864afau, 0xa034f181u, 0xd8b4192fu, 0x1cbedd98u},
-           F::r_sqr());
+    F::to_montgomery(
+        p2.x(), //
+        {0x16b60634u, 0xe1d3e896u, 0x2879d7aau, 0x2c1672abu, 0xde0252bbu});
+    F::to_montgomery(
+        p2.y(), //
+        {0x99056d94u, 0xe6864afau, 0xa034f181u, 0xd8b4192fu, 0x1cbedd98u});
     CAPTURE(p2);
     REQUIRE(C::on_curve(p2, ctx));
 
-    C sum;
+    C sum, expected;
+
     C::add(sum, p1, p2, ctx);
     CAPTURE(sum);
     REQUIRE(C::on_curve(sum, ctx));
-
-    C expected;
-    F::mul(expected.x(),
-           {0x506c783fu, 0x82e6ba2fu, 0x323ddc50u, 0xffe966bfu, 0x41cb4178u},
-           F::r_sqr());
-    F::mul(expected.y(),
-           {0x8fc3cd04u, 0x2e78553eu, 0xb84d4c96u, 0x196151feu, 0xe3bd209bu},
-           F::r_sqr());
+    F::to_montgomery(
+        expected.x(), //
+        {0x506c783fu, 0x82e6ba2fu, 0x323ddc50u, 0xffe966bfu, 0x41cb4178u});
+    F::to_montgomery(
+        expected.y(), //
+        {0x8fc3cd04u, 0x2e78553eu, 0xb84d4c96u, 0x196151feu, 0xe3bd209bu});
     CAPTURE(expected);
     REQUIRE(C::on_curve(expected, ctx));
+    REQUIRE(C::eq(expected, sum));
 
-    CHECK(C::eq(expected, sum));
+    C::add(sum, p1, p1, ctx);
+    CAPTURE(sum);
+    REQUIRE(C::on_curve(sum, ctx));
+    F::to_montgomery(
+        expected.x(), //
+        {0x6b52f5f8u, 0x836d4559u, 0x4eb4f96fu, 0x11b16271u, 0xb9194d96u});
+    F::to_montgomery(
+        expected.y(), //
+        {0x1fd6f136u, 0xcd8ecae6u, 0xbec3bb77u, 0xa5bdc183u, 0x842648beu});
+    CAPTURE(expected);
+    REQUIRE(C::on_curve(expected, ctx));
+    REQUIRE(C::eq(expected, sum));
+
+    C::add(sum, p2, p2, ctx);
+    CAPTURE(sum);
+    REQUIRE(C::on_curve(sum, ctx));
+    F::to_montgomery(
+        expected.x(), //
+        {0x34aabf2eu, 0xf06c1194u, 0xbd316d0au, 0x3a407ef7u, 0x850f874eu});
+    F::to_montgomery(
+        expected.y(), //
+        {0x1870fd80u, 0xe627d83bu, 0x7af69418u, 0xad073ee5u, 0xba3606e5u});
+    CAPTURE(expected);
+    REQUIRE(C::on_curve(expected, ctx));
+    REQUIRE(C::eq(expected, sum));
+
+    p2.set_inf();
+    C::add(sum, p1, p2, ctx);
+    CAPTURE(sum);
+    REQUIRE(C::on_curve(sum, ctx));
+    REQUIRE(C::eq(p1, sum));
+
+    p1.set_inf();
+    C::add(sum, p1, p2, ctx);
+    CAPTURE(sum);
+    REQUIRE(C::on_curve(sum, ctx));
+    REQUIRE(sum.is_inf());
 }
 
 TEST_CASE("affine bench", "[curve][affine][bench]") {
@@ -237,6 +273,66 @@ TEST_CASE("jacobian bench", "[curve][jacobian][bench]") {
     };
 }
 
+TEST_CASE("affine scaler_mul", "[curve][affine][scaler_mul]") {
+    using C = Dlp1CurveA;
+    using F = Dlp1Field;
+    using S = Dlp1Scaler;
+
+    std::random_device rd;
+    auto seed = rd();
+    INFO("seed: " << seed);
+    auto rng = make_gec_rng(std::mt19937(seed));
+
+    C::Context<> ctx;
+
+    C p;
+    F::to_montgomery(
+        p.x(), //
+        {0x1e3b0742u, 0xebf7d73fu, 0xf1a78116u, 0x4c46739au, 0x153663f3u});
+    F::to_montgomery(
+        p.y(), //
+        {0x16a8c9aau, 0xc4ad5fdfu, 0x58163ef3u, 0x9de531f5u, 0xe9cb1575u});
+    REQUIRE(C::on_curve(p, ctx));
+    CAPTURE(p);
+
+    C prod1, prod2, sum;
+
+    C::mul(prod1, 0, p, ctx);
+    CAPTURE(prod1);
+    REQUIRE(prod1.is_inf());
+
+    C::mul(prod1, 1, p, ctx);
+    CAPTURE(prod1);
+    REQUIRE(prod1.x() == p.x());
+    REQUIRE(prod1.y() == p.y());
+
+    C::mul(prod1, S::mod(), p, ctx);
+    CAPTURE(prod1);
+    REQUIRE(C::on_curve(prod1, ctx));
+    REQUIRE(prod1.is_inf());
+
+    S s1, s2;
+    for (int k = 0; k < 100; ++k) {
+        S::sample(s1, rng);
+        S::neg(s2, s1);
+
+        C::mul(prod1, s1, p, ctx);
+        CAPTURE(prod1);
+        C::mul(prod2, s2, p, ctx);
+        CAPTURE(prod2);
+        C::add(sum, prod1, prod2, ctx);
+        CAPTURE(sum);
+        REQUIRE(sum.is_inf());
+
+        S::add(s1, s2, 1);
+        C::mul(prod2, s1, p, ctx);
+        CAPTURE(prod2);
+        C::add(sum, prod1, prod2, ctx);
+        CAPTURE(sum);
+        REQUIRE(C::eq(sum, p, ctx));
+    }
+}
+
 TEST_CASE("jacobian scaler_mul", "[curve][jacobian][scaler_mul]") {
     using C = Dlp1CurveJ;
     using F = Dlp1Field;
@@ -250,12 +346,12 @@ TEST_CASE("jacobian scaler_mul", "[curve][jacobian][scaler_mul]") {
     C::Context<> ctx;
 
     C p;
-    F::mul(p.x(),
-           {0x1e3b0742u, 0xebf7d73fu, 0xf1a78116u, 0x4c46739au, 0x153663f3u},
-           F::r_sqr());
-    F::mul(p.y(),
-           {0x16a8c9aau, 0xc4ad5fdfu, 0x58163ef3u, 0x9de531f5u, 0xe9cb1575u},
-           F::r_sqr());
+    F::to_montgomery(
+        p.x(), //
+        {0x1e3b0742u, 0xebf7d73fu, 0xf1a78116u, 0x4c46739au, 0x153663f3u});
+    F::to_montgomery(
+        p.y(), //
+        {0x16a8c9aau, 0xc4ad5fdfu, 0x58163ef3u, 0x9de531f5u, 0xe9cb1575u});
     C::from_affine(p);
     REQUIRE(C::on_curve(p, ctx));
     CAPTURE(p);

@@ -37,6 +37,25 @@ class GEC_EMPTY_BASES AddSubMixin
         return utils::seq_add<LIMB_N>(a.array(), b.array());
     }
 
+    /** @brief a + carry = b + limb
+     *
+     * return the carry bit
+     */
+    __host__ __device__ static bool add(Core &GEC_RSTRCT a,
+                                        const Core &GEC_RSTRCT b,
+                                        const LIMB_T &GEC_RSTRCT c) {
+        return utils::seq_add_limb<LIMB_N>(a.array(), b.array(), c);
+    }
+
+    /** @brief a + carry = a + limb
+     *
+     * return the carry bit
+     */
+    __host__ __device__ static bool add(Core &GEC_RSTRCT a,
+                                        const LIMB_T &GEC_RSTRCT b) {
+        return utils::seq_add_limb<LIMB_N>(a.array(), b);
+    }
+
     /** @brief a + borrow = b - c
      *
      * return the borrow bit
@@ -54,6 +73,25 @@ class GEC_EMPTY_BASES AddSubMixin
     __host__ __device__ static bool sub(Core &GEC_RSTRCT a,
                                         const Core &GEC_RSTRCT b) {
         return utils::seq_sub<LIMB_N>(a.array(), b.array());
+    }
+
+    /** @brief a + borrow = b - c
+     *
+     * return the borrow bit
+     */
+    __host__ __device__ static bool sub(Core &GEC_RSTRCT a,
+                                        const Core &GEC_RSTRCT b,
+                                        const LIMB_T &GEC_RSTRCT c) {
+        return utils::seq_sub_limb<LIMB_N>(a.array(), b.array(), c);
+    }
+
+    /** @brief a + borrow = a - b
+     *
+     * return the borrow bit
+     */
+    __host__ __device__ static bool sub(Core &GEC_RSTRCT a,
+                                        const LIMB_T &GEC_RSTRCT b) {
+        return utils::seq_sub_limb<LIMB_N>(a.array(), b);
     }
 
     __host__ __device__ Core &add(const Core &GEC_RSTRCT a,

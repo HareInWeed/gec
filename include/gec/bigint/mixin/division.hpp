@@ -83,7 +83,7 @@ __host__ __device__ GEC_INLINE T seq_add_mul_limb(T *GEC_RSTRCT a,
 }
 
 template <bool NeedR, typename TT, typename T, size_t I>
-struct CastSingleDivModHelper {
+struct CastSingleDivRemHelper {
     __host__ __device__ GEC_INLINE static void call(T *GEC_RSTRCT q,
                                                     T &GEC_RSTRCT r,
                                                     const T *GEC_RSTRCT a,
@@ -93,11 +93,11 @@ struct CastSingleDivModHelper {
         TT t = (TT(r) << bits) | TT(a[I]);
         q[I] = t / b;
         r = t % b;
-        CastSingleDivModHelper<NeedR, TT, T, I - 1>::call(q, r, a, b);
+        CastSingleDivRemHelper<NeedR, TT, T, I - 1>::call(q, r, a, b);
     }
 };
 template <bool NeedR, typename TT, typename T>
-struct CastSingleDivModHelper<NeedR, TT, T, 0> {
+struct CastSingleDivRemHelper<NeedR, TT, T, 0> {
     __host__ __device__ GEC_INLINE static void call(T *GEC_RSTRCT q,
                                                     T &GEC_RSTRCT r,
                                                     const T *GEC_RSTRCT a,
@@ -130,11 +130,11 @@ struct CastSingleDivModHelper<NeedR, TT, T, 0> {
  * @param ctx context
  */
 template <bool NeedR, typename TT, size_t N, typename T>
-__host__ __device__ void cast_single_div_mod(T *GEC_RSTRCT q, T &GEC_RSTRCT r,
+__host__ __device__ void cast_single_div_rem(T *GEC_RSTRCT q, T &GEC_RSTRCT r,
                                              const T *GEC_RSTRCT a,
                                              const T &GEC_RSTRCT b) {
     r = 0;
-    CastSingleDivModHelper<NeedR, TT, T, N - 1>::call(q, r, a, b);
+    CastSingleDivRemHelper<NeedR, TT, T, N - 1>::call(q, r, a, b);
 }
 
 /**
@@ -165,7 +165,7 @@ struct TypeMax {
  * @param qb temporary buffer for holding intermediate result
  */
 template <bool NeedQ, bool NeedR, typename TT, size_t N, typename T>
-__host__ __device__ static void cast_div_mod(T *GEC_RSTRCT q, T *GEC_RSTRCT a,
+__host__ __device__ static void cast_div_rem(T *GEC_RSTRCT q, T *GEC_RSTRCT a,
                                              T *GEC_RSTRCT b,
                                              T *GEC_RSTRCT qb) {
     using namespace gec::utils;
@@ -182,7 +182,7 @@ __host__ __device__ static void cast_div_mod(T *GEC_RSTRCT q, T *GEC_RSTRCT a,
 
     if (n == 1) {
         T r0;
-        cast_single_div_mod<NeedR, TT, N>(q, r0, a, b[0]);
+        cast_single_div_rem<NeedR, TT, N>(q, r0, a, b[0]);
         if (NeedR) {
             fill_seq_limb<N>(a, T(0));
             a[0] = r0;
@@ -300,7 +300,7 @@ __host__ __device__ static void cast_div_mod(T *GEC_RSTRCT q, T *GEC_RSTRCT a,
 }
 
 template <bool NeedR, typename T, size_t I>
-struct SplitSingleDivModHelper {
+struct SplitSingleDivRemHelper {
     __host__ __device__ GEC_INLINE static void call(T *GEC_RSTRCT q,
                                                     T &GEC_RSTRCT r,
                                                     const T *GEC_RSTRCT a,
@@ -319,11 +319,11 @@ struct SplitSingleDivModHelper {
         q[I] = t / b;
         r = t % b;
 
-        SplitSingleDivModHelper<NeedR, T, I - 1>::call(q, r, a, b);
+        SplitSingleDivRemHelper<NeedR, T, I - 1>::call(q, r, a, b);
     }
 };
 template <bool NeedR, typename T>
-struct SplitSingleDivModHelper<NeedR, T, 0> {
+struct SplitSingleDivRemHelper<NeedR, T, 0> {
     __host__ __device__ GEC_INLINE static void call(T *GEC_RSTRCT q,
                                                     T &GEC_RSTRCT r,
                                                     const T *GEC_RSTRCT a,
@@ -363,32 +363,32 @@ struct SplitSingleDivModHelper<NeedR, T, 0> {
  * @param ctx context
  */
 template <bool NeedR, size_t N, typename T>
-__host__ __device__ void split_single_div_mod(T *GEC_RSTRCT q, T &GEC_RSTRCT r,
+__host__ __device__ void split_single_div_rem(T *GEC_RSTRCT q, T &GEC_RSTRCT r,
                                               const T *GEC_RSTRCT a,
                                               const T &GEC_RSTRCT b) {
     r = 0;
-    SplitSingleDivModHelper<NeedR, T, N - 1>::call(q, r, a, b);
+    SplitSingleDivRemHelper<NeedR, T, N - 1>::call(q, r, a, b);
 }
 
 template <size_t I, typename T, typename HT>
-struct SplitDivModHelper {
+struct SplitDivRemHelper {
     __host__ __device__ GEC_INLINE static void split(HT *h_arr, const T *arr) {
         using namespace ::gec::utils;
         constexpr size_t shift = type_bits<T>::value / 2;
         h_arr[2 * I + 1] = arr[I] >> shift;
         h_arr[2 * I] = arr[I];
-        SplitDivModHelper<I - 1, T, HT>::split(h_arr, arr);
+        SplitDivRemHelper<I - 1, T, HT>::split(h_arr, arr);
     }
 
     __host__ __device__ GEC_INLINE static void merge(T *arr, const HT *h_arr) {
         using namespace ::gec::utils;
         constexpr size_t shift = type_bits<T>::value / 2;
         arr[I] = (T(h_arr[2 * I + 1]) << shift) | T(h_arr[2 * I]);
-        SplitDivModHelper<I - 1, T, HT>::merge(arr, h_arr);
+        SplitDivRemHelper<I - 1, T, HT>::merge(arr, h_arr);
     }
 };
 template <typename T, typename HT>
-struct SplitDivModHelper<0, T, HT> {
+struct SplitDivRemHelper<0, T, HT> {
     __host__ __device__ GEC_INLINE static void split(HT *h_arr, const T *arr) {
         using namespace ::gec::utils;
         constexpr size_t shift = type_bits<T>::value / 2;
@@ -428,13 +428,13 @@ struct SplitDivModHelper<0, T, HT> {
  */
 template <bool NeedQ, bool NeedR, typename HT, size_t N, typename T>
 __host__ __device__ GEC_INLINE static void
-split_div_mod(T *q, T *r, const T *a, const T *b, HT *hq, HT *ha, HT *hb,
+split_div_rem(T *q, T *r, const T *a, const T *b, HT *hq, HT *ha, HT *hb,
               HT *hqb) {
     using namespace gec::utils;
-    using Helper = SplitDivModHelper<N - 1, T, HT>;
+    using Helper = SplitDivRemHelper<N - 1, T, HT>;
     Helper::split(ha, a);
     Helper::split(hb, b);
-    cast_div_mod<NeedQ, NeedR, T, 2 * N>(hq, ha, hb, hqb);
+    cast_div_rem<NeedQ, NeedR, T, 2 * N>(hq, ha, hb, hqb);
     if (NeedQ) {
         Helper::merge(q, hq);
     }
@@ -446,13 +446,13 @@ split_div_mod(T *q, T *r, const T *a, const T *b, HT *hq, HT *ha, HT *hb,
 enum Method { Split, Cast };
 
 template <size_t N, typename T, Method M>
-struct DivModHelper;
+struct DivRemHelper;
 
 template <size_t N, typename T>
-struct DivModHelper<N, T, Method::Cast> {
+struct DivRemHelper<N, T, Method::Cast> {
     template <typename CTX>
     __host__ __device__ GEC_INLINE static void
-    div_mod(T *GEC_RSTRCT q, T *GEC_RSTRCT r, const T *GEC_RSTRCT a,
+    div_rem(T *GEC_RSTRCT q, T *GEC_RSTRCT r, const T *GEC_RSTRCT a,
             const T *GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
 #ifdef __CUDA_ARCH__
@@ -465,7 +465,7 @@ struct DivModHelper<N, T, Method::Cast> {
         auto &qb = ctx_view.template get<1>();
         fill_seq<N>(r, a);
         fill_seq<N>(nb, b);
-        cast_div_mod<true, true, TT, N>(q, r, nb, qb);
+        cast_div_rem<true, true, TT, N>(q, r, nb, qb);
     }
 
     template <typename CTX>
@@ -484,12 +484,12 @@ struct DivModHelper<N, T, Method::Cast> {
         auto &qb = ctx_view.template get<2>();
         fill_seq<N>(na, a);
         fill_seq<N>(nb, b);
-        cast_div_mod<true, false, TT, N>(q, na, nb, qb);
+        cast_div_rem<true, false, TT, N>(q, na, nb, qb);
     }
 
     template <typename CTX>
     __host__ __device__ GEC_INLINE static void
-    mod(T *GEC_RSTRCT r, const T *GEC_RSTRCT a, const T *GEC_RSTRCT b,
+    rem(T *GEC_RSTRCT r, const T *GEC_RSTRCT a, const T *GEC_RSTRCT b,
         CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
 #ifdef __CUDA_ARCH__
@@ -503,15 +503,15 @@ struct DivModHelper<N, T, Method::Cast> {
         auto &qb = ctx_view.template get<2>();
         fill_seq<N>(r, a);
         fill_seq<N>(nb, b);
-        cast_div_mod<false, true, TT, N>(q, r, nb, qb);
+        cast_div_rem<false, true, TT, N>(q, r, nb, qb);
     }
 };
 
 template <size_t N, typename T>
-struct DivModHelper<N, T, Method::Split> {
+struct DivRemHelper<N, T, Method::Split> {
     template <typename CTX>
     __host__ __device__ GEC_INLINE static void
-    div_mod(T *GEC_RSTRCT q, T *GEC_RSTRCT r, const T *GEC_RSTRCT a,
+    div_rem(T *GEC_RSTRCT q, T *GEC_RSTRCT r, const T *GEC_RSTRCT a,
             const T *GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
 #ifdef __CUDA_ARCH__
@@ -525,7 +525,7 @@ struct DivModHelper<N, T, Method::Split> {
         auto &hr = ctx_view.template get<1>();
         auto &ha = ctx_view.template get<2>();
         auto &hb = ctx_view.template get<3>();
-        split_div_mod<true, true, HT, N>(q, r, a, b, hq, hr, ha, hb);
+        split_div_rem<true, true, HT, N>(q, r, a, b, hq, hr, ha, hb);
     }
 
     template <typename CTX>
@@ -544,13 +544,13 @@ struct DivModHelper<N, T, Method::Split> {
         auto &hr = ctx_view.template get<1>();
         auto &ha = ctx_view.template get<2>();
         auto &hb = ctx_view.template get<3>();
-        split_div_mod<true, false, HT, N>(q, (T *)(nullptr), a, b, hq, hr, ha,
+        split_div_rem<true, false, HT, N>(q, (T *)(nullptr), a, b, hq, hr, ha,
                                           hb);
     }
 
     template <typename CTX>
     __host__ __device__ GEC_INLINE static void
-    mod(T *GEC_RSTRCT r, const T *GEC_RSTRCT a, const T *GEC_RSTRCT b,
+    rem(T *GEC_RSTRCT r, const T *GEC_RSTRCT a, const T *GEC_RSTRCT b,
         CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
 #ifdef __CUDA_ARCH__
@@ -564,7 +564,7 @@ struct DivModHelper<N, T, Method::Split> {
         auto &hr = ctx_view.template get<1>();
         auto &ha = ctx_view.template get<2>();
         auto &hb = ctx_view.template get<3>();
-        split_div_mod<false, true, HT, N>((T *)(nullptr), r, a, b, hq, hr, ha,
+        split_div_rem<false, true, HT, N>((T *)(nullptr), r, a, b, hq, hr, ha,
                                           hb);
     }
 };
@@ -601,10 +601,10 @@ class GEC_EMPTY_BASES CastDivision
      */
     template <typename CTX>
     __host__ __device__ static void
-    div_mod(Core &GEC_RSTRCT q, Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
+    div_rem(Core &GEC_RSTRCT q, Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
             const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         using namespace _division_;
-        DivModHelper<LIMB_N, LIMB_T, Method::Cast>::div_mod(
+        DivRemHelper<LIMB_N, LIMB_T, Method::Cast>::div_rem(
             q.array(), r.array(), a.array(), b.array(), ctx);
     }
 
@@ -624,7 +624,7 @@ class GEC_EMPTY_BASES CastDivision
     div(Core &GEC_RSTRCT q, const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
         CTX &GEC_RSTRCT ctx) {
         using namespace _division_;
-        DivModHelper<LIMB_N, LIMB_T, Method::Cast>::div(q.array(), a.array(),
+        DivRemHelper<LIMB_N, LIMB_T, Method::Cast>::div(q.array(), a.array(),
                                                         b.array(), ctx);
     }
 
@@ -641,10 +641,10 @@ class GEC_EMPTY_BASES CastDivision
      */
     template <typename CTX>
     __host__ __device__ GEC_INLINE static void
-    mod(const Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
+    rem(const Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
         const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         using namespace _division_;
-        DivModHelper<LIMB_N, LIMB_T, Method::Cast>::mod(r.array(), a.array(),
+        DivRemHelper<LIMB_N, LIMB_T, Method::Cast>::rem(r.array(), a.array(),
                                                         b.array(), ctx);
     }
 };
@@ -678,10 +678,10 @@ class GEC_EMPTY_BASES SplitDivision
      */
     template <typename CTX>
     __host__ __device__ static void
-    div_mod(Core &GEC_RSTRCT q, Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
+    div_rem(Core &GEC_RSTRCT q, Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
             const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         using namespace _division_;
-        DivModHelper<LIMB_N, LIMB_T, Method::Split>::div_mod(
+        DivRemHelper<LIMB_N, LIMB_T, Method::Split>::div_rem(
             q.array(), r.array(), a.array(), b.array(), ctx);
     }
 
@@ -701,7 +701,7 @@ class GEC_EMPTY_BASES SplitDivision
     div(Core &GEC_RSTRCT q, const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
         CTX &GEC_RSTRCT ctx) {
         using namespace _division_;
-        DivModHelper<LIMB_N, LIMB_T, Method::Split>::div(q.array(), a.array(),
+        DivRemHelper<LIMB_N, LIMB_T, Method::Split>::div(q.array(), a.array(),
                                                          b.array(), ctx);
     }
 
@@ -718,10 +718,10 @@ class GEC_EMPTY_BASES SplitDivision
      */
     template <typename CTX>
     __host__ __device__ GEC_INLINE static void
-    mod(const Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
+    rem(const Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
         const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         using namespace _division_;
-        DivModHelper<LIMB_N, LIMB_T, Method::Split>::mod(r.array(), a.array(),
+        DivRemHelper<LIMB_N, LIMB_T, Method::Split>::rem(r.array(), a.array(),
                                                          b.array(), ctx);
     }
 };
@@ -756,18 +756,18 @@ class GEC_EMPTY_BASES Division
      */
     template <typename CTX>
     __host__ __device__ static void
-    div_mod(Core &GEC_RSTRCT q, Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
+    div_rem(Core &GEC_RSTRCT q, Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
             const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
         using namespace _division_;
-        DivModHelper<LIMB_N, LIMB_T,
+        DivRemHelper<LIMB_N, LIMB_T,
 #ifdef __CUDA_ARCH__
                      DeviceCast2Uint<LIMB_T>::value
 #else
                      HostCast2Uint<LIMB_T>::value
 #endif // __CUDA_ARCH__
                          ? Method::Cast
-                         : Method::Split>::div_mod(q.array(), r.array(),
+                         : Method::Split>::div_rem(q.array(), r.array(),
                                                    a.array(), b.array(), ctx);
     }
 
@@ -788,7 +788,7 @@ class GEC_EMPTY_BASES Division
         CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
         using namespace _division_;
-        DivModHelper<LIMB_N, LIMB_T,
+        DivRemHelper<LIMB_N, LIMB_T,
 #ifdef __CUDA_ARCH__
                      DeviceCast2Uint<LIMB_T>::value
 #else
@@ -812,18 +812,18 @@ class GEC_EMPTY_BASES Division
      */
     template <typename CTX>
     __host__ __device__ GEC_INLINE static void
-    mod(Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+    rem(Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
         CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
         using namespace _division_;
-        DivModHelper<LIMB_N, LIMB_T,
+        DivRemHelper<LIMB_N, LIMB_T,
 #ifdef __CUDA_ARCH__
                      DeviceCast2Uint<LIMB_T>::value
 #else
                      HostCast2Uint<LIMB_T>::value
 #endif // __CUDA_ARCH__
                          ? Method::Cast
-                         : Method::Split>::mod(r.array(), a.array(), b.array(),
+                         : Method::Split>::rem(r.array(), a.array(), b.array(),
                                                ctx);
     }
 };

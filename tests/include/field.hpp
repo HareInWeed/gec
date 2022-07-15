@@ -20,6 +20,7 @@ class GEC_EMPTY_BASES AddGroupMixin
       public gec::bigint::WithBigintContext<Core>,
       public gec::bigint::WithArrayHasher<Core>,
       public gec::bigint::ArrayOstream<Core, T, N>,
+      public gec::bigint::Division<Core, T, N>,
       public gec::bigint::ArrayPrint<Core, T, N> {};
 
 template <typename T, size_t N, size_t align, const T (*MOD)[N],
@@ -45,7 +46,8 @@ class GEC_EMPTY_BASES FieldMixin
       public gec::bigint::MontgomeryParams<Core, T, N, MOD_P, RR, ONE_R, d_RR,
                                            d_ONE_R>,
       public gec::bigint::MontgomeryOps<Core, T, N>,
-      public gec::bigint::Exponentiation<Core> {};
+      public gec::bigint::Exponentiation<Core>,
+      public gec::bigint::MonQuadraticResidue<Core> {};
 
 template <typename T, size_t N, size_t align, const T (*MOD)[N], T MOD_P,
           const T (*RR)[N], const T (*ONE_R)[N], const T (*d_MOD)[N] = MOD,

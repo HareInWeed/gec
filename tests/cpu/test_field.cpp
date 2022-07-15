@@ -667,6 +667,30 @@ TEST_CASE("montgomery inv bench", "[field][bench]") {
     }
 }
 
+template <typename F>
+static void test_mod_sqrt(std::random_device::result_type seed) {
+    CAPTURE(seed);
+
+    typename F::template Context<> ctx;
+
+    auto rng = make_gec_rng(std::mt19937(seed));
+    F x, xx, sqrt, sqr;
+    for (int k = 0; k < 1000; ++k) {
+        F::sample(x, rng);
+        F::mul(xx, x, x);
+        CAPTURE(x, xx);
+        REQUIRE(F::mod_sqrt(sqrt, xx, ctx, rng));
+        CAPTURE(sqrt);
+        F::mul(sqr, sqrt, sqrt);
+        REQUIRE(xx == sqr);
+    }
+}
+TEST_CASE("montgomery mod_sqrt", "[field][quadratic_residue]") {
+    std::random_device rd;
+    test_mod_sqrt<Field160>(rd());
+    test_mod_sqrt<Field160_2>(rd());
+}
+
 TEST_CASE("bigint hash", "[field][hash]") {
     using F = Field160;
     F::Hasher h;

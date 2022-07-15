@@ -40,7 +40,7 @@ TEST_CASE("cu_pollard_rho", "[dlp][pollard_rho][multithread]") {
 
     F mask(0x80000000, 0, 0, 0, 0, 0, 0, 0);
 
-    CUDA_REQUIRE(cu_pollard_rho(c, d, l, mask, g, h, seed, 60, 128));
+    CUDA_REQUIRE(cu_pollard_rho(c, d, l, mask, g, h, seed, 4, 32));
     S::to_montgomery(mon_c, c);
     S::to_montgomery(mon_d, d);
     S::inv(mon_d, ctx);
@@ -87,10 +87,11 @@ TEST_CASE("cu_pollard_lambda", "[dlp][pollard_lambda][cuda]") {
     CAPTURE(g, lower, upper, x0, h);
 
     S x;
-    F mask(0xFFFF0000, 0, 0, 0, 0, 0, 0, 0);
+    F mask(0xF0000000, 0, 0, 0, 0, 0, 0, 0);
     // the grid size here are for test only, typical grid size should be much
     // larger
-    CUDA_REQUIRE(cu_pollard_lambda(x, lower, upper, g, h, mask, seed, 80, 32));
+    CUDA_REQUIRE(
+        cu_pollard_lambda(x, lower, upper, g, h, mask, seed, 4, 32, 0x100));
 
     C xg;
     C::mul(xg, x, g, ctx);
