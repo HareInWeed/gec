@@ -419,17 +419,20 @@ cudaError_t cu_pollard_rho(S &c,
     std::vector<S> xs(buffer_size);
     std::vector<S> ys(buffer_size);
     uint *d_buf_cursor;
-    P *d_candidate = nullptr;
-    S *d_xs = nullptr, *d_ys = nullptr;
+    P *d_candidate = nullptr, *d_candidate1 = nullptr, *d_candidate2 = nullptr;
+    S *d_xs = nullptr, *d_xs1 = nullptr, *d_xs2 = nullptr;
+    S *d_ys = nullptr, *d_ys1 = nullptr, *d_ys2 = nullptr;
 
     P ag, bh;
 
     bool *d_done = nullptr;
 
-    cudaStream_t stream1, stream2, stream3;
+    cudaStream_t *stream = nullptr, stream1, stream2;
+    cudaEvent_t *done_evt = nullptr, done_evt1, done_evt2;
     _CUDA_CHECK_TO_(cudaStreamCreate(&stream1), clean_stream1);
     _CUDA_CHECK_TO_(cudaStreamCreate(&stream2), clean_stream2);
-    _CUDA_CHECK_TO_(cudaStreamCreate(&stream3), clean_stream3);
+    _CUDA_CHECK_TO_(cudaEventCreate(&done_evt1), clean_done_evt1);
+    _CUDA_CHECK_TO_(cudaEventCreate(&done_evt2), clean_done_evt2);
 
     _CUDA_CHECK_(cudaMalloc(&d_al, sizeof(S) * l));
     _CUDA_CHECK_(cudaMalloc(&d_bl, sizeof(S) * l));
@@ -438,9 +441,12 @@ cudaError_t cu_pollard_rho(S &c,
     _CUDA_CHECK_(cudaMalloc(&d_init_xs, sizeof(S) * thread_n));
     _CUDA_CHECK_(cudaMalloc(&d_init_ys, sizeof(S) * thread_n));
     _CUDA_CHECK_(cudaMalloc(&d_init_ps, sizeof(P) * thread_n));
-    _CUDA_CHECK_(cudaMalloc(&d_candidate, sizeof(P) * buffer_size));
-    _CUDA_CHECK_(cudaMalloc(&d_xs, sizeof(S) * buffer_size));
-    _CUDA_CHECK_(cudaMalloc(&d_ys, sizeof(S) * buffer_size));
+    _CUDA_CHECK_(cudaMalloc(&d_candidate1, sizeof(P) * buffer_size));
+    _CUDA_CHECK_(cudaMalloc(&d_candidate2, sizeof(P) * buffer_size));
+    _CUDA_CHECK_(cudaMalloc(&d_xs1, sizeof(S) * buffer_size));
+    _CUDA_CHECK_(cudaMalloc(&d_xs2, sizeof(S) * buffer_size));
+    _CUDA_CHECK_(cudaMalloc(&d_ys1, sizeof(S) * buffer_size));
+    _CUDA_CHECK_(cudaMalloc(&d_ys2, sizeof(S) * buffer_size));
     _CUDA_CHECK_(cudaMalloc(&d_buf_cursor, sizeof(uint)));
     _CUDA_CHECK_(cudaMalloc(&d_done, sizeof(bool)));
 
@@ -478,38 +484,62 @@ cudaError_t cu_pollard_rho(S &c,
     _CUDA_CHECK_(cudaDeviceSynchronize());
     _CUDA_CHECK_(cudaGetLastError());
 
-    for (;;) {
-        reset_flags_kernel<<<1, 1, 0, stream1>>>(d_done, d_buf_cursor);
-        searching_kernel<S, P><<<block_num, thread_num, 0, stream1>>>(
+    d_candidate = d_candidate1;
+    d_xs = d_xs1;
+    d_ys = d_ys1;
+    stream = &stream1;
+    done_evt = &done_evt1;
+    for (bool round = true, first = true;; round = !round) {
+        if (!first) {
+            _CUDA_CHECK_(
+                cudaStreamWaitEvent(*stream, round ? done_evt2 : done_evt1));
+        }
+        reset_flags_kernel<<<1, 1, 0, *stream>>>(d_done, d_buf_cursor);
+        searching_kernel<S, P><<<block_num, thread_num, 0, *stream>>>(
             d_done, d_candidate, d_xs, d_ys, d_buf_cursor, buffer_size,
             d_init_xs, d_init_ys, d_init_ps, d_al, d_bl, d_pl, l, check_mask);
-        cudaMemcpyAsync(candidates.data(), d_candidate, sizeof(P) * buffer_size,
-                        cudaMemcpyDeviceToHost, stream1);
-        cudaMemcpyAsync(xs.data(), d_xs, sizeof(S) * buffer_size,
-                        cudaMemcpyDeviceToHost, stream1);
-        cudaMemcpyAsync(ys.data(), d_ys, sizeof(S) * buffer_size,
-                        cudaMemcpyDeviceToHost, stream1);
-        _CUDA_CHECK_(cudaDeviceSynchronize());
-        _CUDA_CHECK_(cudaGetLastError());
-        for (uint k = 0; k < buffer_size; ++k) {
-            auto &p = candidates[k];
-            auto &x = xs[k];
-            auto &y = ys[k];
-            auto range = candidates_map.equal_range(p);
-            for (auto it = range.first; it != range.second; ++it) {
-                const auto &p0 = it->first;
-                const auto &coeff0 = it->second;
-                if (P::eq(p0, p) && coeff0.y != y) {
-                    S::sub(c, coeff0.x, x);
-                    S::sub(d2, y, coeff0.y);
-                    goto clean_up;
+        _CUDA_CHECK_(cudaEventRecord(*done_evt, *stream));
+
+        d_candidate = round ? d_candidate2 : d_candidate1;
+        d_xs = round ? d_xs2 : d_xs1;
+        d_ys = round ? d_ys2 : d_ys1;
+        stream = round ? &stream2 : &stream1;
+        done_evt = round ? &done_evt2 : &done_evt1;
+
+        if (!first) {
+            _CUDA_CHECK_(cudaMemcpyAsync(candidates.data(), d_candidate,
+                                         sizeof(P) * buffer_size,
+                                         cudaMemcpyDeviceToHost, *stream));
+            _CUDA_CHECK_(cudaMemcpyAsync(xs.data(), d_xs,
+                                         sizeof(S) * buffer_size,
+                                         cudaMemcpyDeviceToHost, *stream));
+            _CUDA_CHECK_(cudaMemcpyAsync(ys.data(), d_ys,
+                                         sizeof(S) * buffer_size,
+                                         cudaMemcpyDeviceToHost, *stream));
+            _CUDA_CHECK_(cudaStreamSynchronize(*stream));
+            _CUDA_CHECK_(cudaGetLastError());
+            for (uint k = 0; k < buffer_size; ++k) {
+                auto &p = candidates[k];
+                auto &x = xs[k];
+                auto &y = ys[k];
+                auto range = candidates_map.equal_range(p);
+                for (auto it = range.first; it != range.second; ++it) {
+                    const auto &p0 = it->first;
+                    const auto &coeff0 = it->second;
+                    if (P::eq(p0, p) && coeff0.y != y) {
+                        S::sub(c, coeff0.x, x);
+                        S::sub(d2, y, coeff0.y);
+                        goto clean_up;
+                    }
                 }
+                candidates_map.insert(std::make_pair(p, Coefficient<S>{x, y}));
             }
-            candidates_map.insert(std::make_pair(p, Coefficient<S>{x, y}));
-        }
 #ifdef GEC_DEBUG
-        printf("[host] number of candidates: %zu\n", candidates_map.size());
+            printf("[host] number of candidates: %zu\n", candidates_map.size());
 #endif // GEC_DEBUG
+        } else {
+            first = false;
+        }
     }
 
 clean_up:
@@ -520,14 +550,19 @@ clean_up:
     cudaFree(d_init_xs);
     cudaFree(d_init_ys);
     cudaFree(d_init_ps);
-    cudaFree(d_candidate);
-    cudaFree(d_xs);
-    cudaFree(d_ys);
+    cudaFree(d_candidate1);
+    cudaFree(d_candidate2);
+    cudaFree(d_xs1);
+    cudaFree(d_xs2);
+    cudaFree(d_ys1);
+    cudaFree(d_ys2);
     cudaFree(d_buf_cursor);
     cudaFree(d_done);
 
-    cudaStreamDestroy(stream3);
-clean_stream3:
+    cudaEventDestroy(done_evt2);
+clean_done_evt2:
+    cudaEventDestroy(done_evt1);
+clean_done_evt1:
     cudaStreamDestroy(stream2);
 clean_stream2:
     cudaStreamDestroy(stream1);

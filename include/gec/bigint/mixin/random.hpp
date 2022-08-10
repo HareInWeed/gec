@@ -113,6 +113,8 @@ struct GEC_EMPTY_BASES GecRng {
     template <typename T>
     __host__ __device__ GEC_INLINE T sample(const T &lower, const T &higher);
     template <typename T>
+    __host__ __device__ GEC_INLINE T sample(const T &higher);
+    template <typename T>
     __host__ __device__ GEC_INLINE T sample();
     __host__ __device__ GEC_INLINE Rng &get_rng();
 };

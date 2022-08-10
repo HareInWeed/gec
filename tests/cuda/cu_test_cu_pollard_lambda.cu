@@ -46,7 +46,7 @@ TEST_CASE("cu_pollard_lambda", "[dlp][pollard_lambda][cuda]") {
     // the grid size here are for test only, typical grid size should be much
     // larger
     CUDA_REQUIRE(
-        cu_pollard_lambda(x, lower, upper, g, h, mask, seed, 4, 32, 0x100));
+        cu_pollard_lambda(x, lower, upper, g, h, mask, seed, 6, 4, 32, 0x1000));
 
     C xg;
     C::mul(xg, x, g, ctx);

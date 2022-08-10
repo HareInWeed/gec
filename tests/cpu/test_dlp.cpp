@@ -49,7 +49,7 @@ TEST_CASE("pollard_rho", "[dlp][pollard_rho]") {
     C::mul(h, x, g, ctx);
     REQUIRE(C::on_curve(h, ctx));
 
-    constexpr size_t l = 32;
+    constexpr size_t l = 16;
     S al[l], bl[l];
     C pl[l];
 
@@ -95,7 +95,7 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
         C::mul(h, x, g, ctx);
         REQUIRE(C::on_curve(h, ctx));
 
-        constexpr size_t l = 32;
+        constexpr size_t l = 16;
         S al[l], bl[l];
         C pl[l];
 
@@ -129,7 +129,7 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
         C::mul(h, x, g, ctx);
         REQUIRE(C::on_curve(h, ctx));
 
-        constexpr size_t l = 32;
+        constexpr size_t l = 16;
         S al[l], bl[l];
         C pl[l];
 
@@ -216,7 +216,7 @@ TEST_CASE("multithread_pollard_rho", "[dlp][pollard_rho][multithread]") {
     C::mul(h, x, g, ctx);
     REQUIRE(C::on_curve(h, ctx));
 
-    size_t l = 32;
+    size_t l = 16;
     size_t worker_n = 8;
     S c, d, mon_c, mon_d;
 
@@ -263,7 +263,7 @@ TEST_CASE("multithread_pollard_rho bench",
         C::mul(h, x, g, ctx);
         REQUIRE(C::on_curve(h, ctx));
 
-        size_t l = 32;
+        size_t l = 16;
         size_t worker_n = 8;
         S c, d, mon_c, mon_d;
 
@@ -309,7 +309,7 @@ TEST_CASE("multithread_pollard_rho bench",
         C::mul(h, x, g, ctx);
         REQUIRE(C::on_curve(h, ctx));
 
-        size_t l = 32;
+        size_t l = 16;
         size_t worker_n = 8;
         S c, d, mon_c, mon_d;
 

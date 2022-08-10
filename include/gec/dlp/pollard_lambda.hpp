@@ -326,9 +326,7 @@ static __constant__ P cd_h;
 template <typename F>
 static __constant__ F cd_mask;
 template <typename S>
-static __constant__ S cd_a;
-template <typename S>
-static __constant__ S cd_bound;
+static __constant__ S cd_middle;
 
 template <typename S, typename P>
 __global__ void init_wild_kernel(S *GEC_RSTRCT s, P *GEC_RSTRCT p, size_t n,
@@ -361,14 +359,13 @@ __global__ void init_tame_kernel(S *GEC_RSTRCT s, P *GEC_RSTRCT p, size_t n,
 
     typename P::template Context<> ctx;
     if (id < n) {
-        S local_s;
-        P local_p;
+        auto &ctx_view = ctx.template view_as<P, S>();
+        P &local_p = ctx_view.template get<0>();
+        S &local_s = ctx_view.template get<1>();
+        auto &rest_ctx = ctx_view.rest();
 
-        local_s = cd_bound<S>;
-        local_s.template shift_right<1>();
-        S::add(local_s, cd_a<S>);
-        S::add(local_s, id * step);
-        P::mul(local_p, local_s, cd_g<P>, ctx);
+        S::add(local_s, cd_middle<S>, id * step);
+        P::mul(local_p, local_s, cd_g<P>, rest_ctx);
 
         s[id] = local_s;
         p[id] = local_p;
@@ -383,17 +380,24 @@ __global__ void reset_flag_kernel(volatile bool *GEC_RSTRCT done,
 }
 template <typename S, typename P>
 __global__ void
-searching_kernel(volatile bool *GEC_RSTRCT done, P *p_buffer, S *x_buffer,
-                 unsigned int *GEC_RSTRCT len, unsigned int buffer_len,
-                 P *GEC_RSTRCT ps, S *GEC_RSTRCT xs, const P *GEC_RSTRCT pl,
-                 const S *GEC_RSTRCT sl, size_t l_len, unsigned int thread_n,
-                 const unsigned int check_mask) {
+searching_kernel(volatile bool *GEC_RSTRCT done, size_t shift, P *p_buffer,
+                 S *x_buffer, unsigned int *GEC_RSTRCT len,
+                 unsigned int buffer_len, P *GEC_RSTRCT ps, S *GEC_RSTRCT xs,
+                 const P *GEC_RSTRCT pl, const S *GEC_RSTRCT sl, size_t l_len,
+                 unsigned int thread_n, const unsigned int check_mask) {
 
     using F = typename P::Field;
     using LT = typename F::LimbT;
     const typename F::LimbT jump_mask = l_len - 1;
+    const size_t block_num = (thread_n + blockDim.x - 1) / blockDim.x;
 
-    const size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (blockIdx.x >= block_num) {
+        return;
+    }
+
+    // shift to avoid starvation
+    const size_t id =
+        ((blockIdx.x + shift) % block_num) * blockDim.x + threadIdx.x;
 
     if (id >= thread_n) {
         return;
@@ -417,12 +421,6 @@ searching_kernel(volatile bool *GEC_RSTRCT done, P *p_buffer, S *x_buffer,
                 GEC_SRC_.x().array(), cd_mask<F>.array())) {
             unsigned int idx = atomicAdd(len, 1);
             if (idx < buffer_len) {
-                // if (x.array()[0] == 0xfd8c7f60015dee80llu) {
-                //     printf("[device %04llu]: k = %u, [", id, k);
-                //     x.print();
-                //     printf("]: \n");
-                //     GEC_SRC_.println();
-                // }
                 x_buffer[idx] = x;
                 p_buffer[idx] = GEC_SRC_;
             } else {
@@ -432,19 +430,14 @@ searching_kernel(volatile bool *GEC_RSTRCT done, P *p_buffer, S *x_buffer,
         }
         // size_t i = hasher(GEC_SRC_) & 0x1F;
         // size_t i = GEC_SRC_.x().array()[0] & 0x1F;
-        // size_t i = GEC_SRC_.x().array()[0] % l_len;
-        size_t i = GEC_SRC_.x().array()[0] & jump_mask;
+        size_t i = GEC_SRC_.x().array()[0] % l_len;
+        // size_t i = GEC_SRC_.x().array()[0] & jump_mask;
         S::add(x, sl[i]);
         P::add(GEC_DEST_, GEC_SRC_, pl[i], ctx);
         GEC_RELOAD_;
     }
 shutdown:
-    // if (id == 4480) {
-    //     printf("x = ");
-    //     x.println();
-    //     printf("p = \n");
-    //     GEC_SRC_.println();
-    // }
+
     xs[id] = x;
     ps[id] = GEC_SRC_;
 
@@ -478,7 +471,7 @@ __host__ cudaError_t cu_pollard_lambda(
     S &GEC_RSTRCT x, const S &GEC_RSTRCT a, const S &GEC_RSTRCT b,
     const P &GEC_RSTRCT g, const P &GEC_RSTRCT h,
     const typename P::Field &candidate_mask, size_t seed,
-    unsigned int block_num, unsigned int thread_num,
+    size_t l_len, unsigned int block_num, unsigned int thread_num,
     unsigned int buffer_size = 0x1000, unsigned int check_mask = 0x3FF) {
 
     using namespace _pollard_lambda_;
@@ -511,13 +504,17 @@ __host__ cudaError_t cu_pollard_lambda(
     const size_t thread_n = block_num * thread_num;
     const bool true_literal = true;
 
-    S::sub(x, b, a);
-    const size_t l_len =
-        1 << utils::most_significant_bit(x.most_significant_bit());
-
     const size_t tame_n = thread_n;
     const size_t wild_n = thread_n - 1;
-    const size_t step_size = tame_n * wild_n;
+    // we assume `tame_n * wild_n` fits in `size_t` and `S::LimbT`
+    const size_t step_gap = tame_n * wild_n;
+
+    S::sub(x, b, a);
+    // const size_t l_len =
+    //     1 << utils::most_significant_bit(x.most_significant_bit());
+    // const size_t l_len = x.most_significant_bit() / 2;
+    x.template shift_right<1>();
+    S::add(x, a);
 
     VS sl(l_len);
     S *d_sl = nullptr;
@@ -570,9 +567,7 @@ __host__ cudaError_t cu_pollard_lambda(
     _CUDA_CHECK_(cudaMalloc(&d_len, sizeof(uint)));
     _CUDA_CHECK_(cudaMalloc(&d_done, sizeof(bool)));
 
-    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(cd_a<S>, &a, sizeof(S), 0,
-                                         cudaMemcpyHostToDevice, s_exec));
-    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(cd_bound<S>, &x, sizeof(S), 0,
+    _CUDA_CHECK_(cudaMemcpyToSymbolAsync(cd_middle<S>, &x, sizeof(S), 0,
                                          cudaMemcpyHostToDevice, s_exec));
     _CUDA_CHECK_(cudaMemcpyToSymbolAsync(cd_mask<FieldT>, &candidate_mask,
                                          sizeof(FieldT), 0,
@@ -598,7 +593,15 @@ __host__ cudaError_t cu_pollard_lambda(
         }
         for (size_t i = 0; i < l_len; ++i) {
             size_t e = size_t(sl[i].array()[0]);
-            sl[i].array()[0] = typename S::LimbT(step_size);
+            sl[i].set_zero();
+            sl[i].array()[0] = typename S::LimbT(step_gap);
+            // FIXME: choose method between `shift_left` and `mul_pow2` based on
+            // `l_len` and `step_gap`, or refactor the jump table generation
+            // to eliminate the "x * 2^n" step.
+            //
+            // as long as sl[i] lies within [a, b], it is safe to use
+            // `shift_left` directly, otherwise `mul_pow2` should be used
+            // instead.
             sl[i].shift_left(e);
             P::mul(pl[i], sl[i], g, ctx);
         }
@@ -613,6 +616,7 @@ __host__ cudaError_t cu_pollard_lambda(
     _CUDA_CHECK_(cudaGetLastError());
 
     {
+        size_t shift = 0;
         P *d_p_buf = d_wild_buf, *vd_p_buf = d_tame_buf;
         S *d_x_buf = d_wx_buf, *vd_x_buf = d_tx_buf;
         S *x_buf = wx_buf.data(), *v_x_buf = tx_buf.data();
@@ -624,11 +628,15 @@ __host__ cudaError_t cu_pollard_lambda(
         cudaEvent_t *copy_evt = &wild_copy, *v_copy_evt = &tame_copy;
         cudaStream_t *s_data = &s_wild, *v_s_data = &s_tame;
 
+#ifdef GEC_DEBUG
+        size_t sample_idx = 0;
+#endif
+
         for (bool collect = false, wild = true;;) {
             reset_flag_kernel<uint><<<1, 1, 0, s_exec>>>(d_done, d_len);
             searching_kernel<S, P><<<block_num, thread_num, 0, s_exec>>>(
-                d_done, d_p_buf, d_x_buf, d_len, buffer_size, ps, xs, d_pl,
-                d_sl, l_len, n, check_mask);
+                d_done, shift, d_p_buf, d_x_buf, d_len, buffer_size, ps, xs,
+                d_pl, d_sl, l_len, n, check_mask);
             _CUDA_CHECK_(cudaEventRecord(*copy_evt, s_exec));
             _CUDA_CHECK_(cudaStreamWaitEvent(*s_data, *copy_evt));
             _CUDA_CHECK_(cudaMemcpyAsync(p_buf, d_p_buf,
@@ -637,6 +645,9 @@ __host__ cudaError_t cu_pollard_lambda(
             _CUDA_CHECK_(cudaMemcpyAsync(x_buf, d_x_buf,
                                          sizeof(S) * buffer_size,
                                          cudaMemcpyDeviceToHost, *s_data));
+            if (!wild) {
+                shift = (shift + 1) % block_num;
+            }
 
             utils::swap(d_p_buf, vd_p_buf);
             utils::swap(d_x_buf, vd_x_buf);
@@ -648,41 +659,12 @@ __host__ cudaError_t cu_pollard_lambda(
             utils::swap(tracks, v_tracks);
             utils::swap(copy_evt, v_copy_evt);
             utils::swap(s_data, v_s_data);
+            wild = !wild;
 
             if (collect) {
                 _CUDA_CHECK_(cudaStreamSynchronize(*s_data));
                 _CUDA_CHECK_(cudaGetLastError());
                 for (size_t k = 0; k < buffer_size; ++k) {
-                    // P expected;
-                    // if (wild) {
-                    //     P tmp1;
-                    //     P::mul(tmp1, x_buf[k], g, ctx);
-                    //     P::add(expected, h, tmp1, ctx);
-                    // } else {
-                    //     P::mul(expected, x_buf[k], g, ctx);
-                    // }
-                    // if (!P::on_curve(p_buf[k], ctx)) {
-                    //     printf("[host] in %zuth result: \n", k);
-                    //     p_buf[k].print();
-                    //     printf("not on curve\n");
-                    // }
-                    // if (!P::eq(expected, p_buf[k])) {
-                    //     printf("[host] in %zuth result: \n", k);
-                    //     if (wild) {
-                    //         h.print();
-                    //         printf(" + ");
-                    //     }
-                    //     printf("[");
-                    //     x_buf[k].print();
-                    //     printf("]\n");
-                    //     g.print();
-                    //     printf(" == ");
-                    //     expected.print();
-                    //     printf(" != ");
-                    //     p_buf[k].print();
-                    //     printf("\n");
-                    // }
-
                     auto range = v_tracks->equal_range(p_buf[k]);
                     for (auto it = range.first; it != range.second; ++it) {
                         if (it->second == x_buf[k]) {
@@ -700,10 +682,18 @@ __host__ cudaError_t cu_pollard_lambda(
                     }
                     tracks->insert(std::make_pair(p_buf[k], x_buf[k]));
                 }
-                wild = !wild;
 #ifdef GEC_DEBUG
                 printf("[host] %s track size: %zu\n", wild ? "wild" : "tame",
                        tracks->size());
+                printf("[host] sample candidate:\n[");
+                x_buf[sample_idx].print();
+                if (wild) {
+                    printf("] * g + h =\n");
+                } else {
+                    printf("] * g =\n");
+                }
+                p_buf[sample_idx].print();
+                sample_idx = (sample_idx + 1) % l_len;
 #endif // GEC_DEBUG
             } else {
                 collect = true;
