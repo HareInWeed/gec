@@ -22,29 +22,29 @@ class GEC_EMPTY_BASES Affine : protected CRTP<Core, Affine<Core, FIELD_T>> {
   public:
     using Field = FIELD_T;
 
-    __host__ __device__ GEC_INLINE bool is_inf() const {
+    GEC_HD GEC_INLINE bool is_inf() const {
         return this->core().x().is_zero() && this->core().y().is_zero();
     }
 
-    __host__ __device__ GEC_INLINE void set_inf() {
+    GEC_HD GEC_INLINE void set_inf() {
         this->core().x().set_zero();
         this->core().y().set_zero();
     }
 
     template <typename F_CTX>
-    __host__ __device__ GEC_INLINE static bool
-    eq(const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, F_CTX &) {
+    GEC_HD GEC_INLINE static bool eq(const Core &GEC_RSTRCT a,
+                                     const Core &GEC_RSTRCT b, F_CTX &) {
         return eq(a, b);
     }
 
-    __host__ __device__ GEC_INLINE static bool eq(const Core &GEC_RSTRCT a,
-                                                  const Core &GEC_RSTRCT b) {
+    GEC_HD GEC_INLINE static bool eq(const Core &GEC_RSTRCT a,
+                                     const Core &GEC_RSTRCT b) {
         return a.x() == b.x() && a.y() == b.y();
     }
 
     template <typename F_CTX>
-    __host__ __device__ static bool on_curve(const Core &GEC_RSTRCT a,
-                                             F_CTX &GEC_RSTRCT ctx) {
+    GEC_HD static bool on_curve(const Core &GEC_RSTRCT a,
+                                F_CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<F, F, F>();
 
         if (a.is_inf()) {
@@ -78,7 +78,7 @@ class GEC_EMPTY_BASES Affine : protected CRTP<Core, Affine<Core, FIELD_T>> {
     }
 
     template <typename F_CTX>
-    __host__ __device__ static void
+    GEC_HD static void
     add_distinct(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
                  const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<F, F, F, F>();
@@ -100,9 +100,8 @@ class GEC_EMPTY_BASES Affine : protected CRTP<Core, Affine<Core, FIELD_T>> {
     }
 
     template <typename F_CTX>
-    __host__ __device__ static void add_self(Core &GEC_RSTRCT a,
-                                             const Core &GEC_RSTRCT b,
-                                             F_CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                                F_CTX &GEC_RSTRCT ctx) {
         if (b.y().is_zero()) {
             a.set_inf();
             return;
@@ -140,8 +139,8 @@ class GEC_EMPTY_BASES Affine : protected CRTP<Core, Affine<Core, FIELD_T>> {
     }
 
     template <typename F_CTX>
-    __host__ __device__ static void add(Core &GEC_RSTRCT a, const Core &b,
-                                        const Core &c, F_CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void add(Core &GEC_RSTRCT a, const Core &b, const Core &c,
+                           F_CTX &GEC_RSTRCT ctx) {
         if (b.is_inf()) {
             a = c;
         } else if (c.is_inf()) {
@@ -155,8 +154,8 @@ class GEC_EMPTY_BASES Affine : protected CRTP<Core, Affine<Core, FIELD_T>> {
         }
     }
 
-    __host__ __device__ GEC_INLINE static void neg(Core &GEC_RSTRCT a,
-                                                   const Core &GEC_RSTRCT b) {
+    GEC_HD GEC_INLINE static void neg(Core &GEC_RSTRCT a,
+                                      const Core &GEC_RSTRCT b) {
         a.x() = b.x();
         F::neg(a.y(), b.y());
     }

@@ -8,120 +8,117 @@ template <typename T>
 struct OpaqueNum {
     T num;
 
-    __host__ __device__ inline constexpr OpaqueNum() : num() {}
-    __host__ __device__ inline constexpr OpaqueNum(T num) : num(num) {}
+    GEC_HD inline constexpr OpaqueNum() : num() {}
+    GEC_HD inline constexpr OpaqueNum(T num) : num(num) {}
 
-    __host__ __device__ constexpr OpaqueNum(const OpaqueNum &others)
-        : num(others.num) {}
+    GEC_HD constexpr OpaqueNum(const OpaqueNum &others) : num(others.num) {}
 
-    __host__ __device__ OpaqueNum &operator=(const OpaqueNum &others) {
+    GEC_HD OpaqueNum &operator=(const OpaqueNum &others) {
         num = others.num;
         return *this;
     }
 
-    __host__ __device__ constexpr friend OpaqueNum
-    operator+(const OpaqueNum &a, const OpaqueNum &b) {
+    GEC_HD constexpr friend OpaqueNum operator+(const OpaqueNum &a,
+                                                const OpaqueNum &b) {
         return OpaqueNum(a.num + b.num);
     }
-    __host__ __device__ OpaqueNum &operator+=(const OpaqueNum &others) {
+    GEC_HD OpaqueNum &operator+=(const OpaqueNum &others) {
         num += others.num;
         return (*this);
     }
 
-    __host__ __device__ constexpr friend OpaqueNum
-    operator-(const OpaqueNum &a, const OpaqueNum &b) {
+    GEC_HD constexpr friend OpaqueNum operator-(const OpaqueNum &a,
+                                                const OpaqueNum &b) {
         return OpaqueNum(a.num - b.num);
     }
-    __host__ __device__ OpaqueNum &operator-=(const OpaqueNum &others) {
+    GEC_HD OpaqueNum &operator-=(const OpaqueNum &others) {
         num -= others.num;
         return (*this);
     }
 
-    __host__ __device__ constexpr friend OpaqueNum
-    operator*(const OpaqueNum &a, const OpaqueNum &b) {
+    GEC_HD constexpr friend OpaqueNum operator*(const OpaqueNum &a,
+                                                const OpaqueNum &b) {
         return OpaqueNum(a.num * b.num);
     }
-    __host__ __device__ OpaqueNum &operator*=(const OpaqueNum &others) {
+    GEC_HD OpaqueNum &operator*=(const OpaqueNum &others) {
         num *= others.num;
         return (*this);
     }
 
-    __host__ __device__ constexpr friend OpaqueNum
-    operator/(const OpaqueNum &a, const OpaqueNum &b) {
+    GEC_HD constexpr friend OpaqueNum operator/(const OpaqueNum &a,
+                                                const OpaqueNum &b) {
         return OpaqueNum(a.num / b.num);
     }
-    __host__ __device__ OpaqueNum &operator/=(const OpaqueNum &others) {
+    GEC_HD OpaqueNum &operator/=(const OpaqueNum &others) {
         num /= others.num;
         return (*this);
     }
 
-    __host__ __device__ constexpr friend OpaqueNum
-    operator&(const OpaqueNum &a, const OpaqueNum &b) {
+    GEC_HD constexpr friend OpaqueNum operator&(const OpaqueNum &a,
+                                                const OpaqueNum &b) {
         return OpaqueNum(a.num & b.num);
     }
-    __host__ __device__ OpaqueNum &operator&=(const OpaqueNum &others) {
+    GEC_HD OpaqueNum &operator&=(const OpaqueNum &others) {
         num &= others.num;
         return (*this);
     }
 
-    __host__ __device__ constexpr friend OpaqueNum
-    operator|(const OpaqueNum &a, const OpaqueNum &b) {
+    GEC_HD constexpr friend OpaqueNum operator|(const OpaqueNum &a,
+                                                const OpaqueNum &b) {
         return OpaqueNum(a.num | b.num);
     }
-    __host__ __device__ OpaqueNum &operator|=(const OpaqueNum &others) {
+    GEC_HD OpaqueNum &operator|=(const OpaqueNum &others) {
         num |= others.num;
         return (*this);
     }
 
-    __host__ __device__ constexpr friend OpaqueNum
-    operator^(const OpaqueNum &a, const OpaqueNum &b) {
+    GEC_HD constexpr friend OpaqueNum operator^(const OpaqueNum &a,
+                                                const OpaqueNum &b) {
         return OpaqueNum(a.num ^ b.num);
     }
-    __host__ __device__ OpaqueNum &operator^=(const OpaqueNum &others) {
+    GEC_HD OpaqueNum &operator^=(const OpaqueNum &others) {
         num ^= others.num;
         return (*this);
     }
 
-    __host__ __device__ constexpr friend OpaqueNum
-    operator>>(const OpaqueNum &a, size_t n) {
+    GEC_HD constexpr friend OpaqueNum operator>>(const OpaqueNum &a, size_t n) {
         return OpaqueNum(a.num >> n);
     }
-    __host__ __device__ OpaqueNum &operator>>=(size_t n) {
+    GEC_HD OpaqueNum &operator>>=(size_t n) {
         num >>= n;
         return (*this);
     }
 
-    __host__ __device__ constexpr friend OpaqueNum
-    operator<<(const OpaqueNum &a, size_t n) {
+    GEC_HD constexpr friend OpaqueNum operator<<(const OpaqueNum &a, size_t n) {
         return OpaqueNum(a.num << n);
     }
-    __host__ __device__ OpaqueNum &operator<<=(size_t n) {
+    GEC_HD OpaqueNum &operator<<=(size_t n) {
         num <<= n;
         return (*this);
     }
 
-    __host__ __device__ constexpr friend bool operator==(const OpaqueNum &a,
-                                                         const OpaqueNum &b) {
+    GEC_HD constexpr friend bool operator==(const OpaqueNum &a,
+                                            const OpaqueNum &b) {
         return a.num == b.num;
     }
-    __host__ __device__ constexpr friend bool operator!=(const OpaqueNum &a,
-                                                         const OpaqueNum &b) {
+    GEC_HD constexpr friend bool operator!=(const OpaqueNum &a,
+                                            const OpaqueNum &b) {
         return a.num != b.num;
     }
-    __host__ __device__ constexpr friend bool operator<(const OpaqueNum &a,
-                                                        const OpaqueNum &b) {
+    GEC_HD constexpr friend bool operator<(const OpaqueNum &a,
+                                           const OpaqueNum &b) {
         return a.num < b.num;
     }
-    __host__ __device__ constexpr friend bool operator<=(const OpaqueNum &a,
-                                                         const OpaqueNum &b) {
+    GEC_HD constexpr friend bool operator<=(const OpaqueNum &a,
+                                            const OpaqueNum &b) {
         return a.num <= b.num;
     }
-    __host__ __device__ constexpr friend bool operator>(const OpaqueNum &a,
-                                                        const OpaqueNum &b) {
+    GEC_HD constexpr friend bool operator>(const OpaqueNum &a,
+                                           const OpaqueNum &b) {
         return a.num > b.num;
     }
-    __host__ __device__ constexpr friend bool operator>=(const OpaqueNum &a,
-                                                         const OpaqueNum &b) {
+    GEC_HD constexpr friend bool operator>=(const OpaqueNum &a,
+                                            const OpaqueNum &b) {
         return a.num >= b.num;
     }
 

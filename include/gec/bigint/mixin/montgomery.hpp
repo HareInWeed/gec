@@ -24,22 +24,13 @@ class GEC_EMPTY_BASES MontgomeryOps
     friend CRTP<Core, MontgomeryOps<Core, LIMB_T, LIMB_N>>;
 
   public:
-    __host__ __device__ GEC_INLINE bool is_mul_id() const {
-        return utils::VtSeqAll<LIMB_N, LIMB_T, utils::ops::Eq<LIMB_T>>::call(
-            this->core().array(), this->core().one_r().array());
-    }
-    __host__ __device__ GEC_INLINE void set_mul_id() {
-        utils::fill_seq<LIMB_N>(this->core().array(),
-                                this->core().one_r().array());
-    }
-
-    __host__ __device__ GEC_INLINE static void
-    to_montgomery(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+    GEC_HD GEC_INLINE static void to_montgomery(Core &GEC_RSTRCT a,
+                                                const Core &GEC_RSTRCT b) {
         a.set_zero();
         add_mul(a, b, a.r_sqr());
     }
-    __host__ __device__ GEC_INLINE static void
-    from_montgomery(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+    GEC_HD GEC_INLINE static void from_montgomery(Core &GEC_RSTRCT a,
+                                                  const Core &GEC_RSTRCT b) {
         using namespace utils;
 
         LIMB_T *a_arr = a.array();
@@ -61,9 +52,8 @@ class GEC_EMPTY_BASES MontgomeryOps
         }
     }
 
-    __host__ __device__ static void add_mul(Core &GEC_RSTRCT a,
-                                            const Core &GEC_RSTRCT b,
-                                            const Core &GEC_RSTRCT c) {
+    GEC_HD static void add_mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                               const Core &GEC_RSTRCT c) {
         using namespace utils;
         LIMB_T *a_arr = a.array();
         const LIMB_T *b_arr = b.array();
@@ -86,23 +76,22 @@ class GEC_EMPTY_BASES MontgomeryOps
         }
     }
 
-    __host__ __device__ GEC_INLINE static void mul(Core &GEC_RSTRCT a,
-                                                   const Core &GEC_RSTRCT b,
-                                                   const Core &GEC_RSTRCT c) {
+    GEC_HD GEC_INLINE static void mul(Core &GEC_RSTRCT a,
+                                      const Core &GEC_RSTRCT b,
+                                      const Core &GEC_RSTRCT c) {
         a.set_zero();
         add_mul(a, b, c);
     }
 
     template <typename CTX>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     inv(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         a = b;
         inv(a, ctx);
     }
 
     template <typename CTX>
-    __host__ __device__ static void inv(Core &GEC_RSTRCT a,
-                                        CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void inv(Core &GEC_RSTRCT a, CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<Core, Core, Core>();
 
         using utils::CmpEnum;
@@ -197,22 +186,13 @@ class GEC_EMPTY_BASES CarryFreeMontgomeryOps
     friend CRTP<Core, CarryFreeMontgomeryOps<Core, LIMB_T, LIMB_N>>;
 
   public:
-    bool is_mul_id() const {
-        return utils::VtSeqAll<LIMB_N, LIMB_T, utils::ops::Eq<LIMB_T>>::call(
-            this->core().array(), this->core().one_r().array());
-    }
-    void set_mul_id() {
-        utils::fill_seq<LIMB_N>(this->core().array(),
-                                this->core().one_r().array());
-    }
-
-    __host__ __device__ GEC_INLINE static void
-    to_montgomery(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+    GEC_HD GEC_INLINE static void to_montgomery(Core &GEC_RSTRCT a,
+                                                const Core &GEC_RSTRCT b) {
         a.set_zero();
         add_mul(a, b, a.r_sqr().array());
     }
-    __host__ __device__ GEC_INLINE static void
-    from_montgomery(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+    GEC_HD GEC_INLINE static void from_montgomery(Core &GEC_RSTRCT a,
+                                                  const Core &GEC_RSTRCT b) {
         using namespace utils;
 
         LIMB_T *a_arr = a.array();
@@ -234,9 +214,8 @@ class GEC_EMPTY_BASES CarryFreeMontgomeryOps
         }
     }
 
-    __host__ __device__ static void add_mul(Core &GEC_RSTRCT a,
-                                            const Core &GEC_RSTRCT b,
-                                            const Core &GEC_RSTRCT c) {
+    GEC_HD static void add_mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                               const Core &GEC_RSTRCT c) {
         using namespace utils;
         LIMB_T *a_arr = a.array();
         const LIMB_T *b_arr = b.array();
@@ -258,23 +237,22 @@ class GEC_EMPTY_BASES CarryFreeMontgomeryOps
         }
     }
 
-    __host__ __device__ GEC_INLINE static void mul(Core &GEC_RSTRCT a,
-                                                   const Core &GEC_RSTRCT b,
-                                                   const Core &GEC_RSTRCT c) {
+    GEC_HD GEC_INLINE static void mul(Core &GEC_RSTRCT a,
+                                      const Core &GEC_RSTRCT b,
+                                      const Core &GEC_RSTRCT c) {
         a.set_zero();
         add_mul(a, b, c);
     }
 
     template <typename CTX>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     inv(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         a = b;
         inv(a, ctx);
     }
 
     template <typename CTX>
-    __host__ __device__ static void inv(Core &GEC_RSTRCT a,
-                                        CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void inv(Core &GEC_RSTRCT a, CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<Core, Core, Core>();
 
         using utils::CmpEnum;
@@ -356,17 +334,17 @@ class GEC_EMPTY_BASES AVX2MontgomeryOps<Core, uint32_t, 8>
     constexpr static size_t LIMB_N = 8;
     friend CRTP<Core, AVX2MontgomeryOps<Core, LIMB_T, LIMB_N>>;
 
-    __host__ GEC_INLINE static __m256i add_limbs(__m256i &a, const __m256i &b,
-                                                 const __m256i &c,
-                                                 const __m256i &least_mask) {
+    GEC_H GEC_INLINE static __m256i add_limbs(__m256i &a, const __m256i &b,
+                                              const __m256i &c,
+                                              const __m256i &least_mask) {
         __m256i m = _mm256_max_epu32(b, c);
         a = _mm256_add_epi32(b, c);
         return _mm256_andnot_si256(
             _mm256_cmpeq_epi32(_mm256_max_epu32(a, m), a), least_mask);
     }
 
-    __host__ GEC_INLINE static void
-    mul_limbs(__m256i &l, __m256i &h, const __m256i &a, const __m256i &b) {
+    GEC_H GEC_INLINE static void mul_limbs(__m256i &l, __m256i &h,
+                                           const __m256i &a, const __m256i &b) {
         __m256i a_odd = _mm256_shuffle_epi32(a, 0xf5);
         __m256i b_odd = _mm256_shuffle_epi32(b, 0xf5);
         __m256i p_even = _mm256_mul_epu32(a, b);
@@ -378,22 +356,13 @@ class GEC_EMPTY_BASES AVX2MontgomeryOps<Core, uint32_t, 8>
     }
 
   public:
-    __host__ GEC_INLINE bool is_mul_id() const {
-        return utils::VtSeqAll<LIMB_N, LIMB_T, utils::ops::Eq<LIMB_T>>::call(
-            this->core().array(), this->core().one_r().array());
-    }
-    __host__ GEC_INLINE void set_mul_id() {
-        utils::fill_seq<LIMB_N>(this->core().array(),
-                                this->core().one_r().array());
-    }
-
-    __host__ GEC_INLINE static void to_montgomery(Core &GEC_RSTRCT a,
-                                                  const Core &GEC_RSTRCT b) {
+    GEC_H GEC_INLINE static void to_montgomery(Core &GEC_RSTRCT a,
+                                               const Core &GEC_RSTRCT b) {
         a.set_zero();
         add_mul(a, b, a.r_sqr());
     }
-    __host__ GEC_INLINE static void from_montgomery(Core &GEC_RSTRCT a,
-                                                    const Core &GEC_RSTRCT b) {
+    GEC_H GEC_INLINE static void from_montgomery(Core &GEC_RSTRCT a,
+                                                 const Core &GEC_RSTRCT b) {
         using namespace utils;
         using V = __m256i *;
         using CV = const __m256i *;
@@ -439,8 +408,8 @@ class GEC_EMPTY_BASES AVX2MontgomeryOps<Core, uint32_t, 8>
         }
     }
 
-    __host__ static void add_mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                                 const Core &GEC_RSTRCT c) {
+    GEC_H static void add_mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                              const Core &GEC_RSTRCT c) {
         using namespace utils;
         using V = __m256i *;
         using CV = const __m256i *;
@@ -502,22 +471,22 @@ class GEC_EMPTY_BASES AVX2MontgomeryOps<Core, uint32_t, 8>
         }
     }
 
-    __host__ GEC_INLINE static void mul(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        const Core &GEC_RSTRCT c) {
+    GEC_H GEC_INLINE static void mul(Core &GEC_RSTRCT a,
+                                     const Core &GEC_RSTRCT b,
+                                     const Core &GEC_RSTRCT c) {
         a.set_zero();
         add_mul(a, b, c);
     }
 
     template <typename CTX>
-    __host__ GEC_INLINE static void
+    GEC_H GEC_INLINE static void
     inv(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         a = b;
         inv(a, ctx);
     }
 
     template <typename CTX>
-    __host__ static void inv(Core &GEC_RSTRCT a, CTX &GEC_RSTRCT ctx) {
+    GEC_H static void inv(Core &GEC_RSTRCT a, CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<Core, Core, Core>();
 
         using utils::CmpEnum;

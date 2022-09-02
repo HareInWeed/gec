@@ -28,11 +28,11 @@ namespace dlp {
  * `a` must be strictly less than `b`, otherwise the behaviour is undefined.
  */
 template <typename S, typename P, typename Rng, typename Ctx>
-__host__ void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl,
-                             P *GEC_RSTRCT pl, const S &GEC_RSTRCT bound,
-                             const S &GEC_RSTRCT a, const S &GEC_RSTRCT b,
-                             const P &GEC_RSTRCT g, const P &GEC_RSTRCT h,
-                             GecRng<Rng> &rng, Ctx &GEC_RSTRCT ctx) {
+GEC_H void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl, P *GEC_RSTRCT pl,
+                          const S &GEC_RSTRCT bound, const S &GEC_RSTRCT a,
+                          const S &GEC_RSTRCT b, const P &GEC_RSTRCT g,
+                          const P &GEC_RSTRCT h, GecRng<Rng> &rng,
+                          Ctx &GEC_RSTRCT ctx) {
     using F = typename P::Field;
     auto &ctx_view = ctx.template view_as<P, P, P, S, S, S>();
     auto &p1 = ctx_view.template get<0>();
@@ -314,7 +314,7 @@ namespace _pollard_lambda_ {
 
 template <typename T>
 struct MaskZero {
-    __host__ __device__ GEC_INLINE static bool call(const T &a, const T &b) {
+    GEC_HD GEC_INLINE static bool call(const T &a, const T &b) {
         return !(a & b);
     }
 };
@@ -467,11 +467,11 @@ shutdown:
  * @param thread_num TODO
  */
 template <typename S, typename P, typename Rng = std::mt19937>
-__host__ cudaError_t cu_pollard_lambda(
+GEC_H cudaError_t cu_pollard_lambda(
     S &GEC_RSTRCT x, const S &GEC_RSTRCT a, const S &GEC_RSTRCT b,
     const P &GEC_RSTRCT g, const P &GEC_RSTRCT h,
-    const typename P::Field &candidate_mask, size_t seed,
-    size_t l_len, unsigned int block_num, unsigned int thread_num,
+    const typename P::Field &candidate_mask, size_t seed, size_t l_len,
+    unsigned int block_num, unsigned int thread_num,
     unsigned int buffer_size = 0x1000, unsigned int check_mask = 0x3FF) {
 
     using namespace _pollard_lambda_;

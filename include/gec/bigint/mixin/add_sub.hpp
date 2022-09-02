@@ -13,18 +13,17 @@ namespace bigint {
 /** @brief mixin that enables addition and substrcation operation
  */
 template <class Core, typename LIMB_T, size_t LIMB_N>
-class GEC_EMPTY_BASES AddSubMixin
-    : protected CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>> {
-    friend CRTP<Core, AddSubMixin<Core, LIMB_T, LIMB_N>>;
+class GEC_EMPTY_BASES AddSub
+    : protected CRTP<Core, AddSub<Core, LIMB_T, LIMB_N>> {
+    friend CRTP<Core, AddSub<Core, LIMB_T, LIMB_N>>;
 
   public:
     /** @brief a + carry = b + c
      *
      * return the carry bit
      */
-    __host__ __device__ static bool add(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        const Core &GEC_RSTRCT c) {
+    GEC_HD static bool add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const Core &GEC_RSTRCT c) {
         return utils::seq_add<LIMB_N>(a.array(), b.array(), c.array());
     }
 
@@ -32,8 +31,7 @@ class GEC_EMPTY_BASES AddSubMixin
      *
      * return the carry bit
      */
-    __host__ __device__ static bool add(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b) {
+    GEC_HD static bool add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         return utils::seq_add<LIMB_N>(a.array(), b.array());
     }
 
@@ -41,9 +39,8 @@ class GEC_EMPTY_BASES AddSubMixin
      *
      * return the carry bit
      */
-    __host__ __device__ static bool add(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        const LIMB_T &GEC_RSTRCT c) {
+    GEC_HD static bool add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const LIMB_T &GEC_RSTRCT c) {
         return utils::seq_add_limb<LIMB_N>(a.array(), b.array(), c);
     }
 
@@ -51,8 +48,7 @@ class GEC_EMPTY_BASES AddSubMixin
      *
      * return the carry bit
      */
-    __host__ __device__ static bool add(Core &GEC_RSTRCT a,
-                                        const LIMB_T &GEC_RSTRCT b) {
+    GEC_HD static bool add(Core &GEC_RSTRCT a, const LIMB_T &GEC_RSTRCT b) {
         return utils::seq_add_limb<LIMB_N>(a.array(), b);
     }
 
@@ -60,9 +56,8 @@ class GEC_EMPTY_BASES AddSubMixin
      *
      * return the borrow bit
      */
-    __host__ __device__ static bool sub(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        const Core &GEC_RSTRCT c) {
+    GEC_HD static bool sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const Core &GEC_RSTRCT c) {
         return utils::seq_sub<LIMB_N>(a.array(), b.array(), c.array());
     }
 
@@ -70,8 +65,7 @@ class GEC_EMPTY_BASES AddSubMixin
      *
      * return the borrow bit
      */
-    __host__ __device__ static bool sub(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b) {
+    GEC_HD static bool sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         return utils::seq_sub<LIMB_N>(a.array(), b.array());
     }
 
@@ -79,9 +73,8 @@ class GEC_EMPTY_BASES AddSubMixin
      *
      * return the borrow bit
      */
-    __host__ __device__ static bool sub(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        const LIMB_T &GEC_RSTRCT c) {
+    GEC_HD static bool sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const LIMB_T &GEC_RSTRCT c) {
         return utils::seq_sub_limb<LIMB_N>(a.array(), b.array(), c);
     }
 
@@ -89,37 +82,34 @@ class GEC_EMPTY_BASES AddSubMixin
      *
      * return the borrow bit
      */
-    __host__ __device__ static bool sub(Core &GEC_RSTRCT a,
-                                        const LIMB_T &GEC_RSTRCT b) {
+    GEC_HD static bool sub(Core &GEC_RSTRCT a, const LIMB_T &GEC_RSTRCT b) {
         return utils::seq_sub_limb<LIMB_N>(a.array(), b);
     }
 
-    __host__ __device__ Core &add(const Core &GEC_RSTRCT a,
-                                  const Core &GEC_RSTRCT b) {
+    GEC_HD Core &add(const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         add(this->core(), a, b);
         return this->core();
     }
-    __host__ __device__ Core &add(const Core &GEC_RSTRCT a) {
+    GEC_HD Core &add(const Core &GEC_RSTRCT a) {
         add(this->core(), a);
         return this->core();
     }
 
-    __host__ __device__ Core &sub(const Core &GEC_RSTRCT a,
-                                  const Core &GEC_RSTRCT b) {
+    GEC_HD Core &sub(const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         sub(this->core(), a, b);
         return this->core();
     }
-    __host__ __device__ Core &sub(const Core &GEC_RSTRCT a) {
+    GEC_HD Core &sub(const Core &GEC_RSTRCT a) {
         sub(this->core(), a);
         return this->core();
     }
 
-    __host__ __device__ Core &operator+=(const Core &GEC_RSTRCT a) {
+    GEC_HD Core &operator+=(const Core &GEC_RSTRCT a) {
         add(a);
         return this->core();
     }
 
-    __host__ __device__ Core &operator-=(const Core &GEC_RSTRCT a) {
+    GEC_HD Core &operator-=(const Core &GEC_RSTRCT a) {
         sub(a);
         return this->core();
     }

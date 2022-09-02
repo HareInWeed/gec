@@ -111,12 +111,12 @@ struct is_thrust_rng<
 template <typename Rng, typename Enable = void>
 struct GEC_EMPTY_BASES GecRng {
     template <typename T>
-    __host__ __device__ GEC_INLINE T sample(const T &lower, const T &higher);
+    GEC_HD GEC_INLINE T sample(const T &lower, const T &higher);
     template <typename T>
-    __host__ __device__ GEC_INLINE T sample(const T &higher);
+    GEC_HD GEC_INLINE T sample(const T &higher);
     template <typename T>
-    __host__ __device__ GEC_INLINE T sample();
-    __host__ __device__ GEC_INLINE Rng &get_rng();
+    GEC_HD GEC_INLINE T sample();
+    GEC_HD GEC_INLINE Rng &get_rng();
 };
 
 template <typename Rng>
@@ -125,16 +125,16 @@ class GEC_EMPTY_BASES
     Rng rng;
 
     template <typename T>
-    __device__ GEC_INLINE T reject() {
+    GEC_D GEC_INLINE T reject() {
         int std_rng_is_not_available_in_device_code = 0;
         assert(std_rng_is_not_available_in_device_code);
         return T(std_rng_is_not_available_in_device_code);
     }
 
   public:
-    __host__ __device__ GEC_INLINE GecRng(Rng &&rng) : rng(std::move(rng)){};
+    GEC_HD GEC_INLINE GecRng(Rng &&rng) : rng(std::move(rng)){};
     template <typename T>
-    __host__ __device__ GEC_INLINE T sample() {
+    GEC_HD GEC_INLINE T sample() {
 #ifdef __CUDA_ARCH__
         return reject<T>();
 #else
@@ -143,7 +143,7 @@ class GEC_EMPTY_BASES
 #endif // __CUDA_ARCH__
     }
     template <typename T>
-    __host__ __device__ GEC_INLINE T sample(const T &higher) {
+    GEC_HD GEC_INLINE T sample(const T &higher) {
 #ifdef __CUDA_ARCH__
         return reject<T>();
 #else
@@ -152,7 +152,7 @@ class GEC_EMPTY_BASES
 #endif // __CUDA_ARCH__
     }
     template <typename T>
-    __host__ __device__ GEC_INLINE T sample(const T &lower, const T &higher) {
+    GEC_HD GEC_INLINE T sample(const T &lower, const T &higher) {
 #ifdef __CUDA_ARCH__
         return reject<T>();
 #else
@@ -160,7 +160,7 @@ class GEC_EMPTY_BASES
         return gen(rng);
 #endif // __CUDA_ARCH__
     }
-    __host__ __device__ GEC_INLINE Rng &get_rng() { return rng; }
+    GEC_HD GEC_INLINE Rng &get_rng() { return rng; }
 };
 
 #ifdef __CUDACC__
@@ -171,16 +171,16 @@ class GEC_EMPTY_BASES
     Rng rng;
 
     template <typename T>
-    __host__ GEC_INLINE T reject() {
+    GEC_H GEC_INLINE T reject() {
         int cu_rand_rng_is_not_available_in_host_code = 0;
         assert(cu_rand_rng_is_not_available_in_host_code);
         return T(cu_rand_rng_is_not_available_in_host_code);
     }
 
   public:
-    __host__ __device__ GEC_INLINE GecRng(Rng &&rng) : rng(std::move(rng)){};
+    GEC_HD GEC_INLINE GecRng(Rng &&rng) : rng(std::move(rng)){};
     template <typename T>
-    __host__ __device__ GEC_INLINE T sample() {
+    GEC_HD GEC_INLINE T sample() {
 #ifdef __CUDA_ARCH__
         // FIXME: handle cases where the type of rng generation is not T
         return curand(&get_rng());
@@ -189,7 +189,7 @@ class GEC_EMPTY_BASES
 #endif // __CUDA_ARCH__
     }
     template <typename T>
-    __host__ __device__ GEC_INLINE T sample(const T &higher) {
+    GEC_HD GEC_INLINE T sample(const T &higher) {
 #ifdef __CUDA_ARCH__
         // FIXME: handle cases where max of rng generated number is less than
         // higher
@@ -212,7 +212,7 @@ class GEC_EMPTY_BASES
 #endif // __CUDA_ARCH__
     }
     template <typename T>
-    __host__ __device__ GEC_INLINE T sample(const T &lower, const T &higher) {
+    GEC_HD GEC_INLINE T sample(const T &lower, const T &higher) {
 #ifdef __CUDA_ARCH__
         return lower + sample(higher - lower);
 #else
@@ -221,7 +221,7 @@ class GEC_EMPTY_BASES
         return reject<T>();
 #endif // __CUDA_ARCH__
     }
-    __host__ __device__ GEC_INLINE Rng &get_rng() { return rng; }
+    GEC_HD GEC_INLINE Rng &get_rng() { return rng; }
 };
 
 template <typename Rng>
@@ -230,30 +230,29 @@ class GEC_EMPTY_BASES
     Rng rng;
 
   public:
-    __host__ __device__ GEC_INLINE GecRng(Rng &&rng) : rng(std::move(rng)){};
+    GEC_HD GEC_INLINE GecRng(Rng &&rng) : rng(std::move(rng)){};
     template <typename T>
-    __host__ __device__ GEC_INLINE T sample() {
+    GEC_HD GEC_INLINE T sample() {
         thrust::uniform_int_distribution<T> gen;
         return gen(rng);
     }
     template <typename T>
-    __host__ __device__ GEC_INLINE T sample(const T &higher) {
+    GEC_HD GEC_INLINE T sample(const T &higher) {
         thrust::uniform_int_distribution<T> gen(T(0), higher);
         return gen(rng);
     }
     template <typename T>
-    __host__ __device__ GEC_INLINE T sample(const T &lower, const T &higher) {
+    GEC_HD GEC_INLINE T sample(const T &lower, const T &higher) {
         thrust::uniform_int_distribution<T> gen(lower, higher);
         return gen(rng);
     }
-    __host__ __device__ GEC_INLINE Rng &get_rng() { return rng; }
+    GEC_HD GEC_INLINE Rng &get_rng() { return rng; }
 };
 
 #endif // __CUDACC__
 
 template <typename Rng, typename... Args>
-__host__ __device__ GEC_INLINE GecRng<Rng> make_gec_rng(Rng &&rng,
-                                                        Args... args) {
+GEC_HD GEC_INLINE GecRng<Rng> make_gec_rng(Rng &&rng, Args... args) {
     return GecRng<Rng>(std::forward<Rng>(rng), args...);
 }
 
@@ -268,12 +267,12 @@ class GEC_EMPTY_BASES BasicRandom
 
   public:
     template <typename Rng>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     sample(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT upper, GecRng<Rng> &rng) {
         sample_exclusive_raw(a, upper.array(), rng);
     }
     template <typename Rng, typename Ctx>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     sample(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT lower,
            const Core &GEC_RSTRCT upper, GecRng<Rng> &rng, Ctx &ctx) {
         auto &ctx_view = ctx.template view_as<Core>();
@@ -284,13 +283,13 @@ class GEC_EMPTY_BASES BasicRandom
     }
 
     template <typename Rng>
-    __host__ __device__ GEC_INLINE static void
-    sample_inclusive(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT upper,
-                     GecRng<Rng> &rng) {
+    GEC_HD GEC_INLINE static void sample_inclusive(Core &GEC_RSTRCT a,
+                                                   const Core &GEC_RSTRCT upper,
+                                                   GecRng<Rng> &rng) {
         sample_inclusive_raw(a, upper.array(), rng);
     }
     template <typename Rng, typename Ctx>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     sample_inclusive(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT lower,
                      const Core &GEC_RSTRCT upper, GecRng<Rng> &rng, Ctx &ctx) {
         auto &ctx_view = ctx.template view_as<Core>();
@@ -301,9 +300,9 @@ class GEC_EMPTY_BASES BasicRandom
     }
 
     template <typename Rng>
-    __host__ __device__ static void
-    sample_inclusive_raw(Core &GEC_RSTRCT a, const LIMB_T *GEC_RSTRCT bound,
-                         GecRng<Rng> &rng) {
+    GEC_HD static void sample_inclusive_raw(Core &GEC_RSTRCT a,
+                                            const LIMB_T *GEC_RSTRCT bound,
+                                            GecRng<Rng> &rng) {
         bool is_gt;
         bool is_eq;
         do {
@@ -335,9 +334,9 @@ class GEC_EMPTY_BASES BasicRandom
     }
 
     template <typename Rng>
-    __host__ __device__ static void
-    sample_exclusive_raw(Core &GEC_RSTRCT a, const LIMB_T *GEC_RSTRCT bound,
-                         GecRng<Rng> &rng) {
+    GEC_HD static void sample_exclusive_raw(Core &GEC_RSTRCT a,
+                                            const LIMB_T *GEC_RSTRCT bound,
+                                            GecRng<Rng> &rng) {
         bool is_ge;
         do {
             is_ge = true;
@@ -364,8 +363,7 @@ class GEC_EMPTY_BASES BasicRandom
     }
 
     template <typename Rng>
-    __host__ __device__ static void sample_non_zero(Core &GEC_RSTRCT a,
-                                                    GecRng<Rng> &rng) {
+    GEC_HD static void sample_non_zero(Core &GEC_RSTRCT a, GecRng<Rng> &rng) {
         do {
             Core::sample(a, rng);
         } while (a.is_zero());
@@ -379,8 +377,7 @@ class GEC_EMPTY_BASES BigintRandom : public BasicRandom<Core, LIMB_T, LIMB_N> {
   public:
     using BasicRandom<Core, LIMB_T, LIMB_N>::sample;
     template <typename Rng>
-    __host__ __device__ GEC_INLINE static void sample(Core &GEC_RSTRCT a,
-                                                      GecRng<Rng> &rng) {
+    GEC_HD GEC_INLINE static void sample(Core &GEC_RSTRCT a, GecRng<Rng> &rng) {
         for (size_t k = 0; k < LIMB_N; ++k) {
             a.array()[k] = rng.template sample<LIMB_T>();
         }
@@ -394,8 +391,7 @@ class GEC_EMPTY_BASES ModRandom : public BasicRandom<Core, LIMB_T, LIMB_N> {
   public:
     using BasicRandom<Core, LIMB_T, LIMB_N>::sample;
     template <typename Rng>
-    __host__ __device__ GEC_INLINE static void sample(Core &GEC_RSTRCT a,
-                                                      GecRng<Rng> &rng) {
+    GEC_HD GEC_INLINE static void sample(Core &GEC_RSTRCT a, GecRng<Rng> &rng) {
         BasicRandom<Core, LIMB_T, LIMB_N>::sample_exclusive_raw(
             a, a.mod().array(), rng);
     }

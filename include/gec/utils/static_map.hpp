@@ -19,25 +19,23 @@ namespace utils {
 namespace _CHD_ {
 
 struct BucketHash {
-    __host__ __device__ GEC_INLINE static size_t call(size_t bucket_num,
-                                                      size_t hash) {
+    GEC_HD GEC_INLINE static size_t call(size_t bucket_num, size_t hash) {
         return hash % bucket_num;
     }
 };
 
 struct HashFamily {
-    __host__ __device__ GEC_INLINE static size_t
-    call(size_t hash_id, size_t hash_range, size_t hash) {
+    GEC_HD GEC_INLINE static size_t call(size_t hash_id, size_t hash_range,
+                                         size_t hash) {
         hash::hash_combine(hash_id, hash);
         return hash_id % hash_range;
     }
 };
 
-__host__ __device__ GEC_INLINE void multi_swap(size_t, size_t) {}
+GEC_HD GEC_INLINE void multi_swap(size_t, size_t) {}
 
 template <typename T, typename... Args>
-__host__ __device__ GEC_INLINE void multi_swap(size_t i, size_t j, T *arr,
-                                               Args *...args) {
+GEC_HD GEC_INLINE void multi_swap(size_t i, size_t j, T *arr, Args *...args) {
     utils::swap(arr[i], arr[j]);
     multi_swap(i, j, args...);
 }
@@ -53,30 +51,27 @@ class CHD {
     size_t N;
     size_t B;
 
-    __host__ __device__ GEC_INLINE constexpr CHD(size_t *buckets,
-                                                 size_t M) noexcept
+    GEC_HD GEC_INLINE constexpr CHD(size_t *buckets, size_t M) noexcept
         : buckets(buckets) {
         set_params(M);
     }
-    __host__ __device__ GEC_INLINE constexpr CHD(size_t *buckets, size_t M,
-                                                 size_t N) noexcept
+    GEC_HD GEC_INLINE constexpr CHD(size_t *buckets, size_t M,
+                                    size_t N) noexcept
         : buckets(buckets) {
         set_params(M, N);
     }
-    __host__ __device__ GEC_INLINE constexpr CHD(size_t *buckets, size_t M,
-                                                 size_t N, size_t B) noexcept
+    GEC_HD GEC_INLINE constexpr CHD(size_t *buckets, size_t M, size_t N,
+                                    size_t B) noexcept
         : buckets(buckets) {
         set_params(M, N, B);
     }
-    __host__ __device__ GEC_INLINE void set_params(size_t M, size_t N = 0,
-                                                   size_t B = 0) {
+    GEC_HD GEC_INLINE void set_params(size_t M, size_t N = 0, size_t B = 0) {
         this->M = M;
         this->N = N ? N : next_prime(this->M * 123 / 100);
         this->B = B ? B : next_prime(this->N / 10);
     }
 
-    __host__ std::vector<std::pair<size_t, size_t>>
-    build(const size_t *hashes) {
+    GEC_H std::vector<std::pair<size_t, size_t>> build(const size_t *hashes) {
         // TODO: make build function device compatible
         // 1. device compatible sort
         // 2. device compatible deduplication
@@ -158,10 +153,10 @@ class CHD {
 
         return duplicates;
     }
-    __host__ __device__ GEC_INLINE size_t get(size_t hash) {
+    GEC_HD GEC_INLINE size_t get(size_t hash) {
         return HashFamily::call(buckets[BucketHash::call(B, hash)], N, hash);
     }
-    __host__ __device__ size_t fill_placeholder(size_t *hashes) {
+    GEC_HD size_t fill_placeholder(size_t *hashes) {
         size_t placeholder = 0;
         for (size_t k = 0; k < M; ++k) {
             if (placeholder == hashes[k]) {
@@ -175,8 +170,7 @@ class CHD {
         return placeholder;
     }
     template <typename... Args>
-    __host__ __device__ void rearrange(size_t *hashes, size_t placeholder,
-                                       Args *...args) {
+    GEC_HD void rearrange(size_t *hashes, size_t placeholder, Args *...args) {
         for (size_t k = 0; k < M; ++k) {
             if (hashes[k] == placeholder)
                 continue;

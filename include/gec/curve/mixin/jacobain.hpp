@@ -19,18 +19,16 @@ class GEC_EMPTY_BASES Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
   public:
     using Field = FIELD_T;
 
-    __host__ __device__ GEC_INLINE bool is_inf() const {
-        return this->core().z().is_zero();
-    }
-    __host__ __device__ GEC_INLINE void set_inf() {
+    GEC_HD GEC_INLINE bool is_inf() const { return this->core().z().is_zero(); }
+    GEC_HD GEC_INLINE void set_inf() {
         this->core().x().set_zero();
         this->core().y().set_zero();
         this->core().z().set_zero();
     }
 
     template <typename F_CTX>
-    __host__ __device__ static bool on_curve(const Core &GEC_RSTRCT a,
-                                             F_CTX &GEC_RSTRCT ctx) {
+    GEC_HD static bool on_curve(const Core &GEC_RSTRCT a,
+                                F_CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<F, F, F, F>();
 
         auto &l = ctx_view.template get<0>();
@@ -75,8 +73,7 @@ class GEC_EMPTY_BASES Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
     }
 
     template <typename F_CTX>
-    __host__ __device__ static void to_affine(Core &GEC_RSTRCT a,
-                                              F_CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void to_affine(Core &GEC_RSTRCT a, F_CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<F, F>();
 
         if (a.z().is_mul_id()) {
@@ -100,7 +97,7 @@ class GEC_EMPTY_BASES Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
         }
     }
 
-    __host__ __device__ static void from_affine(Core &GEC_RSTRCT a) {
+    GEC_HD static void from_affine(Core &GEC_RSTRCT a) {
         if (a.x().is_zero() && a.y().is_zero()) {
             a.z().set_zero();
         } else {
@@ -109,9 +106,8 @@ class GEC_EMPTY_BASES Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
     }
 
     template <typename F_CTX>
-    __host__ __device__ static bool eq(const Core &GEC_RSTRCT a,
-                                       const Core &GEC_RSTRCT b,
-                                       F_CTX &GEC_RSTRCT ctx) {
+    GEC_HD static bool eq(const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                          F_CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<F, F, F, F>();
 
         bool a_inf = a.is_inf();
@@ -156,7 +152,7 @@ class GEC_EMPTY_BASES Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
      * ctx.get<3>() == d == y2 z1^3
      */
     template <typename F_CTX>
-    __host__ __device__ static void
+    GEC_HD static void
     add_distinct_inner(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
                        const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<F, F, F, F>();
@@ -184,7 +180,7 @@ class GEC_EMPTY_BASES Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
     }
 
     template <typename F_CTX>
-    __host__ __device__ static void
+    GEC_HD static void
     add_distinct(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
                  const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<F, F, F, F, F>();
@@ -209,9 +205,8 @@ class GEC_EMPTY_BASES Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
     }
 
     template <typename F_CTX>
-    __host__ __device__ static void add_self(Core &GEC_RSTRCT a,
-                                             const Core &GEC_RSTRCT b,
-                                             F_CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                                F_CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<F, F, F>();
 
         auto &t4 = ctx_view.template get<0>();
@@ -252,9 +247,8 @@ class GEC_EMPTY_BASES Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
     }
 
     template <typename F_CTX>
-    __host__ __device__ static void
-    add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const Core &GEC_RSTRCT c,
-        F_CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<F, F, F, F, F>();
 
         // checking for infinity here is not necessary
@@ -287,8 +281,8 @@ class GEC_EMPTY_BASES Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
         }
     }
 
-    __host__ __device__ GEC_INLINE static void neg(Core &GEC_RSTRCT a,
-                                                   const Core &GEC_RSTRCT b) {
+    GEC_HD GEC_INLINE static void neg(Core &GEC_RSTRCT a,
+                                      const Core &GEC_RSTRCT b) {
         a.x() = b.y();
         F::neg(a.y(), b.y());
         a.z() = b.z();

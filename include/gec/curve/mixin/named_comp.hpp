@@ -16,47 +16,47 @@ class GEC_EMPTY_BASES NamedComp : protected CRTP<Core, NamedComp<Core>> {
 
   public:
     template <typename P = Core, std::enable_if_t<(P::CompN > 0)> * = nullptr>
-    __host__ __device__ GEC_INLINE const typename P::CompT &x() const {
+    GEC_HD GEC_INLINE const typename P::CompT &x() const {
         return this->core().template get<0>();
     }
     template <typename P = Core, std::enable_if_t<(P::CompN > 0)> * = nullptr>
-    __host__ __device__ GEC_INLINE typename P::CompT &x() {
+    GEC_HD GEC_INLINE typename P::CompT &x() {
         return this->core().template get<0>();
     }
 
     template <typename P = Core, std::enable_if_t<(P::CompN > 1)> * = nullptr>
-    __host__ __device__ GEC_INLINE const typename P::CompT &y() const {
+    GEC_HD GEC_INLINE const typename P::CompT &y() const {
         return this->core().template get<1>();
     }
     template <typename P = Core, std::enable_if_t<(P::CompN > 1)> * = nullptr>
-    __host__ __device__ GEC_INLINE typename P::CompT &y() {
+    GEC_HD GEC_INLINE typename P::CompT &y() {
         return this->core().template get<1>();
     }
 
     template <typename P = Core, std::enable_if_t<(P::CompN > 2)> * = nullptr>
-    __host__ __device__ GEC_INLINE const typename P::CompT &z() const {
+    GEC_HD GEC_INLINE const typename P::CompT &z() const {
         return this->core().template get<2>();
     }
     template <typename P = Core, std::enable_if_t<(P::CompN > 2)> * = nullptr>
-    __host__ __device__ GEC_INLINE typename P::CompT &z() {
+    GEC_HD GEC_INLINE typename P::CompT &z() {
         return this->core().template get<2>();
     }
 
     template <typename P = Core, std::enable_if_t<(P::CompN > 3)> * = nullptr>
-    __host__ __device__ GEC_INLINE const typename P::CompT &z1() const {
+    GEC_HD GEC_INLINE const typename P::CompT &z1() const {
         return this->core().template get<3>();
     }
     template <typename P = Core, std::enable_if_t<(P::CompN > 3)> * = nullptr>
-    __host__ __device__ GEC_INLINE typename P::CompT &z1() {
+    GEC_HD GEC_INLINE typename P::CompT &z1() {
         return this->core().template get<3>();
     }
 
     template <typename P = Core, std::enable_if_t<(P::CompN > 4)> * = nullptr>
-    __host__ __device__ GEC_INLINE const typename P::CompT &z2() const {
+    GEC_HD GEC_INLINE const typename P::CompT &z2() const {
         return this->core().template get<4>();
     }
     template <typename P = Core, std::enable_if_t<(P::CompN > 4)> * = nullptr>
-    __host__ __device__ GEC_INLINE typename P::CompT &z2() {
+    GEC_HD GEC_INLINE typename P::CompT &z2() {
         return this->core().template get<4>();
     }
 };

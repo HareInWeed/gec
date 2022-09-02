@@ -17,7 +17,7 @@ class GEC_EMPTY_BASES CompWiseEq : protected CRTP<Core, CompWiseEq<Core>> {
     friend CRTP<Core, CompWiseEq<Core>>;
 
   public:
-    __host__ __device__ bool operator==(const Core &other) const {
+    GEC_HD bool operator==(const Core &other) const {
         return utils::VtSeqAll<
             Core::CompN, typename Core::CompT,
             utils::ops::Eq<typename Core::CompT>>::call(this->core().array(),

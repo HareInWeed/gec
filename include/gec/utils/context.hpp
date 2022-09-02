@@ -28,22 +28,20 @@ struct AlignTo {
 
 template <size_t align, typename T, typename... Types>
 struct CtxAlignChecker {
-    __host__ __device__ constexpr static bool call() {
+    GEC_HD constexpr static bool call() {
         return alignof(T) <= align && CtxAlignChecker<align, Types...>::call();
     }
 };
 template <size_t align, typename T>
 struct CtxAlignChecker<align, T> {
-    __host__ __device__ constexpr static bool call() {
-        return alignof(T) <= align;
-    }
+    GEC_HD constexpr static bool call() { return alignof(T) <= align; }
 };
 
 template <size_t I, size_t occupied, typename... Types>
 struct CtxGetOffset;
 template <size_t I, size_t occupied, typename T, typename... Types>
 struct CtxGetOffset<I, occupied, T, Types...> {
-    __host__ __device__ constexpr static size_t call() {
+    GEC_HD constexpr static size_t call() {
         return CtxGetOffset<I - 1,
                             AlignTo<occupied, alignof(T)>::value + sizeof(T),
                             Types...>::call();
@@ -51,27 +49,27 @@ struct CtxGetOffset<I, occupied, T, Types...> {
 };
 template <size_t occupied, typename T, typename... Types>
 struct CtxGetOffset<0, occupied, T, Types...> {
-    __host__ __device__ constexpr static size_t call() {
+    GEC_HD constexpr static size_t call() {
         return AlignTo<occupied, alignof(T)>::value;
     }
 };
 template <size_t occupied>
 struct CtxGetOffset<0, occupied> {
-    __host__ __device__ constexpr static size_t call() { return occupied; }
+    GEC_HD constexpr static size_t call() { return occupied; }
 };
 
 template <size_t I, size_t occupied, typename... Types>
 struct CtxGetEndOffset;
 template <size_t I, size_t occupied, typename T, typename... Types>
 struct CtxGetEndOffset<I, occupied, T, Types...> {
-    __host__ __device__ constexpr static size_t call() {
+    GEC_HD constexpr static size_t call() {
         return CtxGetOffset<I - 1, occupied, T, Types...>::call() +
                sizeof(typename CtxTypeI<I - 1, T, Types...>::type);
     }
 };
 template <size_t occupied>
 struct CtxGetEndOffset<0, occupied> {
-    __host__ __device__ constexpr static size_t call() { return occupied; }
+    GEC_HD constexpr static size_t call() { return occupied; }
 };
 
 template <size_t N, size_t align, size_t occupied, typename... Types>
@@ -80,29 +78,26 @@ class GEC_EMPTY_BASES alignas(align) Context {
     static const size_t capacity = N - occupied;
     uint8_t mem[N];
 
-    __host__ __device__ GEC_INLINE constexpr Context() {}
+    GEC_HD GEC_INLINE constexpr Context() {}
 
     template <size_t I>
-    __host__ __device__ GEC_INLINE static constexpr size_t get_offset() {
+    GEC_HD GEC_INLINE static constexpr size_t get_offset() {
         return CtxGetOffset<I, occupied, Types...>::call();
     }
 
     template <size_t I, std::enable_if_t<(I < sizeof...(Types))> * = nullptr>
-    __host__ __device__ GEC_INLINE constexpr
-        typename CtxTypeI<I, Types...>::type &
-        get() {
+    GEC_HD GEC_INLINE constexpr typename CtxTypeI<I, Types...>::type &get() {
         return *reinterpret_cast<typename CtxTypeI<I, Types...>::type *>(
             this->mem + get_offset<I>());
     }
     template <size_t I, std::enable_if_t<(I < sizeof...(Types))> * = nullptr>
-    __host__ __device__
-        GEC_INLINE constexpr const typename CtxTypeI<I, Types...>::type &
-        get() const {
+    GEC_HD GEC_INLINE constexpr const typename CtxTypeI<I, Types...>::type &
+    get() const {
         return *reinterpret_cast<typename CtxTypeI<I, Types...>::type *>(
             this->mem + get_offset<I>());
     }
 
-    __host__ __device__ GEC_INLINE constexpr Context<
+    GEC_HD GEC_INLINE constexpr Context<
         N, align, CtxGetEndOffset<sizeof...(Types), occupied, Types...>::call()>
         &rest() {
         return *reinterpret_cast<Context<
@@ -110,7 +105,7 @@ class GEC_EMPTY_BASES alignas(align) Context {
             CtxGetEndOffset<sizeof...(Types), occupied, Types...>::call()> *>(
             this);
     }
-    __host__ __device__ GEC_INLINE constexpr const Context<
+    GEC_HD GEC_INLINE constexpr const Context<
         N, align, CtxGetEndOffset<sizeof...(Types), occupied, Types...>::call()>
         &rest() const {
         return *reinterpret_cast<const Context<
@@ -120,9 +115,8 @@ class GEC_EMPTY_BASES alignas(align) Context {
     }
 
     template <typename... OtherTypes>
-    __host__ __device__
-        GEC_INLINE constexpr Context<N, align, occupied, OtherTypes...> &
-        view_as() {
+    GEC_HD GEC_INLINE constexpr Context<N, align, occupied, OtherTypes...> &
+    view_as() {
         static_assert(CtxAlignChecker<align, OtherTypes...>::call(),
                       "alignments of some components exceed context limit");
         static_assert(
@@ -133,7 +127,7 @@ class GEC_EMPTY_BASES alignas(align) Context {
             this);
     }
     template <typename... OtherTypes>
-    __host__ __device__
+    GEC_HD
         GEC_INLINE constexpr const Context<N, align, occupied, OtherTypes...> &
         view_as() const {
         static_assert(CtxAlignChecker<align, OtherTypes...>::call(),

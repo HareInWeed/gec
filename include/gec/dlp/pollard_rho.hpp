@@ -27,10 +27,10 @@ namespace gec {
 namespace dlp {
 
 template <typename S, typename P, typename Ctx, typename Rng>
-__host__ __device__ void pollard_rho(S &c,
-                                     S &d2, // TODO: require general int inv
-                                     size_t l, S *al, S *bl, P *pl, const P &g,
-                                     const P &h, GecRng<Rng> &rng, Ctx &ctx) {
+GEC_HD void pollard_rho(S &c,
+                        S &d2, // TODO: require general int inv
+                        size_t l, S *al, S *bl, P *pl, const P &g, const P &h,
+                        GecRng<Rng> &rng, Ctx &ctx) {
     auto &ctx_view = ctx.template view_as<P, P, P, P, P, S, S>();
 
     auto &ag = ctx_view.template get<0>();
@@ -91,7 +91,7 @@ namespace _pollard_rho_ {
 
 template <typename T>
 struct MaskZero {
-    __host__ __device__ GEC_INLINE static bool call(const T &a, const T &b) {
+    GEC_HD GEC_INLINE static bool call(const T &a, const T &b) {
         return !(a & b);
     }
 };

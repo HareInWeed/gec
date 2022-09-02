@@ -12,7 +12,7 @@ namespace bigint {
 
 template <class Core, size_t K, typename LIMB_T, size_t LIMB_N>
 struct MulPow2Helper {
-    __host__ __device__ GEC_INLINE static void call(Core &GEC_RSTRCT a) {
+    GEC_HD GEC_INLINE static void call(Core &GEC_RSTRCT a) {
         constexpr size_t Idx = LIMB_N - 1;
         constexpr LIMB_T Mask = LIMB_T(1)
                                 << (utils::type_bits<LIMB_T>::value - 1);
@@ -28,7 +28,7 @@ struct MulPow2Helper {
 };
 template <class Core, typename LIMB_T, size_t LIMB_N>
 struct MulPow2Helper<Core, 0, LIMB_T, LIMB_N> {
-    __host__ __device__ GEC_INLINE static void call(Core &GEC_RSTRCT) {}
+    GEC_HD GEC_INLINE static void call(Core &GEC_RSTRCT) {}
 };
 
 /** @brief mixin that enables addition and subtraction operation
@@ -43,9 +43,8 @@ class GEC_EMPTY_BASES ModAddSub
   public:
     /** @brief a = b + c (mod MOD)
      */
-    __host__ __device__ static void add(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        const Core &GEC_RSTRCT c) {
+    GEC_HD static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const Core &GEC_RSTRCT c) {
         bool carry = utils::seq_add<LIMB_N>(a.array(), b.array(), c.array());
         if (carry || utils::VtSeqCmp<LIMB_N, LIMB_T>::call(
                          a.array(), a.mod().array()) != utils::CmpEnum::Lt) {
@@ -55,8 +54,7 @@ class GEC_EMPTY_BASES ModAddSub
 
     /** @brief a = a + c (mod MOD)
      */
-    __host__ __device__ static void add(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b) {
+    GEC_HD static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         bool carry = utils::seq_add<LIMB_N>(a.array(), b.array());
         if (carry || utils::VtSeqCmp<LIMB_N, LIMB_T>::call(
                          a.array(), a.mod().array()) != utils::CmpEnum::Lt) {
@@ -66,9 +64,8 @@ class GEC_EMPTY_BASES ModAddSub
 
     /** @brief a = b + limb (mod MOD)
      */
-    __host__ __device__ static void add(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        const LIMB_T &GEC_RSTRCT c) {
+    GEC_HD static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const LIMB_T &GEC_RSTRCT c) {
         bool carry = utils::seq_add_limb<LIMB_N>(a.array(), b.array(), c);
         if (carry || utils::VtSeqCmp<LIMB_N, LIMB_T>::call(
                          a.array(), a.mod().array()) != utils::CmpEnum::Lt) {
@@ -78,8 +75,7 @@ class GEC_EMPTY_BASES ModAddSub
 
     /** @brief a = a + limb (mod MOD)
      */
-    __host__ __device__ static void add(Core &GEC_RSTRCT a,
-                                        const LIMB_T &GEC_RSTRCT b) {
+    GEC_HD static void add(Core &GEC_RSTRCT a, const LIMB_T &GEC_RSTRCT b) {
         bool carry = utils::seq_add_limb<LIMB_N>(a.array(), b);
         if (carry || utils::VtSeqCmp<LIMB_N, LIMB_T>::call(
                          a.array(), a.mod().array()) != utils::CmpEnum::Lt) {
@@ -89,8 +85,7 @@ class GEC_EMPTY_BASES ModAddSub
 
     /** @brief a = - b (mod MOD)
      */
-    __host__ __device__ static void neg(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b) {
+    GEC_HD static void neg(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         if (b.is_zero()) {
             a.set_zero();
         } else {
@@ -100,9 +95,8 @@ class GEC_EMPTY_BASES ModAddSub
 
     /** @brief a = b - c (mod MOD)
      */
-    __host__ __device__ static void sub(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        const Core &GEC_RSTRCT c) {
+    GEC_HD static void sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const Core &GEC_RSTRCT c) {
         bool borrow = utils::seq_sub<LIMB_N>(a.array(), b.array(), c.array());
         if (borrow) {
             utils::seq_add<LIMB_N>(a.array(), a.mod().array());
@@ -111,8 +105,7 @@ class GEC_EMPTY_BASES ModAddSub
 
     /** @brief a = a - b (mod MOD)
      */
-    __host__ __device__ static void sub(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b) {
+    GEC_HD static void sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         bool borrow = utils::seq_sub<LIMB_N>(a.array(), b.array());
         if (borrow) {
             utils::seq_add<LIMB_N>(a.array(), a.mod().array());
@@ -121,9 +114,8 @@ class GEC_EMPTY_BASES ModAddSub
 
     /** @brief a = b - limb (mod MOD)
      */
-    __host__ __device__ static void sub(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        const LIMB_T &GEC_RSTRCT c) {
+    GEC_HD static void sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const LIMB_T &GEC_RSTRCT c) {
         bool borrow = utils::seq_sub_limb<LIMB_N>(a.array(), b.array(), c);
         if (borrow) {
             utils::seq_add<LIMB_N>(a.array(), a.mod().array());
@@ -132,8 +124,7 @@ class GEC_EMPTY_BASES ModAddSub
 
     /** @brief a = a - limb (mod MOD)
      */
-    __host__ __device__ static void sub(Core &GEC_RSTRCT a,
-                                        const LIMB_T &GEC_RSTRCT b) {
+    GEC_HD static void sub(Core &GEC_RSTRCT a, const LIMB_T &GEC_RSTRCT b) {
         bool borrow = utils::seq_sub_limb<LIMB_N>(a.array(), b);
         if (borrow) {
             utils::seq_add<LIMB_N>(a.array(), a.mod().array());
@@ -143,13 +134,13 @@ class GEC_EMPTY_BASES ModAddSub
     /** @brief a = a * 2^K (mod MOD)
      */
     template <size_t K>
-    __host__ __device__ static void mul_pow2(Core &GEC_RSTRCT a) {
+    GEC_HD static void mul_pow2(Core &GEC_RSTRCT a) {
         MulPow2Helper<Core, K, LIMB_T, LIMB_N>::call(a);
     }
 
     /** @brief a = 2 * a (mod MOD)
      */
-    __host__ __device__ static void add_self(Core &GEC_RSTRCT a) {
+    GEC_HD static void add_self(Core &GEC_RSTRCT a) {
         MulPow2Helper<Core, 1, LIMB_T, LIMB_N>::call(a);
     }
 };
@@ -157,7 +148,7 @@ class GEC_EMPTY_BASES ModAddSub
 template <class Core, size_t K, typename LIMB_T, size_t LIMB_N,
           const LIMB_T *MOD>
 struct CarryFreeMulPow2Helper {
-    __host__ __device__ GEC_INLINE static void call(Core &GEC_RSTRCT a) {
+    GEC_HD GEC_INLINE static void call(Core &GEC_RSTRCT a) {
         utils::seq_shift_left<LIMB_N, K>(a.array());
         if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), MOD) !=
             utils::CmpEnum::Lt) {
@@ -169,7 +160,7 @@ struct CarryFreeMulPow2Helper {
 
 template <class Core, typename LIMB_T, size_t LIMB_N, const LIMB_T *MOD>
 struct CarryFreeMulPow2Helper<Core, 0, LIMB_T, LIMB_N, MOD> {
-    __host__ __device__ GEC_INLINE static void call(Core &GEC_RSTRCT) {}
+    GEC_HD GEC_INLINE static void call(Core &GEC_RSTRCT) {}
 };
 
 /** @brief Mixin that enables addition and subtraction operation without
@@ -191,9 +182,8 @@ class GEC_EMPTY_BASES ModAddSubMixinCarryFree
   public:
     /** @brief a = b + c (mod MOD)
      */
-    __host__ __device__ static void add(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        const Core &GEC_RSTRCT c) {
+    GEC_HD static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const Core &GEC_RSTRCT c) {
         utils::seq_add<LIMB_N>(a.array(), b.array(), c.array());
         if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), a.mod().array()) !=
             utils::CmpEnum::Lt) {
@@ -203,8 +193,7 @@ class GEC_EMPTY_BASES ModAddSubMixinCarryFree
 
     /** @brief a = a + c (mod MOD)
      */
-    __host__ __device__ static void add(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b) {
+    GEC_HD static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         utils::seq_add<LIMB_N>(a.array(), b.array());
         if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), a.mod().array()) !=
             utils::CmpEnum::Lt) {
@@ -214,9 +203,8 @@ class GEC_EMPTY_BASES ModAddSubMixinCarryFree
 
     /** @brief a = b + limb (mod MOD)
      */
-    __host__ __device__ static void add(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        const LIMB_T &GEC_RSTRCT c) {
+    GEC_HD static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const LIMB_T &GEC_RSTRCT c) {
         utils::seq_add_limb<LIMB_N>(a.array(), b.array(), c);
         if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), a.mod().array()) !=
             utils::CmpEnum::Lt) {
@@ -226,8 +214,7 @@ class GEC_EMPTY_BASES ModAddSubMixinCarryFree
 
     /** @brief a = a + limb (mod MOD)
      */
-    __host__ __device__ static void add(Core &GEC_RSTRCT a,
-                                        const LIMB_T &GEC_RSTRCT b) {
+    GEC_HD static void add(Core &GEC_RSTRCT a, const LIMB_T &GEC_RSTRCT b) {
         utils::seq_add_limb<LIMB_N>(a.array(), b);
         if (utils::VtSeqCmp<LIMB_N, LIMB_T>::call(a.array(), a.mod().array()) !=
             utils::CmpEnum::Lt) {
@@ -237,8 +224,7 @@ class GEC_EMPTY_BASES ModAddSubMixinCarryFree
 
     /** @brief a = - b (mod MOD)
      */
-    __host__ __device__ static void neg(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b) {
+    GEC_HD static void neg(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         if (b.is_zero()) {
             a.set_zero();
         } else {
@@ -248,9 +234,8 @@ class GEC_EMPTY_BASES ModAddSubMixinCarryFree
 
     /** @brief a = b - c (mod MOD)
      */
-    __host__ __device__ static void sub(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        const Core &GEC_RSTRCT c) {
+    GEC_HD static void sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const Core &GEC_RSTRCT c) {
         bool borrow = utils::seq_sub<LIMB_N>(a.array(), b.array(), c.array());
         if (borrow) {
             utils::seq_add<LIMB_N>(a.array(), a.mod().array());
@@ -259,8 +244,7 @@ class GEC_EMPTY_BASES ModAddSubMixinCarryFree
 
     /** @brief a = a - c (mod MOD)
      */
-    __host__ __device__ static void sub(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b) {
+    GEC_HD static void sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         bool borrow = utils::seq_sub<LIMB_N>(a.array(), b.array());
         if (borrow) {
             utils::seq_add<LIMB_N>(a.array(), a.mod().array());
@@ -269,9 +253,8 @@ class GEC_EMPTY_BASES ModAddSubMixinCarryFree
 
     /** @brief a = b - limb (mod MOD)
      */
-    __host__ __device__ static void sub(Core &GEC_RSTRCT a,
-                                        const Core &GEC_RSTRCT b,
-                                        const LIMB_T &GEC_RSTRCT c) {
+    GEC_HD static void sub(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const LIMB_T &GEC_RSTRCT c) {
         bool borrow = utils::seq_sub_limb<LIMB_N>(a.array(), b.array(), c);
         if (borrow) {
             utils::seq_add<LIMB_N>(a.array(), a.mod().array());
@@ -280,8 +263,7 @@ class GEC_EMPTY_BASES ModAddSubMixinCarryFree
 
     /** @brief a = a - limb (mod MOD)
      */
-    __host__ __device__ static void sub(Core &GEC_RSTRCT a,
-                                        const LIMB_T &GEC_RSTRCT b) {
+    GEC_HD static void sub(Core &GEC_RSTRCT a, const LIMB_T &GEC_RSTRCT b) {
         bool borrow = utils::seq_sub_limb<LIMB_N>(a.array(), b);
         if (borrow) {
             utils::seq_add<LIMB_N>(a.array(), a.mod().array());
@@ -291,14 +273,14 @@ class GEC_EMPTY_BASES ModAddSubMixinCarryFree
     /** @brief a = a * 2^K (mod MOD)
      */
     template <size_t K>
-    __host__ __device__ static void mul_pow2(Core &GEC_RSTRCT a) {
+    GEC_HD static void mul_pow2(Core &GEC_RSTRCT a) {
         CarryFreeMulPow2Helper<Core, K, LIMB_T, LIMB_N, a.mod().array()>::call(
             a);
     }
 
     /** @brief a = 2 * a (mod MOD)
      */
-    __host__ __device__ static void add_self(Core &GEC_RSTRCT a) {
+    GEC_HD static void add_self(Core &GEC_RSTRCT a) {
         CarryFreeMulPow2Helper<Core, 1, LIMB_T, LIMB_N, a.mod().array()>::call(
             a);
     }

@@ -15,7 +15,7 @@ class GEC_EMPTY_BASES CurveParams
     friend CRTP<Core, CurveParams<Core, FIELD_T, A, B, d_A, d_B>>;
 
   public:
-    __host__ __device__ GEC_INLINE static constexpr const FIELD_T *a() {
+    GEC_HD GEC_INLINE static constexpr const FIELD_T *a() {
 #ifdef __CUDA_ARCH__
         return d_A;
 #else
@@ -23,7 +23,7 @@ class GEC_EMPTY_BASES CurveParams
 #endif // __CUDA_ARCH__
     }
 
-    __host__ __device__ GEC_INLINE static constexpr const FIELD_T *b() {
+    GEC_HD GEC_INLINE static constexpr const FIELD_T *b() {
 #ifdef __CUDA_ARCH__
         return d_B;
 #else

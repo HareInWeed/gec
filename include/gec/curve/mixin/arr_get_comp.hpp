@@ -17,13 +17,13 @@ class GEC_EMPTY_BASES ArrGetCompLE : protected CRTP<Core, ArrGetCompLE<Core>> {
   public:
     template <size_t I, typename P = Core,
               std::enable_if_t<(I < P::CompN)> * = nullptr>
-    __host__ __device__ GEC_INLINE const typename P::CompT &get() const {
+    GEC_HD GEC_INLINE const typename P::CompT &get() const {
         return this->core().array()[I];
     }
 
     template <size_t I, typename P = Core,
               std::enable_if_t<(I < P::CompN)> * = nullptr>
-    __host__ __device__ GEC_INLINE typename P::CompT &get() {
+    GEC_HD GEC_INLINE typename P::CompT &get() {
         return this->core().array()[I];
     }
 };
@@ -37,13 +37,13 @@ class GEC_EMPTY_BASES ArrGetCompBE : protected CRTP<Core, ArrGetCompBE<Core>> {
   public:
     template <size_t I, typename P = Core,
               std::enable_if_t<(I < P::CompN)> * = nullptr>
-    __host__ __device__ GEC_INLINE const typename P::CompT &get() const {
+    GEC_HD GEC_INLINE const typename P::CompT &get() const {
         return this->core().array()[Core::CompN - 1 - I];
     }
 
     template <size_t I, typename P = Core,
               std::enable_if_t<(I < P::CompN)> * = nullptr>
-    __host__ __device__ GEC_INLINE typename P::CompT &get() {
+    GEC_HD GEC_INLINE typename P::CompT &get() {
         return this->core().array()[Core::CompN - 1 - I];
     }
 };

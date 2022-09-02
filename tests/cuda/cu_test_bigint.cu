@@ -10,15 +10,6 @@
 using namespace gec;
 using namespace bigint;
 
-template <typename Core, typename T, size_t N>
-class GEC_EMPTY_BASES BigintMixin : public Constants<Core, T, N>,
-                                    public VtCompare<Core, T, N>,
-                                    public BitOps<Core, T, N>,
-                                    public AddSubMixin<Core, T, N>,
-                                    public BigintRandom<Core, T, N>,
-                                    public ArrayPrint<Core, T, N>,
-                                    public ArrayOstream<Core, T, N> {};
-
 class GEC_EMPTY_BASES Int160 : public ArrayBE<LIMB_T, LN_160>,
                                public BigintMixin<Int160, LIMB_T, LN_160> {
   public:

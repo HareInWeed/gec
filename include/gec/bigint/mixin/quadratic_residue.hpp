@@ -13,8 +13,7 @@ namespace bigint {
 namespace _legendre_ {
 
 template <typename Int, typename CTX>
-__host__ __device__ int legendre(Int &GEC_RSTRCT a, Int &GEC_RSTRCT p,
-                                 CTX &GEC_RSTRCT ctx) {
+GEC_HD int legendre(Int &GEC_RSTRCT a, Int &GEC_RSTRCT p, CTX &GEC_RSTRCT ctx) {
     auto &ctx_view = ctx.template view_as<Int>();
     auto &r = ctx_view.template get<0>();
     auto &rest_ctx = ctx_view.rest();
@@ -48,7 +47,7 @@ class GEC_EMPTY_BASES Legendre : protected CRTP<Core, Legendre<Core>> {
 
   public:
     template <typename CTX>
-    __host__ __device__ GEC_INLINE int legendre(CTX &ctx) {
+    GEC_HD GEC_INLINE int legendre(CTX &ctx) {
         auto &ctx_view = ctx.template view_as<Core, Core>();
         auto &la = ctx_view.template get<0>();
         auto &lp = ctx_view.template get<1>();
@@ -65,7 +64,7 @@ class GEC_EMPTY_BASES MonLegendre : protected CRTP<Core, MonLegendre<Core>> {
 
   public:
     template <typename CTX>
-    __host__ __device__ GEC_INLINE int legendre(CTX &ctx) {
+    GEC_HD GEC_INLINE int legendre(CTX &ctx) {
         auto &ctx_view = ctx.template view_as<Core, Core>();
         auto &la = ctx_view.template get<0>();
         auto &lp = ctx_view.template get<1>();
@@ -85,8 +84,8 @@ class GEC_EMPTY_BASES ModSqrt : protected CRTP<Core, ModSqrt<Core>> {
 
   public:
     template <typename CTX, typename Rng>
-    __host__ __device__ static bool mod_sqrt(Core &x, const Core &a, CTX &ctx,
-                                             GecRng<Rng> &rng) {
+    GEC_HD static bool mod_sqrt(Core &x, const Core &a, CTX &ctx,
+                                GecRng<Rng> &rng) {
         using T = typename Core::LimbT;
 
         auto &ctx_view0 = ctx.template view_as<Core>();

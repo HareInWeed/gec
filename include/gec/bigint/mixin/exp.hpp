@@ -22,9 +22,8 @@ class GEC_EMPTY_BASES Exponentiation
     template <
         size_t N, typename IntT, typename CTX,
         std::enable_if_t<std::numeric_limits<IntT>::is_integer> * = nullptr>
-    __host__ __device__ static void
-    pow(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT *GEC_RSTRCT e,
-        CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void pow(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const IntT *GEC_RSTRCT e, CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<Core>();
 
         auto &ap = ctx_view.template get<0>();
@@ -64,7 +63,7 @@ class GEC_EMPTY_BASES Exponentiation
     template <
         typename IntT, typename CTX,
         std::enable_if_t<std::numeric_limits<IntT>::is_integer> * = nullptr>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     pow(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT &GEC_RSTRCT e,
         CTX &GEC_RSTRCT ctx) {
         pow<1>(a, b, &e, ctx);
@@ -73,7 +72,7 @@ class GEC_EMPTY_BASES Exponentiation
     template <
         typename IntT, typename CTX,
         std::enable_if_t<!std::numeric_limits<IntT>::is_integer> * = nullptr>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     pow(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT &GEC_RSTRCT e,
         CTX &GEC_RSTRCT ctx) {
         pow<IntT::LimbN>(a, b, e.array(), ctx);

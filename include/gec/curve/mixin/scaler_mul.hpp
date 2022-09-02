@@ -22,9 +22,8 @@ class GEC_EMPTY_BASES ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
     template <
         size_t N, typename IntT, typename CTX,
         std::enable_if_t<std::numeric_limits<IntT>::is_integer> * = nullptr>
-    __host__ __device__ static void
-    mul(Core &GEC_RSTRCT a, const IntT *GEC_RSTRCT s, const Core &GEC_RSTRCT b,
-        CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void mul(Core &GEC_RSTRCT a, const IntT *GEC_RSTRCT s,
+                           const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<Core>();
 
         auto &ap = ctx_view.template get<0>();
@@ -63,7 +62,7 @@ class GEC_EMPTY_BASES ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
     template <
         typename IntT, typename CTX,
         std::enable_if_t<std::numeric_limits<IntT>::is_integer> * = nullptr>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     mul(Core &GEC_RSTRCT a, const IntT &GEC_RSTRCT e, const Core &GEC_RSTRCT b,
         CTX &GEC_RSTRCT ctx) {
         mul<1>(a, &e, b, ctx);
@@ -72,7 +71,7 @@ class GEC_EMPTY_BASES ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
     template <
         typename IntT, typename CTX,
         std::enable_if_t<!std::numeric_limits<IntT>::is_integer> * = nullptr>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     mul(Core &GEC_RSTRCT a, const IntT &GEC_RSTRCT e, const Core &GEC_RSTRCT b,
         CTX &GEC_RSTRCT ctx) {
         mul<IntT::LimbN>(a, e.array(), b, ctx);

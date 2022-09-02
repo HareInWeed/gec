@@ -20,10 +20,9 @@ class GEC_EMPTY_BASES Point : public bigint::ArrayLE<COMP_T, N>,
 
   public:
     using CompT = COMP_T;
-    const static size_t CompN = N;
+    constexpr static size_t CompN = N;
     using Base::Base;
-    constexpr __host__ __device__ GEC_INLINE Point()
-        : bigint::ArrayLE<COMP_T, N>() {
+    constexpr GEC_HD GEC_INLINE Point() : bigint::ArrayLE<COMP_T, N>() {
         // for some mysterious reason, without defining the custom default
         // constructor, MSVC will complain the default constructor are ambiguous
         // due to multiple candidates from different base classes.

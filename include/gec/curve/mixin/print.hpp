@@ -11,7 +11,7 @@ namespace curve {
 
 template <typename Point, size_t I, size_t N>
 struct GEC_EMPTY_BASES PointPrintHelper {
-    __host__ __device__ GEC_INLINE static void call(const Point &point) {
+    GEC_HD GEC_INLINE static void call(const Point &point) {
         printf(",\n ");
         point.template get<I>().print();
         PointPrintHelper<Point, I + 1, N>::call(point);
@@ -19,18 +19,18 @@ struct GEC_EMPTY_BASES PointPrintHelper {
 };
 template <typename Point, size_t N>
 struct GEC_EMPTY_BASES PointPrintHelper<Point, 0, N> {
-    __host__ __device__ GEC_INLINE static void call(const Point &point) {
+    GEC_HD GEC_INLINE static void call(const Point &point) {
         point.template get<0>().print();
         PointPrintHelper<Point, 1, N>::call(point);
     }
 };
 template <typename Point, size_t N>
 struct GEC_EMPTY_BASES PointPrintHelper<Point, N, N> {
-    __host__ __device__ GEC_INLINE static void call(const Point &) {}
+    GEC_HD GEC_INLINE static void call(const Point &) {}
 };
 template <typename Point>
 struct GEC_EMPTY_BASES PointPrintHelper<Point, 0, 0> {
-    __host__ __device__ GEC_INLINE static void call(const Point &) {}
+    GEC_HD GEC_INLINE static void call(const Point &) {}
 };
 
 /** @brief mixin that enables output x() and y() with stdio
@@ -40,13 +40,13 @@ class GEC_EMPTY_BASES PointPrint : protected CRTP<Core, PointPrint<Core>> {
     friend CRTP<Core, PointPrint<Core>>;
 
   public:
-    __host__ __device__ void print() const {
+    GEC_HD void print() const {
         using namespace std;
         printf("{");
         PointPrintHelper<Core, 0, Core::CompN>::call(this->core());
         printf("}\n");
     }
-    __host__ __device__ void println() const {
+    GEC_HD void println() const {
         this->print();
         printf("\n");
     }

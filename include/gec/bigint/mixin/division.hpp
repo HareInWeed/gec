@@ -14,17 +14,16 @@ namespace bigint {
 
 namespace _division_ {
 
-__host__ __device__ GEC_INLINE bool multi_gt() { return false; }
+GEC_HD GEC_INLINE bool multi_gt() { return false; }
 template <typename T, typename... Args>
-__host__ __device__ GEC_INLINE bool multi_gt(const T &GEC_RSTRCT a,
-                                             const T &GEC_RSTRCT b,
-                                             const Args &GEC_RSTRCT... args) {
+GEC_HD GEC_INLINE bool multi_gt(const T &GEC_RSTRCT a, const T &GEC_RSTRCT b,
+                                const Args &GEC_RSTRCT... args) {
     return a > b || (a == b && multi_gt(args...));
 }
 
 template <typename T>
-__host__ __device__ GEC_INLINE bool seq_add(T *GEC_RSTRCT a,
-                                            const T *GEC_RSTRCT b, size_t n) {
+GEC_HD GEC_INLINE bool seq_add(T *GEC_RSTRCT a, const T *GEC_RSTRCT b,
+                               size_t n) {
     using namespace ::gec::utils;
     bool carry = false;
     for (size_t k = 0; k < n; ++k) {
@@ -34,8 +33,8 @@ __host__ __device__ GEC_INLINE bool seq_add(T *GEC_RSTRCT a,
 }
 
 template <typename T>
-__host__ __device__ GEC_INLINE bool seq_sub(T *GEC_RSTRCT a,
-                                            const T *GEC_RSTRCT b, size_t n) {
+GEC_HD GEC_INLINE bool seq_sub(T *GEC_RSTRCT a, const T *GEC_RSTRCT b,
+                               size_t n) {
     using namespace ::gec::utils;
     bool borrow = false;
     for (size_t k = 0; k < n; ++k) {
@@ -45,9 +44,8 @@ __host__ __device__ GEC_INLINE bool seq_sub(T *GEC_RSTRCT a,
 }
 
 template <typename T>
-__host__ __device__ GEC_INLINE T seq_add_mul_limb(T *GEC_RSTRCT a,
-                                                  const T *GEC_RSTRCT b,
-                                                  size_t n, const T &x) {
+GEC_HD GEC_INLINE T seq_add_mul_limb(T *GEC_RSTRCT a, const T *GEC_RSTRCT b,
+                                     size_t n, const T &x) {
     using namespace ::gec::utils;
     T l0, h0, l1, h1;
     bool carry0 = false, carry1 = false;
@@ -84,10 +82,9 @@ __host__ __device__ GEC_INLINE T seq_add_mul_limb(T *GEC_RSTRCT a,
 
 template <bool NeedR, typename TT, typename T, size_t I>
 struct CastSingleDivRemHelper {
-    __host__ __device__ GEC_INLINE static void call(T *GEC_RSTRCT q,
-                                                    T &GEC_RSTRCT r,
-                                                    const T *GEC_RSTRCT a,
-                                                    const T &GEC_RSTRCT b) {
+    GEC_HD GEC_INLINE static void call(T *GEC_RSTRCT q, T &GEC_RSTRCT r,
+                                       const T *GEC_RSTRCT a,
+                                       const T &GEC_RSTRCT b) {
         using namespace gec::utils;
         constexpr size_t bits = type_bits<T>::value;
         TT t = (TT(r) << bits) | TT(a[I]);
@@ -98,10 +95,9 @@ struct CastSingleDivRemHelper {
 };
 template <bool NeedR, typename TT, typename T>
 struct CastSingleDivRemHelper<NeedR, TT, T, 0> {
-    __host__ __device__ GEC_INLINE static void call(T *GEC_RSTRCT q,
-                                                    T &GEC_RSTRCT r,
-                                                    const T *GEC_RSTRCT a,
-                                                    const T &GEC_RSTRCT b) {
+    GEC_HD GEC_INLINE static void call(T *GEC_RSTRCT q, T &GEC_RSTRCT r,
+                                       const T *GEC_RSTRCT a,
+                                       const T &GEC_RSTRCT b) {
         using namespace gec::utils;
         constexpr size_t bits = type_bits<T>::value;
         TT t = (TT(r) << bits) | TT(a[0]);
@@ -130,9 +126,8 @@ struct CastSingleDivRemHelper<NeedR, TT, T, 0> {
  * @param ctx context
  */
 template <bool NeedR, typename TT, size_t N, typename T>
-__host__ __device__ void cast_single_div_rem(T *GEC_RSTRCT q, T &GEC_RSTRCT r,
-                                             const T *GEC_RSTRCT a,
-                                             const T &GEC_RSTRCT b) {
+GEC_HD void cast_single_div_rem(T *GEC_RSTRCT q, T &GEC_RSTRCT r,
+                                const T *GEC_RSTRCT a, const T &GEC_RSTRCT b) {
     r = 0;
     CastSingleDivRemHelper<NeedR, TT, T, N - 1>::call(q, r, a, b);
 }
@@ -165,9 +160,8 @@ struct TypeMax {
  * @param qb temporary buffer for holding intermediate result
  */
 template <bool NeedQ, bool NeedR, typename TT, size_t N, typename T>
-__host__ __device__ static void cast_div_rem(T *GEC_RSTRCT q, T *GEC_RSTRCT a,
-                                             T *GEC_RSTRCT b,
-                                             T *GEC_RSTRCT qb) {
+GEC_HD static void cast_div_rem(T *GEC_RSTRCT q, T *GEC_RSTRCT a,
+                                T *GEC_RSTRCT b, T *GEC_RSTRCT qb) {
     using namespace gec::utils;
 
     constexpr size_t bits = type_bits<T>::value;
@@ -301,10 +295,9 @@ __host__ __device__ static void cast_div_rem(T *GEC_RSTRCT q, T *GEC_RSTRCT a,
 
 template <bool NeedR, typename T, size_t I>
 struct SplitSingleDivRemHelper {
-    __host__ __device__ GEC_INLINE static void call(T *GEC_RSTRCT q,
-                                                    T &GEC_RSTRCT r,
-                                                    const T *GEC_RSTRCT a,
-                                                    const T &GEC_RSTRCT b) {
+    GEC_HD GEC_INLINE static void call(T *GEC_RSTRCT q, T &GEC_RSTRCT r,
+                                       const T *GEC_RSTRCT a,
+                                       const T &GEC_RSTRCT b) {
         using namespace gec::utils;
         constexpr size_t bits = type_bits<T>::value;
         constexpr size_t half_bits = bits / 2;
@@ -324,10 +317,9 @@ struct SplitSingleDivRemHelper {
 };
 template <bool NeedR, typename T>
 struct SplitSingleDivRemHelper<NeedR, T, 0> {
-    __host__ __device__ GEC_INLINE static void call(T *GEC_RSTRCT q,
-                                                    T &GEC_RSTRCT r,
-                                                    const T *GEC_RSTRCT a,
-                                                    const T &GEC_RSTRCT b) {
+    GEC_HD GEC_INLINE static void call(T *GEC_RSTRCT q, T &GEC_RSTRCT r,
+                                       const T *GEC_RSTRCT a,
+                                       const T &GEC_RSTRCT b) {
         using namespace gec::utils;
         constexpr size_t bits = type_bits<T>::value;
         constexpr size_t half_bits = bits / 2;
@@ -363,16 +355,15 @@ struct SplitSingleDivRemHelper<NeedR, T, 0> {
  * @param ctx context
  */
 template <bool NeedR, size_t N, typename T>
-__host__ __device__ void split_single_div_rem(T *GEC_RSTRCT q, T &GEC_RSTRCT r,
-                                              const T *GEC_RSTRCT a,
-                                              const T &GEC_RSTRCT b) {
+GEC_HD void split_single_div_rem(T *GEC_RSTRCT q, T &GEC_RSTRCT r,
+                                 const T *GEC_RSTRCT a, const T &GEC_RSTRCT b) {
     r = 0;
     SplitSingleDivRemHelper<NeedR, T, N - 1>::call(q, r, a, b);
 }
 
 template <size_t I, typename T, typename HT>
 struct SplitDivRemHelper {
-    __host__ __device__ GEC_INLINE static void split(HT *h_arr, const T *arr) {
+    GEC_HD GEC_INLINE static void split(HT *h_arr, const T *arr) {
         using namespace ::gec::utils;
         constexpr size_t shift = type_bits<T>::value / 2;
         h_arr[2 * I + 1] = arr[I] >> shift;
@@ -380,7 +371,7 @@ struct SplitDivRemHelper {
         SplitDivRemHelper<I - 1, T, HT>::split(h_arr, arr);
     }
 
-    __host__ __device__ GEC_INLINE static void merge(T *arr, const HT *h_arr) {
+    GEC_HD GEC_INLINE static void merge(T *arr, const HT *h_arr) {
         using namespace ::gec::utils;
         constexpr size_t shift = type_bits<T>::value / 2;
         arr[I] = (T(h_arr[2 * I + 1]) << shift) | T(h_arr[2 * I]);
@@ -389,14 +380,14 @@ struct SplitDivRemHelper {
 };
 template <typename T, typename HT>
 struct SplitDivRemHelper<0, T, HT> {
-    __host__ __device__ GEC_INLINE static void split(HT *h_arr, const T *arr) {
+    GEC_HD GEC_INLINE static void split(HT *h_arr, const T *arr) {
         using namespace ::gec::utils;
         constexpr size_t shift = type_bits<T>::value / 2;
         h_arr[1] = arr[0] >> shift;
         h_arr[0] = arr[0];
     }
 
-    __host__ __device__ GEC_INLINE static void merge(T *arr, const HT *h_arr) {
+    GEC_HD GEC_INLINE static void merge(T *arr, const HT *h_arr) {
         using namespace ::gec::utils;
         constexpr size_t shift = type_bits<T>::value / 2;
         arr[0] = (T(h_arr[1]) << shift) | T(h_arr[0]);
@@ -427,9 +418,8 @@ struct SplitDivRemHelper<0, T, HT> {
  * @param hqb temporary buffer, whose length must be no less then `2 * N`
  */
 template <bool NeedQ, bool NeedR, typename HT, size_t N, typename T>
-__host__ __device__ GEC_INLINE static void
-split_div_rem(T *q, T *r, const T *a, const T *b, HT *hq, HT *ha, HT *hb,
-              HT *hqb) {
+GEC_HD GEC_INLINE static void split_div_rem(T *q, T *r, const T *a, const T *b,
+                                            HT *hq, HT *ha, HT *hb, HT *hqb) {
     using namespace gec::utils;
     using Helper = SplitDivRemHelper<N - 1, T, HT>;
     Helper::split(ha, a);
@@ -451,7 +441,7 @@ struct DivRemHelper;
 template <size_t N, typename T>
 struct DivRemHelper<N, T, Method::Cast> {
     template <typename CTX>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     div_rem(T *GEC_RSTRCT q, T *GEC_RSTRCT r, const T *GEC_RSTRCT a,
             const T *GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
@@ -469,9 +459,9 @@ struct DivRemHelper<N, T, Method::Cast> {
     }
 
     template <typename CTX>
-    __host__ __device__ GEC_INLINE static void
-    div(T *GEC_RSTRCT q, const T *GEC_RSTRCT a, const T *GEC_RSTRCT b,
-        CTX &GEC_RSTRCT ctx) {
+    GEC_HD GEC_INLINE static void div(T *GEC_RSTRCT q, const T *GEC_RSTRCT a,
+                                      const T *GEC_RSTRCT b,
+                                      CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
 #ifdef __CUDA_ARCH__
         using TT = typename DeviceCast2Uint<T>::type;
@@ -488,9 +478,9 @@ struct DivRemHelper<N, T, Method::Cast> {
     }
 
     template <typename CTX>
-    __host__ __device__ GEC_INLINE static void
-    rem(T *GEC_RSTRCT r, const T *GEC_RSTRCT a, const T *GEC_RSTRCT b,
-        CTX &GEC_RSTRCT ctx) {
+    GEC_HD GEC_INLINE static void rem(T *GEC_RSTRCT r, const T *GEC_RSTRCT a,
+                                      const T *GEC_RSTRCT b,
+                                      CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
 #ifdef __CUDA_ARCH__
         using TT = typename DeviceCast2Uint<T>::type;
@@ -510,7 +500,7 @@ struct DivRemHelper<N, T, Method::Cast> {
 template <size_t N, typename T>
 struct DivRemHelper<N, T, Method::Split> {
     template <typename CTX>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     div_rem(T *GEC_RSTRCT q, T *GEC_RSTRCT r, const T *GEC_RSTRCT a,
             const T *GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
@@ -529,9 +519,9 @@ struct DivRemHelper<N, T, Method::Split> {
     }
 
     template <typename CTX>
-    __host__ __device__ GEC_INLINE static void
-    div(T *GEC_RSTRCT q, const T *GEC_RSTRCT a, const T *GEC_RSTRCT b,
-        CTX &GEC_RSTRCT ctx) {
+    GEC_HD GEC_INLINE static void div(T *GEC_RSTRCT q, const T *GEC_RSTRCT a,
+                                      const T *GEC_RSTRCT b,
+                                      CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
 #ifdef __CUDA_ARCH__
         using HT = typename DeviceCastHalfUint<T>::type;
@@ -549,9 +539,9 @@ struct DivRemHelper<N, T, Method::Split> {
     }
 
     template <typename CTX>
-    __host__ __device__ GEC_INLINE static void
-    rem(T *GEC_RSTRCT r, const T *GEC_RSTRCT a, const T *GEC_RSTRCT b,
-        CTX &GEC_RSTRCT ctx) {
+    GEC_HD GEC_INLINE static void rem(T *GEC_RSTRCT r, const T *GEC_RSTRCT a,
+                                      const T *GEC_RSTRCT b,
+                                      CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
 #ifdef __CUDA_ARCH__
         using HT = typename DeviceCastHalfUint<T>::type;
@@ -600,9 +590,9 @@ class GEC_EMPTY_BASES CastDivision
      * @param ctx context
      */
     template <typename CTX>
-    __host__ __device__ static void
-    div_rem(Core &GEC_RSTRCT q, Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
-            const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void div_rem(Core &GEC_RSTRCT q, Core &GEC_RSTRCT r,
+                               const Core &GEC_RSTRCT a,
+                               const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         using namespace _division_;
         DivRemHelper<LIMB_N, LIMB_T, Method::Cast>::div_rem(
             q.array(), r.array(), a.array(), b.array(), ctx);
@@ -620,7 +610,7 @@ class GEC_EMPTY_BASES CastDivision
      * @param ctx context
      */
     template <typename CTX>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     div(Core &GEC_RSTRCT q, const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
         CTX &GEC_RSTRCT ctx) {
         using namespace _division_;
@@ -640,7 +630,7 @@ class GEC_EMPTY_BASES CastDivision
      * @param ctx context
      */
     template <typename CTX>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     rem(const Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
         const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         using namespace _division_;
@@ -677,9 +667,9 @@ class GEC_EMPTY_BASES SplitDivision
      * @param ctx context
      */
     template <typename CTX>
-    __host__ __device__ static void
-    div_rem(Core &GEC_RSTRCT q, Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
-            const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void div_rem(Core &GEC_RSTRCT q, Core &GEC_RSTRCT r,
+                               const Core &GEC_RSTRCT a,
+                               const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         using namespace _division_;
         DivRemHelper<LIMB_N, LIMB_T, Method::Split>::div_rem(
             q.array(), r.array(), a.array(), b.array(), ctx);
@@ -697,7 +687,7 @@ class GEC_EMPTY_BASES SplitDivision
      * @param ctx context
      */
     template <typename CTX>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     div(Core &GEC_RSTRCT q, const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
         CTX &GEC_RSTRCT ctx) {
         using namespace _division_;
@@ -717,7 +707,7 @@ class GEC_EMPTY_BASES SplitDivision
      * @param ctx context
      */
     template <typename CTX>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     rem(const Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
         const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         using namespace _division_;
@@ -755,9 +745,9 @@ class GEC_EMPTY_BASES Division
      * @param ctx context
      */
     template <typename CTX>
-    __host__ __device__ static void
-    div_rem(Core &GEC_RSTRCT q, Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
-            const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void div_rem(Core &GEC_RSTRCT q, Core &GEC_RSTRCT r,
+                               const Core &GEC_RSTRCT a,
+                               const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
         using namespace _division_;
         DivRemHelper<LIMB_N, LIMB_T,
@@ -783,7 +773,7 @@ class GEC_EMPTY_BASES Division
      * @param ctx context
      */
     template <typename CTX>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     div(Core &GEC_RSTRCT q, const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
         CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;
@@ -811,7 +801,7 @@ class GEC_EMPTY_BASES Division
      * @param ctx context
      */
     template <typename CTX>
-    __host__ __device__ GEC_INLINE static void
+    GEC_HD GEC_INLINE static void
     rem(Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
         CTX &GEC_RSTRCT ctx) {
         using namespace ::gec::utils;

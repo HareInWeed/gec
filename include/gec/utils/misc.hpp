@@ -17,7 +17,7 @@ namespace gec {
 namespace utils {
 
 template <typename T>
-__host__ __device__ GEC_INLINE constexpr void swap(T &a, T &b) {
+GEC_HD GEC_INLINE constexpr void swap(T &a, T &b) {
     T tmp = std::move(a);
     a = std::move(b);
     b = std::move(tmp);
@@ -37,17 +37,17 @@ struct RepeatingMask<T, Part, I, N, typename std::enable_if_t<(I < N)>> {
 template <typename T, size_t I = utils::type_bits<T>::value,
           typename Enable = void>
 struct SignificantMask {
-    __host__ __device__ GEC_INLINE static T call(T x) {
+    GEC_HD GEC_INLINE static T call(T x) {
         x = x | (x >> (utils::type_bits<T>::value / I));
         return SignificantMask<T, I / 2>::call(x);
     }
 };
 template <typename T>
 struct SignificantMask<T, 1> {
-    __host__ __device__ GEC_INLINE static T call(T x) { return x; }
+    GEC_HD GEC_INLINE static T call(T x) { return x; }
 };
 template <typename T>
-__host__ __device__ GEC_INLINE T significant_mask(T x) {
+GEC_HD GEC_INLINE T significant_mask(T x) {
     return SignificantMask<T>::call(x);
 }
 
@@ -67,7 +67,7 @@ namespace _clz_ {
 
 template <typename T, size_t L, size_t R>
 struct BinSearchCLZHelper {
-    __host__ __device__ GEC_INLINE static constexpr void call(size_t &n, T &x) {
+    GEC_HD GEC_INLINE static constexpr void call(size_t &n, T &x) {
         if ((x >> R) == 0) {
             n = n + L;
             x = x << L;
@@ -77,11 +77,11 @@ struct BinSearchCLZHelper {
 };
 template <typename T, size_t R>
 struct BinSearchCLZHelper<T, 1, R> {
-    __host__ __device__ GEC_INLINE static constexpr void call(size_t &, T &) {}
+    GEC_HD GEC_INLINE static constexpr void call(size_t &, T &) {}
 };
 template <typename T>
 struct BinSearchCLZ {
-    __host__ __device__ static constexpr size_t call(T x) {
+    GEC_HD static constexpr size_t call(T x) {
         constexpr size_t bits = utils::type_bits<T>::value;
         constexpr size_t bits_m_1 = bits - 1;
         constexpr size_t half_bits = bits / 2;
@@ -93,21 +93,21 @@ struct BinSearchCLZ {
 
 template <typename T, typename Enable = void>
 struct HostCLZ {
-    __host__ GEC_INLINE static size_t call(T x) {
+    GEC_H GEC_INLINE static size_t call(T x) {
         return BinSearchCLZ<T>::call(x);
     }
 };
 
 template <typename T, typename Enable = void>
 struct DeviceCLZ {
-    __device__ GEC_INLINE static size_t call(T x) {
+    GEC_D GEC_INLINE static size_t call(T x) {
         return BinSearchCLZ<T>::call(x);
     }
 };
 
 template <typename T, typename Enable = void>
 struct CLZ {
-    __host__ __device__ GEC_INLINE static size_t call(T x) {
+    GEC_HD GEC_INLINE static size_t call(T x) {
 #ifdef __CUDA_ARCH__
         return DeviceCLZ<T>::call(x);
 #else
@@ -120,13 +120,13 @@ struct CLZ {
 
 template <>
 struct DeviceCLZ<unsigned int> {
-    __device__ GEC_INLINE static size_t call(unsigned int x) {
+    GEC_D GEC_INLINE static size_t call(unsigned int x) {
         return size_t(__clz((int)x));
     }
 };
 template <>
 struct DeviceCLZ<unsigned long long int> {
-    __device__ GEC_INLINE static size_t call(unsigned long long int x) {
+    GEC_D GEC_INLINE static size_t call(unsigned long long int x) {
         return size_t(__clzll((long long int)x));
     }
 };
@@ -137,19 +137,19 @@ struct DeviceCLZ<unsigned long long int> {
 
 template <>
 struct HostCLZ<unsigned int> {
-    __host__ GEC_INLINE static size_t call(unsigned int x) {
+    GEC_H GEC_INLINE static size_t call(unsigned int x) {
         return size_t(__builtin_clz(x));
     }
 };
 template <>
 struct HostCLZ<unsigned long> {
-    __host__ GEC_INLINE static size_t call(unsigned long x) {
+    GEC_H GEC_INLINE static size_t call(unsigned long x) {
         return size_t(__builtin_clzl(x));
     }
 };
 template <>
 struct HostCLZ<unsigned long long> {
-    __host__ GEC_INLINE static size_t call(unsigned long long x) {
+    GEC_H GEC_INLINE static size_t call(unsigned long long x) {
         return size_t(__builtin_clzll(x));
     }
 };
@@ -158,7 +158,7 @@ struct HostCLZ<unsigned long long> {
 
 template <typename T, typename Enable = void>
 struct CLZMostSignificantBit {
-    __host__ __device__ GEC_INLINE static size_t call(T x) {
+    GEC_HD GEC_INLINE static size_t call(T x) {
         constexpr size_t max_bit = utils::type_bits<T>::value - 1;
         return max_bit - CLZ<T>::call(x);
     }
@@ -166,21 +166,21 @@ struct CLZMostSignificantBit {
 
 template <typename T, typename Enable = void>
 struct HostMostSignificantBit {
-    __host__ GEC_INLINE static size_t call(T x) {
+    GEC_H GEC_INLINE static size_t call(T x) {
         return CLZMostSignificantBit<T>::call(x);
     }
 };
 
 template <typename T, typename Enable = void>
 struct DeviceMostSignificantBit {
-    __device__ GEC_INLINE static size_t call(T x) {
+    GEC_D GEC_INLINE static size_t call(T x) {
         return CLZMostSignificantBit<T>::call(x);
     }
 };
 
 template <typename T, typename Enable = void>
 struct MostSignificantBit {
-    __host__ __device__ GEC_INLINE static size_t call(T x) {
+    GEC_HD GEC_INLINE static size_t call(T x) {
 #ifdef __CUDA_ARCH__
         return DeviceMostSignificantBit<T>::call(x);
 #else
@@ -197,7 +197,7 @@ struct MostSignificantBit {
 template <typename T>
 struct HostMostSignificantBit<
     T, std::enable_if_t<(utils::type_bits<T>::value <= 32)>> {
-    __host__ GEC_INLINE static size_t call(T x) {
+    GEC_H GEC_INLINE static size_t call(T x) {
         unsigned long ret;
         _BitScanReverse(&ret, (unsigned long)x);
         return (size_t)ret;
@@ -206,7 +206,7 @@ struct HostMostSignificantBit<
 
 template <typename T>
 struct HostCLZ<T, std::enable_if_t<(utils::type_bits<T>::value <= 32)>> {
-    __host__ GEC_INLINE static size_t call(T x) {
+    GEC_H GEC_INLINE static size_t call(T x) {
         constexpr size_t max_bit = utils::type_bits<T>::value - 1;
         return max_bit - HostMostSignificantBit<T>::call(x);
     }
@@ -221,7 +221,7 @@ template <typename T>
 struct HostMostSignificantBit<
     T, std::enable_if_t<(utils::type_bits<T>::value > 32 &&
                          utils::type_bits<T>::value <= 64)>> {
-    __host__ GEC_INLINE static size_t call(T x) {
+    GEC_H GEC_INLINE static size_t call(T x) {
         unsigned long ret;
         _BitScanReverse64(&ret, (__int64)x);
         return (size_t)ret;
@@ -231,7 +231,7 @@ struct HostMostSignificantBit<
 template <typename T>
 struct HostCLZ<T, std::enable_if_t<(utils::type_bits<T>::value <= 32 &&
                                     utils::type_bits<T>::value <= 64)>> {
-    __host__ GEC_INLINE static size_t call(T x) {
+    GEC_H GEC_INLINE static size_t call(T x) {
         constexpr size_t max_bit = utils::type_bits<T>::value - 1;
         return max_bit - MostSignificantBit<T>::call(x);
     }
@@ -253,7 +253,7 @@ struct HostCLZ<T, std::enable_if_t<(utils::type_bits<T>::value <= 32 &&
  * @return size_t the number of leading zeros
  */
 template <typename T>
-__host__ __device__ GEC_INLINE size_t count_leading_zeros(T x) {
+GEC_HD GEC_INLINE size_t count_leading_zeros(T x) {
     return _clz_::CLZ<T>::call(x);
 }
 
@@ -267,7 +267,7 @@ __host__ __device__ GEC_INLINE size_t count_leading_zeros(T x) {
  * @return size_t the position of the most significant bit
  */
 template <typename T>
-__host__ __device__ GEC_INLINE size_t most_significant_bit(T x) {
+GEC_HD GEC_INLINE size_t most_significant_bit(T x) {
     return _clz_::MostSignificantBit<T>::call(x);
 }
 
@@ -275,7 +275,7 @@ namespace _ctz_ {
 
 template <typename T, size_t I, typename Enable = void>
 struct BinSearchCTZHelper {
-    __host__ __device__ GEC_INLINE static void call(size_t &n, T &x) {
+    GEC_HD GEC_INLINE static void call(size_t &n, T &x) {
         if (!(x & LowerKMask<T, I>::value)) {
             n += I;
             x >>= I;
@@ -285,11 +285,11 @@ struct BinSearchCTZHelper {
 };
 template <typename T>
 struct BinSearchCTZHelper<T, 1> {
-    __host__ __device__ GEC_INLINE static void call(T, size_t &) {}
+    GEC_HD GEC_INLINE static void call(T, size_t &) {}
 };
 template <typename T>
 struct BinSearchCTZ {
-    __host__ __device__ static constexpr size_t call(T x) {
+    GEC_HD static constexpr size_t call(T x) {
         constexpr size_t bits = utils::type_bits<T>::value;
         size_t n = 1;
         BinSearchCTZHelper<T, bits / 2>::call(n, x);
@@ -299,7 +299,7 @@ struct BinSearchCTZ {
 
 template <typename T, size_t I>
 struct GaudetCTZHelper {
-    __host__ __device__ GEC_INLINE static constexpr size_t call(T y) {
+    GEC_HD GEC_INLINE static constexpr size_t call(T y) {
         constexpr T mask =
             RepeatingMask<T, LowerKMask<T, I>::value, 2 * I>::value;
         return ((y & mask) ? 0 : I) + GaudetCTZHelper<T, I / 2>::call(y);
@@ -307,11 +307,11 @@ struct GaudetCTZHelper {
 };
 template <typename T>
 struct GaudetCTZHelper<T, 0> {
-    __host__ __device__ GEC_INLINE static constexpr size_t call(T) { return 0; }
+    GEC_HD GEC_INLINE static constexpr size_t call(T) { return 0; }
 };
 template <typename T>
 struct GaudetCTZ {
-    __host__ __device__ static constexpr size_t call(T x) {
+    GEC_HD static constexpr size_t call(T x) {
         constexpr size_t bits = utils::type_bits<T>::value;
         T y = x & -x;
         return (y ? 0 : 1) + GaudetCTZHelper<T, bits / 2>::call(y);
@@ -320,19 +320,15 @@ struct GaudetCTZ {
 
 template <typename T, typename Enable = void>
 struct HostCTZ {
-    __host__ GEC_INLINE static size_t call(T x) {
-        return GaudetCTZ<T>::call(x);
-    }
+    GEC_H GEC_INLINE static size_t call(T x) { return GaudetCTZ<T>::call(x); }
 };
 template <typename T, typename Enable = void>
 struct DeviceCTZ {
-    __device__ GEC_INLINE static size_t call(T x) {
-        return GaudetCTZ<T>::call(x);
-    }
+    GEC_D GEC_INLINE static size_t call(T x) { return GaudetCTZ<T>::call(x); }
 };
 template <typename T, typename Enable = void>
 struct CTZ {
-    __host__ __device__ GEC_INLINE static size_t call(T x) {
+    GEC_HD GEC_INLINE static size_t call(T x) {
 #ifdef __CUDA_ARCH__
         return DeviceCTZ<T>::call(x);
 #else
@@ -345,13 +341,13 @@ struct CTZ {
 
 template <>
 struct DeviceCTZ<unsigned int> {
-    __device__ GEC_INLINE static size_t call(unsigned int x) {
+    GEC_D GEC_INLINE static size_t call(unsigned int x) {
         return size_t(__ffs((int)x));
     }
 };
 template <>
 struct DeviceCTZ<unsigned long long int> {
-    __device__ GEC_INLINE static size_t call(unsigned long long int x) {
+    GEC_D GEC_INLINE static size_t call(unsigned long long int x) {
         return size_t(__ffsll((unsigned long long int)x));
     }
 };
@@ -362,19 +358,19 @@ struct DeviceCTZ<unsigned long long int> {
 
 template <>
 struct HostCTZ<unsigned int> {
-    __host__ GEC_INLINE static size_t call(unsigned int x) {
+    GEC_H GEC_INLINE static size_t call(unsigned int x) {
         return size_t(__builtin_ctz(x));
     }
 };
 template <>
 struct HostCTZ<unsigned long> {
-    __host__ GEC_INLINE static size_t call(unsigned long x) {
+    GEC_H GEC_INLINE static size_t call(unsigned long x) {
         return size_t(__builtin_ctzl(x));
     }
 };
 template <>
 struct HostCTZ<unsigned long long> {
-    __host__ GEC_INLINE static size_t call(unsigned long long x) {
+    GEC_H GEC_INLINE static size_t call(unsigned long long x) {
         return size_t(__builtin_ctzll(x));
     }
 };
@@ -388,7 +384,7 @@ struct HostCTZ<unsigned long long> {
 #pragma intrinsic(_BitScanForward)
 template <typename T>
 struct HostCTZ<T, std::enable_if_t<(utils::type_bits<T>::value <= 32)>> {
-    __host__ GEC_INLINE static size_t call(T x) {
+    GEC_H GEC_INLINE static size_t call(T x) {
         unsigned long ret;
         _BitScanForward(&ret, (unsigned long)x);
         return (size_t)ret;
@@ -403,7 +399,7 @@ struct HostCTZ<T, std::enable_if_t<(utils::type_bits<T>::value <= 32)>> {
 template <typename T>
 struct HostCTZ<T, std::enable_if_t<(utils::type_bits<T>::value > 32 &&
                                     utils::type_bits<T>::value <= 64)>> {
-    __host__ GEC_INLINE static size_t call(T x) {
+    GEC_H GEC_INLINE static size_t call(T x) {
         unsigned long ret;
         _BitScanForward64(&ret, (__int64)x);
         return (size_t)ret;
@@ -429,7 +425,7 @@ using LeastSignificantBit = CTZ<T>;
  * @return size_t the number of trailing zeros
  */
 template <typename T>
-__host__ __device__ GEC_INLINE size_t count_trailing_zeros(T x) {
+GEC_HD GEC_INLINE size_t count_trailing_zeros(T x) {
     return _ctz_::CTZ<T>::call(x);
 }
 
@@ -443,7 +439,7 @@ __host__ __device__ GEC_INLINE size_t count_trailing_zeros(T x) {
  * @return size_t the position of least most significant bit
  */
 template <typename T>
-__host__ __device__ GEC_INLINE size_t least_significant_bit(T x) {
+GEC_HD GEC_INLINE size_t least_significant_bit(T x) {
     return _ctz_::LeastSignificantBit<T>::call(x);
 }
 

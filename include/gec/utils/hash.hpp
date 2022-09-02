@@ -58,14 +58,12 @@ struct HashIntegral;
 
 template <class T, size_t size_t_bits, size_t type_bits>
 struct HashIntegral<T, false, size_t_bits, type_bits> {
-    __host__ __device__ static size_t call(T v) {
-        return static_cast<size_t>(v);
-    }
+    GEC_HD static size_t call(T v) { return static_cast<size_t>(v); }
 };
 
 template <class T>
 struct HashIntegral<T, true, 32, 64> {
-    __host__ __device__ static size_t call(T v) {
+    GEC_HD static size_t call(T v) {
         size_t seed = 0;
 
         seed ^= static_cast<size_t>(v >> 32) + (seed << 6) + (seed >> 2);
@@ -77,7 +75,7 @@ struct HashIntegral<T, true, 32, 64> {
 
 template <class T>
 struct HashIntegral<T, true, 32, 128> {
-    __host__ __device__ static size_t call(T v) {
+    GEC_HD static size_t call(T v) {
         size_t seed = 0;
 
         seed ^= static_cast<size_t>(v >> 96) + (seed << 6) + (seed >> 2);
@@ -91,7 +89,7 @@ struct HashIntegral<T, true, 32, 128> {
 
 template <class T>
 struct HashIntegral<T, true, 64, 128> {
-    __host__ __device__ static size_t call(T v) {
+    GEC_HD static size_t call(T v) {
         size_t seed = 0;
 
         seed ^= static_cast<size_t>(v >> 64) + (seed << 6) + (seed >> 2);
@@ -106,14 +104,14 @@ struct HashIntegral<T, true, 64, 128> {
 template <typename T>
 typename std::enable_if_t<
     std::is_integral<T>::value && std::is_unsigned<T>::value, size_t>
-    __host__ __device__ hash_value(T v) {
+    GEC_HD hash_value(T v) {
     return _hash_integral_::HashIntegral<T>::call(v);
 }
 
 template <typename T>
 typename std::enable_if_t<
     std::is_integral<T>::value && std::is_signed<T>::value, size_t>
-    __host__ __device__ hash_value(T v) {
+    GEC_HD hash_value(T v) {
     using U = typename std::make_unsigned<T>::type;
 
     if (v >= 0) {
@@ -126,7 +124,7 @@ typename std::enable_if_t<
 // enumeration types
 
 template <typename T>
-__host__ __device__ typename std::enable_if_t<std::is_enum<T>::value, size_t>
+GEC_HD typename std::enable_if_t<std::is_enum<T>::value, size_t>
 hash_value(T v) {
     return static_cast<size_t>(v);
 }
@@ -143,7 +141,7 @@ struct HashFloat;
 // float
 template <class T, int Digits, size_t size_t_bits>
 struct HashFloat<T, 32, Digits, size_t_bits> {
-    __host__ __device__ static size_t call(T v) {
+    GEC_HD static size_t call(T v) {
         uint32_t w;
         memcpy(&w, &v, sizeof(v));
 
@@ -154,7 +152,7 @@ struct HashFloat<T, 32, Digits, size_t_bits> {
 // double
 template <class T, int Digits>
 struct HashFloat<T, 64, Digits, 64> {
-    __host__ __device__ static size_t call(T v) {
+    GEC_HD static size_t call(T v) {
         uint64_t w;
         memcpy(&w, &v, sizeof(v));
 
@@ -164,7 +162,7 @@ struct HashFloat<T, 64, Digits, 64> {
 
 template <class T, int Digits>
 struct HashFloat<T, 64, Digits, 32> {
-    __host__ __device__ static size_t call(T v) {
+    GEC_HD static size_t call(T v) {
         uint32_t w[2];
         memcpy(&w, &v, sizeof(v));
 
@@ -180,7 +178,7 @@ struct HashFloat<T, 64, Digits, 32> {
 // 80 bit long double in 12 bytes
 template <class T>
 struct HashFloat<T, 96, 64, 64> {
-    __host__ __device__ static size_t call(T v) {
+    GEC_HD static size_t call(T v) {
         uint64_t w[2] = {};
         memcpy(&w, &v, 80 / CHAR_BIT);
 
@@ -195,7 +193,7 @@ struct HashFloat<T, 96, 64, 64> {
 
 template <class T>
 struct HashFloat<T, 96, 64, 32> {
-    __host__ __device__ static size_t call(T v) {
+    GEC_HD static size_t call(T v) {
         uint32_t w[3] = {};
         memcpy(&w, &v, 80 / CHAR_BIT);
 
@@ -212,7 +210,7 @@ struct HashFloat<T, 96, 64, 32> {
 // 80 bit long double in 16 bytes
 template <class T>
 struct HashFloat<T, 128, 64, 64> {
-    __host__ __device__ static size_t call(T v) {
+    GEC_HD static size_t call(T v) {
         uint64_t w[2] = {};
         memcpy(&w, &v, 80 / CHAR_BIT);
 
@@ -227,7 +225,7 @@ struct HashFloat<T, 128, 64, 64> {
 
 template <class T>
 struct HashFloat<T, 128, 64, 32> {
-    __host__ __device__ static size_t call(T v) {
+    GEC_HD static size_t call(T v) {
         uint32_t w[3] = {};
         memcpy(&w, &v, 80 / CHAR_BIT);
 
@@ -244,7 +242,7 @@ struct HashFloat<T, 128, 64, 32> {
 // 128 bit long double
 template <class T, int Digits>
 struct HashFloat<T, 128, Digits, 64> {
-    __host__ __device__ static size_t call(T v) {
+    GEC_HD static size_t call(T v) {
         uint64_t w[2];
         memcpy(&w, &v, sizeof(v));
 
@@ -259,7 +257,7 @@ struct HashFloat<T, 128, Digits, 64> {
 
 template <class T, int Digits>
 struct HashFloat<T, 128, Digits, 32> {
-    __host__ __device__ static size_t call(T v) {
+    GEC_HD static size_t call(T v) {
         uint32_t w[4];
         memcpy(&w, &v, sizeof(v));
 
@@ -277,9 +275,8 @@ struct HashFloat<T, 128, Digits, 32> {
 } // namespace _hash_float_
 
 template <typename T>
-__host__ __device__
-    typename std::enable_if_t<std::is_floating_point<T>::value, size_t>
-    hash_value(T v) {
+GEC_HD typename std::enable_if_t<std::is_floating_point<T>::value, size_t>
+hash_value(T v) {
     return _hash_float_::HashFloat<T>::call(v + 0);
 }
 
@@ -287,7 +284,7 @@ __host__ __device__
 
 // Implementation by Alberto Barbati and Dave Harris.
 template <class T>
-__host__ __device__ size_t hash_value(T *const &v) {
+GEC_HD size_t hash_value(T *const &v) {
     size_t x = static_cast<size_t>(reinterpret_cast<uintptr_t>(v));
     return x + (x >> 3);
 }
@@ -297,14 +294,12 @@ struct GEC_EMPTY_BASES Hash {
     using argument_type = T;
     using result_type = size_t;
 
-    __host__ __device__ size_t operator()(T const &val) const {
-        return hash_value(val);
-    }
+    GEC_HD size_t operator()(T const &val) const { return hash_value(val); }
 };
 
 namespace _hash_combine_ {
 
-__host__ __device__ GEC_INLINE uint32_t rotl32(uint32_t x, int r) {
+GEC_HD GEC_INLINE uint32_t rotl32(uint32_t x, int r) {
 #ifdef __CUDA_ARCH__
     return __funnelshift_l(x, x, r);
 #else
@@ -327,8 +322,7 @@ struct HashCombine {
 
 template <>
 struct HashCombine<32> {
-    __host__ __device__ GEC_INLINE static uint32_t call(uint32_t h1,
-                                                        uint32_t k1) {
+    GEC_HD GEC_INLINE static uint32_t call(uint32_t h1, uint32_t k1) {
         constexpr uint32_t c1 = 0xcc9e2d51;
         constexpr uint32_t c2 = 0x1b873593;
 
@@ -346,8 +340,7 @@ struct HashCombine<32> {
 
 template <>
 struct HashCombine<64> {
-    __host__ __device__ GEC_INLINE static uint64_t call(uint64_t h,
-                                                        uint64_t k) {
+    GEC_HD GEC_INLINE static uint64_t call(uint64_t h, uint64_t k) {
         constexpr uint64_t m = 0xc6a4a7935bd1e995ull;
         constexpr int r = 47;
 
@@ -378,7 +371,7 @@ struct HashCombine<64> {
 #endif
 #endif
 
-__host__ __device__ GEC_INLINE void hash_combine(size_t &seed, size_t v) {
+GEC_HD GEC_INLINE void hash_combine(size_t &seed, size_t v) {
 
     seed = _hash_combine_::HashCombine<utils::type_bits<size_t>::value>::call(
         seed, v);
@@ -390,16 +383,16 @@ __host__ __device__ GEC_INLINE void hash_combine(size_t &seed, size_t v) {
 
 template <typename LIMB_T, size_t LIMB_N, typename Hasher = Hash<LIMB_T>>
 struct SeqHasher {
-    __host__ __device__ GEC_INLINE static void
-    call(size_t &seed, const LIMB_T *arr, const Hasher &hasher) {
+    GEC_HD GEC_INLINE static void call(size_t &seed, const LIMB_T *arr,
+                                       const Hasher &hasher) {
         hash_combine(seed, hasher(*arr));
         SeqHasher<LIMB_T, LIMB_N - 1, Hasher>::call(seed, arr + 1, hasher);
     }
 };
 template <typename LIMB_T, typename Hasher>
 struct SeqHasher<LIMB_T, 0, Hasher> {
-    __host__ __device__ GEC_INLINE static void call(size_t &, const LIMB_T *,
-                                                    const Hasher &) {}
+    GEC_HD GEC_INLINE static void call(size_t &, const LIMB_T *,
+                                       const Hasher &) {}
 };
 
 } // namespace hash

@@ -11,15 +11,13 @@ namespace gec {
 template <typename Core, typename Mixin>
 struct GEC_EMPTY_BASES CRTP {
   public:
-    __host__ __device__ GEC_INLINE Core const &core() const {
+    GEC_HD GEC_INLINE Core const &core() const {
         return static_cast<const Core &>(*this);
     }
-    __host__ __device__ GEC_INLINE Core &core() {
-        return static_cast<Core &>(*this);
-    }
+    GEC_HD GEC_INLINE Core &core() { return static_cast<Core &>(*this); }
 
   private:
-    __host__ __device__ GEC_INLINE constexpr CRTP() noexcept {}
+    GEC_HD GEC_INLINE constexpr CRTP() noexcept {}
     friend Mixin;
 };
 

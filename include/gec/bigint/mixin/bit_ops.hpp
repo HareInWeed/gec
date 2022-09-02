@@ -19,46 +19,46 @@ class GEC_EMPTY_BASES BitOps
     friend CRTP<Core, BitOps<Core, LIMB_T, LIMB_N>>;
 
   public:
-    __host__ __device__ GEC_INLINE static void
-    bit_and(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-            const Core &GEC_RSTRCT c) {
+    GEC_HD GEC_INLINE static void bit_and(Core &GEC_RSTRCT a,
+                                          const Core &GEC_RSTRCT b,
+                                          const Core &GEC_RSTRCT c) {
         utils::SeqBinOp<LIMB_N, LIMB_T, utils::ops::BitAnd<LIMB_T>>::call(
             a.array(), b.array(), c.array());
     }
-    __host__ __device__ GEC_INLINE static void
-    bit_or(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-           const Core &GEC_RSTRCT c) {
+    GEC_HD GEC_INLINE static void bit_or(Core &GEC_RSTRCT a,
+                                         const Core &GEC_RSTRCT b,
+                                         const Core &GEC_RSTRCT c) {
         utils::SeqBinOp<LIMB_N, LIMB_T, utils::ops::BitOr<LIMB_T>>::call(
             a.array(), b.array(), c.array());
     }
-    __host__ __device__ GEC_INLINE static void
-    bit_not(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
+    GEC_HD GEC_INLINE static void bit_not(Core &GEC_RSTRCT a,
+                                          const Core &GEC_RSTRCT b) {
         utils::SeqUnaryOp<LIMB_N, LIMB_T, utils::ops::BitNot<LIMB_T>>::call(
             a.array(), b.array());
     }
-    __host__ __device__ GEC_INLINE static void
-    bit_xor(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-            const Core &GEC_RSTRCT c) {
+    GEC_HD GEC_INLINE static void bit_xor(Core &GEC_RSTRCT a,
+                                          const Core &GEC_RSTRCT b,
+                                          const Core &GEC_RSTRCT c) {
         utils::SeqBinOp<LIMB_N, LIMB_T, utils::ops::BitXor<LIMB_T>>::call(
             a.array(), b.array(), c.array());
     }
 
-    __host__ __device__ GEC_INLINE Core &bit_and(const Core &GEC_RSTRCT a,
-                                                 const Core &GEC_RSTRCT b) {
+    GEC_HD GEC_INLINE Core &bit_and(const Core &GEC_RSTRCT a,
+                                    const Core &GEC_RSTRCT b) {
         bit_and(this->core(), a, b);
         return this->core();
     }
-    __host__ __device__ GEC_INLINE Core &bit_or(const Core &GEC_RSTRCT a,
-                                                const Core &GEC_RSTRCT b) {
+    GEC_HD GEC_INLINE Core &bit_or(const Core &GEC_RSTRCT a,
+                                   const Core &GEC_RSTRCT b) {
         bit_or(this->core(), a, b);
         return this->core();
     }
-    __host__ __device__ GEC_INLINE Core &bit_not(const Core &GEC_RSTRCT a) {
+    GEC_HD GEC_INLINE Core &bit_not(const Core &GEC_RSTRCT a) {
         bit_not(this->core(), a);
         return this->core();
     }
-    __host__ __device__ GEC_INLINE Core &bit_xor(const Core &GEC_RSTRCT a,
-                                                 const Core &GEC_RSTRCT b) {
+    GEC_HD GEC_INLINE Core &bit_xor(const Core &GEC_RSTRCT a,
+                                    const Core &GEC_RSTRCT b) {
         bit_xor(this->core(), a, b);
         return this->core();
     }
@@ -67,11 +67,11 @@ class GEC_EMPTY_BASES BitOps
     template <size_t B,
               std::enable_if_t<(B <= LIMB_N * utils::type_bits<LIMB_T>::value)>
                   * = nullptr>
-    __host__ __device__ GEC_INLINE void shift_right() {
+    GEC_HD GEC_INLINE void shift_right() {
         utils::seq_shift_right<LIMB_N, B>(this->core().array());
     }
 
-    __host__ __device__ void shift_right(size_t n) {
+    GEC_HD void shift_right(size_t n) {
         utils::seq_shift_right<LIMB_N>(this->core().array(), n);
     }
 
@@ -79,15 +79,15 @@ class GEC_EMPTY_BASES BitOps
     template <size_t B,
               std::enable_if_t<(B <= LIMB_N * utils::type_bits<LIMB_T>::value)>
                   * = nullptr>
-    __host__ __device__ GEC_INLINE void shift_left() {
+    GEC_HD GEC_INLINE void shift_left() {
         utils::seq_shift_left<LIMB_N, B>(this->core().array());
     }
 
-    __host__ __device__ void shift_left(size_t n) {
+    GEC_HD void shift_left(size_t n) {
         utils::seq_shift_left<LIMB_N>(this->core().array(), n);
     }
 
-    __host__ __device__ size_t most_significant_bit() {
+    GEC_HD size_t most_significant_bit() {
         constexpr size_t limb_digits = utils::type_bits<LIMB_T>::value;
         constexpr size_t is_zero = limb_digits * LIMB_N;
 
@@ -103,7 +103,7 @@ class GEC_EMPTY_BASES BitOps
         return is_zero;
     }
 
-    __host__ __device__ size_t leading_zeros() {
+    GEC_HD size_t leading_zeros() {
         constexpr size_t limb_n_m_1 = LIMB_N - 1;
         constexpr size_t limb_digits = utils::type_bits<LIMB_T>::value;
         constexpr size_t is_zero = limb_digits * LIMB_N;
@@ -121,7 +121,7 @@ class GEC_EMPTY_BASES BitOps
         return is_zero;
     }
 
-    __host__ __device__ size_t least_significant_bit() {
+    GEC_HD size_t least_significant_bit() {
         constexpr size_t limb_digits = utils::type_bits<LIMB_T>::value;
         constexpr size_t is_zero = limb_digits * LIMB_N;
 
@@ -135,7 +135,7 @@ class GEC_EMPTY_BASES BitOps
         return is_zero;
     }
 
-    __host__ __device__ size_t trailing_zeros() {
+    GEC_HD size_t trailing_zeros() {
         constexpr size_t limb_digits = utils::type_bits<LIMB_T>::value;
         constexpr size_t is_zero = limb_digits * LIMB_N;
 

@@ -15,14 +15,13 @@ struct GEC_EMPTY_BASES ArrayHasher {
     using argument_type = ARRAY;
     using result_type = size_t;
 
-    __host__ __device__ GEC_INLINE constexpr ArrayHasher() {}
-    __host__ __device__ GEC_INLINE constexpr ArrayHasher(const ArrayHasher &) {}
-    __host__ __device__ GEC_INLINE ArrayHasher &operator=(const ArrayHasher &) {
+    GEC_HD GEC_INLINE constexpr ArrayHasher() {}
+    GEC_HD GEC_INLINE constexpr ArrayHasher(const ArrayHasher &) {}
+    GEC_HD GEC_INLINE ArrayHasher &operator=(const ArrayHasher &) {
         return *this;
     }
 
-    __host__ __device__ GEC_INLINE result_type
-    operator()(const argument_type &array) const {
+    GEC_HD GEC_INLINE result_type operator()(const argument_type &array) const {
         using H = hash::Hash<typename argument_type::LimbT>;
         size_t seed = 0;
         H hasher;

@@ -128,7 +128,7 @@
 // Disable the "invalid error number" message that we get with older versions of
 // nvcc
 GEC_NV_DIAG_SUPPRESS(1222)
-// Disable the "calling a __host__ function from a __host__ __device__ function
+// Disable the "calling a GEC_H function from a GEC_HD function
 // is not allowed" messages
 #define GEC_CALL_H_FROM_H_D                                                    \
     GEC_NV_DIAG_SUPPRESS(2527)                                                 \
@@ -154,10 +154,14 @@ GEC_NV_DIAG_SUPPRESS(1222)
 #endif // __CUDACC__
 
 // CUDA function attribute modifier
-#ifndef __CUDACC__
-#define __host__
-#define __device__
+#ifdef __CUDACC__
+#define GEC_H __host__
+#define GEC_D __device__
+#else
+#define GEC_H
+#define GEC_D
 #endif
+#define GEC_HD GEC_H GEC_D
 
 #include <cinttypes>
 #include <cstddef>

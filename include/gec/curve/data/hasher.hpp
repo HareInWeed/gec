@@ -17,14 +17,13 @@ struct GEC_EMPTY_BASES PointHasher {
     using argument_type = POINT;
     using result_type = size_t;
 
-    __host__ __device__ GEC_INLINE constexpr PointHasher() {}
-    __host__ __device__ GEC_INLINE constexpr PointHasher(const PointHasher &) {}
-    __host__ __device__ GEC_INLINE PointHasher &operator=(const PointHasher &) {
+    GEC_HD GEC_INLINE constexpr PointHasher() {}
+    GEC_HD GEC_INLINE constexpr PointHasher(const PointHasher &) {}
+    GEC_HD GEC_INLINE PointHasher &operator=(const PointHasher &) {
         return *this;
     }
 
-    __host__ __device__ GEC_INLINE result_type
-    operator()(const argument_type &point) const {
+    GEC_HD GEC_INLINE result_type operator()(const argument_type &point) const {
         using Hasher = gec::bigint::ArrayHasher<typename POINT::CompT>;
         size_t seed = 0;
         Hasher hasher;
