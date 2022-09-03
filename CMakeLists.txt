@@ -25,6 +25,15 @@ add_library(gec INTERFACE)
 target_include_directories(gec INTERFACE "./include")
 target_compile_features(gec INTERFACE cxx_std_14)
 
+add_library(secp256k1 STATIC "src/secp256k1.cpp")
+target_link_libraries(secp256k1 PUBLIC gec)
+
+add_library(sm2 STATIC "src/sm2.cpp")
+target_link_libraries(sm2 PUBLIC gec)
+
+add_library(curves INTERFACE)
+target_link_libraries(curves INTERFACE secp256k1 sm2)
+
 option(GEC_ENABLE_AVX2 "use avx2" OFF)
 
 if(GEC_ENABLE_AVX2)
@@ -63,6 +72,13 @@ endif()
 if(GEC_ENABLE_CUDA)
     find_package(CUDAToolkit)
     target_link_libraries(gec INTERFACE CUDA::curand)
+
+    set_source_files_properties("src/secp256k1.cpp" PROPERTIES LANGUAGE CUDA)
+    set_target_properties(secp256k1 PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    set_target_properties(secp256k1 PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+    set_source_files_properties("src/sm2.cpp" PROPERTIES LANGUAGE CUDA)
+    set_target_properties(sm2 PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    set_target_properties(sm2 PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 endif()
 
 if(BUILD_TESTING)

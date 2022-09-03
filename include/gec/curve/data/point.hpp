@@ -16,12 +16,12 @@ template <typename COMP_T, size_t N>
 class GEC_EMPTY_BASES Point : public bigint::ArrayLE<COMP_T, N>,
                               public ArrGetCompLE<Point<COMP_T, N>>,
                               public NamedComp<Point<COMP_T, N>> {
-    using Base = bigint::ArrayLE<COMP_T, N>;
+    // using Base = bigint::ArrayLE<COMP_T, N>;
 
   public:
     using CompT = COMP_T;
     constexpr static size_t CompN = N;
-    using Base::Base;
+    using bigint::ArrayLE<COMP_T, N>::ArrayLE;
     constexpr GEC_HD GEC_INLINE Point() : bigint::ArrayLE<COMP_T, N>() {
         // for some mysterious reason, without defining the custom default
         // constructor, MSVC will complain the default constructor are ambiguous

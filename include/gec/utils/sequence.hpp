@@ -12,12 +12,12 @@ namespace gec {
 namespace utils {
 
 template <typename T>
-GEC_HD GEC_INLINE void fill_le(T *) {}
+constexpr GEC_HD GEC_INLINE void fill_le(T *) {}
 /** @brief fill `dst` with the rest of arguments, from lower to higher (big
  * endian)
  */
 template <typename T, typename... S>
-GEC_HD GEC_INLINE void fill_le(T *dst, T elem, S... seq) {
+constexpr GEC_HD GEC_INLINE void fill_le(T *dst, T elem, S... seq) {
     *dst = elem;
     fill_le<T>(dst + 1, seq...);
 }
@@ -39,22 +39,23 @@ constexpr GEC_HD GEC_INLINE void fill_be(T *dst, T elem, S... seq) {
  */
 template <size_t LEN, typename T>
 struct FillSeqLimb {
-    GEC_HD GEC_INLINE static void call(T *GEC_RSTRCT dst,
-                                       const T &GEC_RSTRCT elem) {
+    constexpr GEC_HD GEC_INLINE static void call(T *GEC_RSTRCT dst,
+                                                 const T &GEC_RSTRCT elem) {
         *(dst + LEN - 1) = elem;
         FillSeqLimb<LEN - 1, T>::call(dst, elem);
     }
 };
 template <typename T>
 struct FillSeqLimb<1, T> {
-    GEC_HD GEC_INLINE static void call(T *GEC_RSTRCT dst,
-                                       const T &GEC_RSTRCT elem) {
+    constexpr GEC_HD GEC_INLINE static void call(T *GEC_RSTRCT dst,
+                                                 const T &GEC_RSTRCT elem) {
         *dst = elem;
     }
 };
 template <typename T>
 struct FillSeqLimb<0, T> {
-    GEC_HD GEC_INLINE static void call(T *GEC_RSTRCT, const T &GEC_RSTRCT) {
+    constexpr GEC_HD GEC_INLINE static void call(T *GEC_RSTRCT,
+                                                 const T &GEC_RSTRCT) {
         // don't do anything
     }
 };
@@ -62,8 +63,8 @@ struct FillSeqLimb<0, T> {
 /** @brief fill `dst` with a single limb
  */
 template <size_t LEN, typename T>
-GEC_HD GEC_INLINE void fill_seq_limb(T *GEC_RSTRCT dst,
-                                     const T &GEC_RSTRCT elem) {
+constexpr GEC_HD GEC_INLINE void fill_seq_limb(T *GEC_RSTRCT dst,
+                                               const T &GEC_RSTRCT elem) {
     FillSeqLimb<LEN, T>::call(dst, elem);
 }
 
@@ -96,16 +97,16 @@ GEC_HD GEC_INLINE bool seq_all_limb(const T *GEC_RSTRCT a,
  */
 template <size_t LEN, typename T, typename F>
 struct SeqUnaryOp {
-    GEC_HD GEC_INLINE static void call(T *GEC_RSTRCT dst,
-                                       const T *GEC_RSTRCT src) {
+    constexpr GEC_HD GEC_INLINE static void call(T *GEC_RSTRCT dst,
+                                                 const T *GEC_RSTRCT src) {
         F::call(*(dst + LEN - 1), *(src + LEN - 1));
         SeqUnaryOp<LEN - 1, T, F>::call(dst, src);
     }
 };
 template <typename T, typename F>
 struct SeqUnaryOp<1, T, F> {
-    GEC_HD GEC_INLINE static void call(T *GEC_RSTRCT dst,
-                                       const T *GEC_RSTRCT src) {
+    constexpr GEC_HD GEC_INLINE static void call(T *GEC_RSTRCT dst,
+                                                 const T *GEC_RSTRCT src) {
         F::call(*dst, *src);
     }
 };
@@ -113,7 +114,8 @@ struct SeqUnaryOp<1, T, F> {
 /** @brief fill `dst` with another sequence `src`
  */
 template <size_t LEN, typename T>
-GEC_HD GEC_INLINE void fill_seq(T *GEC_RSTRCT dst, const T *GEC_RSTRCT src) {
+constexpr GEC_HD GEC_INLINE void fill_seq(T *GEC_RSTRCT dst,
+                                          const T *GEC_RSTRCT src) {
     SeqUnaryOp<LEN, T, ops::Let<T>>::call(dst, src);
 }
 

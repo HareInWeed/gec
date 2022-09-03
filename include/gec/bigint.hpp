@@ -3,6 +3,7 @@
 #define GEC_BIGINT_HPP
 
 #include "bigint/data.hpp"
+#include "bigint/macros.hpp"
 #include "bigint/mixin.hpp"
 #include "bigint/preset.hpp"
 

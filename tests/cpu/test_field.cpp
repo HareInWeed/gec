@@ -129,12 +129,13 @@ TEST_CASE("mul_pow2", "[add_group][field]") {
     REQUIRE(a8 == res);
 }
 
-def_array(SmallMod, LIMB_T, 3, 0x7, 0xb, 0x0);
+using SmallArray = ArrayBE<LIMB_T, 3>;
+GEC_DEF(SmallMod, static const SmallArray, 0x0, 0xb, 0x7);
 
 TEST_CASE("random sampling", "[add_group][field][random]") {
     using F1 = Field160;
     using F2 = Field160_2;
-    using G = ADD_GROUP(LIMB_T, 3, alignof(LIMB_T), SmallMod);
+    using G = GEC_BASE_ADD_GROUP(SmallArray, SmallMod);
 
     std::random_device rd;
     auto seed = rd();
@@ -334,33 +335,35 @@ TEST_CASE("montgomery mul", "[ring][field]") {
 TEST_CASE("avx2 montgomery", "[ring][avx2]") {
     using gec::utils::CmpEnum;
     using gec::utils::VtSeqCmp;
-    using Int = ADD_GROUP(LIMB_T, LN_256, 32, MOD_256);
+    using Int = GEC_BASE_ADD_GROUP(Array256, MOD_256);
 
     std::random_device rd;
     auto seed = rd();
     INFO("seed: " << seed);
     auto rng = make_gec_rng(std::mt19937(seed));
 
-    Int x_arr(0x1f82f372u, 0x62639538u, 0xca640ff9u, 0xed12396au, 0x9c4d50dau,
-              0xff21e339u, 0xfbfa64d8u, 0x75b40000u);
-    Int y_arr(0xed469d79u, 0xaba8d6fau, 0x6724432cu, 0x7221f040u, 0x6416351du,
-              0x923ec2cau, 0x72bc1127u, 0xf1e018aau);
-    Int mon_x_arr, mon_y_arr, mon_xy_arr, xy_arr;
+    Array256 x_arr(0x1f82f372u, 0x62639538u, 0xca640ff9u, 0xed12396au,
+                   0x9c4d50dau, 0xff21e339u, 0xfbfa64d8u, 0x75b40000u);
+    Array256 y_arr(0xed469d79u, 0xaba8d6fau, 0x6724432cu, 0x7221f040u,
+                   0x6416351du, 0x923ec2cau, 0x72bc1127u, 0xf1e018aau);
+    Int &x_int = static_cast<Int &>(x_arr);
+    Int &y_int = static_cast<Int &>(y_arr);
+    Array256 mon_x_arr, mon_y_arr, mon_xy_arr, xy_arr;
 
     for (int k = 0; k < 10000; ++k) {
-        Int::sample(x_arr, rng);
-        Int::sample(y_arr, rng);
-        CAPTURE(Int::mod(), x_arr, y_arr);
+        Int::sample(x_int, rng);
+        Int::sample(y_int, rng);
+        CAPTURE(Int::mod(), x_int, y_int);
 
         {
             using F =
-                FIELD(LIMB_T, LN_256, 32, MOD_256, MOD_P_256, RR_256, OneR_256);
-            const auto &x = reinterpret_cast<F &>(x_arr);
-            const auto &y = reinterpret_cast<F &>(y_arr);
-            auto &mon_x = reinterpret_cast<F &>(mon_x_arr);
-            auto &mon_y = reinterpret_cast<F &>(mon_y_arr);
-            auto &mon_xy = reinterpret_cast<F &>(mon_xy_arr);
-            auto &xy = reinterpret_cast<F &>(xy_arr);
+                GEC_BASE_FIELD(Array256, MOD_256, MOD_P_256, RR_256, OneR_256);
+            const auto &x = static_cast<F &>(x_arr);
+            const auto &y = static_cast<F &>(y_arr);
+            auto &mon_x = static_cast<F &>(mon_x_arr);
+            auto &mon_y = static_cast<F &>(mon_y_arr);
+            auto &mon_xy = static_cast<F &>(mon_xy_arr);
+            auto &xy = static_cast<F &>(xy_arr);
 
             F::to_montgomery(mon_x, x);
             F::to_montgomery(mon_y, y);
@@ -371,14 +374,14 @@ TEST_CASE("avx2 montgomery", "[ring][avx2]") {
         CAPTURE(mon_xy_arr, xy_arr);
 
         {
-            using F = AVX2FIELD(LIMB_T, LN_256, 32, MOD_256, MOD_P_256, RR_256,
-                                OneR_256);
-            const auto &x = reinterpret_cast<F &>(x_arr);
-            const auto &y = reinterpret_cast<F &>(y_arr);
-            const auto &expected_mon_x = reinterpret_cast<F &>(mon_x_arr);
-            const auto &expected_mon_y = reinterpret_cast<F &>(mon_y_arr);
-            const auto &expected_mon_xy = reinterpret_cast<F &>(mon_xy_arr);
-            const auto &expected_xy = reinterpret_cast<F &>(xy_arr);
+            using F = GEC_BASE_AVX2FIELD(Array256, MOD_256, MOD_P_256, RR_256,
+                                         OneR_256);
+            const auto &x = static_cast<F &>(x_arr);
+            const auto &y = static_cast<F &>(y_arr);
+            const auto &expected_mon_x = static_cast<F &>(mon_x_arr);
+            const auto &expected_mon_y = static_cast<F &>(mon_y_arr);
+            const auto &expected_mon_xy = static_cast<F &>(mon_xy_arr);
+            const auto &expected_xy = static_cast<F &>(xy_arr);
 
             F mon_x, mon_y, mon_xy, xy;
             F::to_montgomery(mon_x, x);
@@ -402,24 +405,25 @@ TEST_CASE("256 montgomery bench", "[ring][avx2][bench]") {
     auto seed = rd();
     INFO("seed: " << seed);
     auto rng = make_gec_rng(std::mt19937(seed));
-    using AddG = ADD_GROUP(LIMB_T, LN_256, 32, MOD_256);
+    using Int = GEC_BASE_ADD_GROUP(Array256, MOD_256);
     using SerialF =
-        FIELD(LIMB_T, LN_256, 32, MOD_256, MOD_P_256, RR_256, OneR_256);
+        GEC_BASE_FIELD(Array256, MOD_256, MOD_P_256, RR_256, OneR_256);
     using AVX2F =
-        AVX2FIELD(LIMB_T, LN_256, 32, MOD_256, MOD_P_256, RR_256, OneR_256);
+        GEC_BASE_AVX2FIELD(Array256, MOD_256, MOD_P_256, RR_256, OneR_256);
 
-    AddG x_arr, y_arr;
-    AddG mon_x_arr, mon_y_arr;
+    Array256 x_arr, y_arr, mon_x_arr, mon_y_arr;
+    Int &x_int = static_cast<Int &>(x_arr);
+    Int &y_int = static_cast<Int &>(y_arr);
 
-    AddG::sample(x_arr, rng);
-    AddG::sample(y_arr, rng);
+    Int::sample(x_int, rng);
+    Int::sample(y_int, rng);
 
     {
         using F = SerialF;
-        const auto &x = *reinterpret_cast<const F *>(x_arr.array());
-        const auto &y = *reinterpret_cast<const F *>(y_arr.array());
-        auto &mon_x = *reinterpret_cast<F *>(mon_x_arr.array());
-        auto &mon_y = *reinterpret_cast<F *>(mon_y_arr.array());
+        const auto &x = static_cast<const F &>(x_arr);
+        const auto &y = static_cast<const F &>(y_arr);
+        auto &mon_x = static_cast<F &>(mon_x_arr);
+        auto &mon_y = static_cast<F &>(mon_y_arr);
 
         F::to_montgomery(mon_x, x);
         F::to_montgomery(mon_y, y);
@@ -427,9 +431,9 @@ TEST_CASE("256 montgomery bench", "[ring][avx2][bench]") {
 
     {
         using F = SerialF;
-        const auto &x = *reinterpret_cast<const F *>(x_arr.array());
-        const auto &mon_x = *reinterpret_cast<const F *>(mon_x_arr.array());
-        const auto &mon_y = *reinterpret_cast<const F *>(mon_y_arr.array());
+        const auto &x = static_cast<const F &>(x_arr);
+        const auto &mon_x = static_cast<const F &>(mon_x_arr);
+        const auto &mon_y = static_cast<const F &>(mon_y_arr);
 
         BENCHMARK("into montgomery form") {
             F res;
@@ -452,9 +456,9 @@ TEST_CASE("256 montgomery bench", "[ring][avx2][bench]") {
 
     {
         using F = AVX2F;
-        const auto &x = *reinterpret_cast<const F *>(x_arr.array());
-        const auto &mon_x = *reinterpret_cast<const F *>(mon_x_arr.array());
-        const auto &mon_y = *reinterpret_cast<const F *>(mon_y_arr.array());
+        const auto &x = static_cast<const F &>(x_arr);
+        const auto &mon_x = static_cast<const F &>(mon_x_arr);
+        const auto &mon_y = static_cast<const F &>(mon_y_arr);
 
         BENCHMARK("avx2 into montgomery form") {
             F res;

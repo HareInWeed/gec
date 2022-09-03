@@ -10,19 +10,33 @@ namespace curve {
 
 /** @brief mixin that enables elliptic curve arithmetic with Jacobian coordinate
  */
-template <typename Core, typename FIELD_T>
-class GEC_EMPTY_BASES Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
-    friend CRTP<Core, Jacobain<Core, FIELD_T>>;
+template <typename Core, typename FIELD_T, bool InfYZero = true>
+class GEC_EMPTY_BASES JacobianCoordinate
+    : protected CRTP<Core, JacobianCoordinate<Core, FIELD_T, InfYZero>> {
+    friend CRTP<Core, JacobianCoordinate<Core, FIELD_T, InfYZero>>;
 
     using F = FIELD_T;
 
   public:
     using Field = FIELD_T;
 
+    GEC_HD GEC_INLINE bool is_affine_inf() {
+        return this->core().x().is_zero() &&
+               (InfYZero ? this->core().y().is_zero()
+                         : this->core().y().is_mul_id());
+    }
+    GEC_HD GEC_INLINE void set_affine_inf() {
+        this->core().x().set_zero();
+        if (InfYZero) {
+            this->core().y().set_zero();
+        } else {
+            this->core().y().set_mul_id();
+        }
+    }
+
     GEC_HD GEC_INLINE bool is_inf() const { return this->core().z().is_zero(); }
     GEC_HD GEC_INLINE void set_inf() {
-        this->core().x().set_zero();
-        this->core().y().set_zero();
+        this->set_affine_inf();
         this->core().z().set_zero();
     }
 
@@ -74,14 +88,12 @@ class GEC_EMPTY_BASES Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
 
     template <typename F_CTX>
     GEC_HD static void to_affine(Core &GEC_RSTRCT a, F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F, F>();
-
         if (a.z().is_mul_id()) {
             return;
         } else if (a.is_inf()) {
-            a.x().set_zero();
-            a.y().set_zero();
+            a.set_affine_inf();
         } else {
+            auto &ctx_view = ctx.template view_as<F, F>();
             auto &t1 = ctx_view.template get<0>();
             auto &t2 = ctx_view.template get<1>();
 
@@ -97,8 +109,11 @@ class GEC_EMPTY_BASES Jacobain : protected CRTP<Core, Jacobain<Core, FIELD_T>> {
         }
     }
 
-    GEC_HD static void from_affine(Core &GEC_RSTRCT a) {
-        if (a.x().is_zero() && a.y().is_zero()) {
+    GEC_HD GEC_INLINE static void from_non_inf_affine(Core &a) {
+        a.z().set_mul_id();
+    }
+    GEC_HD GEC_INLINE static void from_affine(Core &a) {
+        if (a.is_affine_inf()) {
             a.z().set_zero();
         } else {
             a.z().set_mul_id();

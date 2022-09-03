@@ -54,6 +54,7 @@ template <typename Core, typename T, size_t N, const T (*MOD)[N],
 class GEC_EMPTY_BASES AddGroupRawMixin
     : public AddGroupRawParams<Core, T, N, MOD, d_MOD>,
       public Constants<Core, T, N>,
+      public QuadraticResidue<Core>,
       public AddGroupFunctions<Core, T, N> {};
 
 template <typename Core, typename T, size_t N, typename Base, const Base *MOD,

@@ -31,7 +31,7 @@ class GEC_EMPTY_BASES Array {
     }
 
     template <size_t LIMB_M>
-    GEC_HD GEC_INLINE Array<LIMB_T, LIMB_M> &
+    GEC_HD GEC_INLINE constexpr Array<LIMB_T, LIMB_M> &
     operator=(const Array<LIMB_T, LIMB_M> &GEC_RSTRCT other) {
         if (this != &other) {
             utils::fill_seq<(LIMB_N > LIMB_M ? LIMB_M : LIMB_N)>(arr,
@@ -42,8 +42,8 @@ class GEC_EMPTY_BASES Array {
         return other;
     }
 
-    GEC_HD GEC_INLINE const LIMB_T *array() const { return arr; }
-    GEC_HD GEC_INLINE LIMB_T *array() { return arr; }
+    GEC_HD GEC_INLINE constexpr const LIMB_T *array() const { return arr; }
+    GEC_HD GEC_INLINE constexpr LIMB_T *array() { return arr; }
 };
 
 /** @brief TODO:
@@ -54,8 +54,6 @@ class GEC_EMPTY_BASES ArrayBE : public Array<LIMB_T, LIMB_N, align> {
 
   public:
     using Base::Base;
-
-    GEC_HD GEC_INLINE constexpr ArrayBE() noexcept : Base() {}
 
     template <typename... LIMBS,
               std::enable_if_t<(sizeof...(LIMBS) == LIMB_N &&

@@ -4,7 +4,7 @@ find_package(Catch2 CONFIG REQUIRED)
 
 add_library(unit_test_shared STATIC "test_main.cpp")
 target_compile_features(unit_test_shared PUBLIC cxx_std_14)
-target_link_libraries(unit_test_shared PUBLIC gec Catch2::Catch2)
+target_link_libraries(unit_test_shared PUBLIC gec curves Catch2::Catch2)
 
 # enable warning in test
 target_compile_options(

@@ -26,8 +26,7 @@ class GEC_EMPTY_BASES MontgomeryOps
   public:
     GEC_HD GEC_INLINE static void to_montgomery(Core &GEC_RSTRCT a,
                                                 const Core &GEC_RSTRCT b) {
-        a.set_zero();
-        add_mul(a, b, a.r_sqr());
+        mul(a, b, a.r_sqr());
     }
     GEC_HD GEC_INLINE static void from_montgomery(Core &GEC_RSTRCT a,
                                                   const Core &GEC_RSTRCT b) {
@@ -52,9 +51,10 @@ class GEC_EMPTY_BASES MontgomeryOps
         }
     }
 
-    GEC_HD static void add_mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                               const Core &GEC_RSTRCT c) {
+    GEC_HD static void mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const Core &GEC_RSTRCT c) {
         using namespace utils;
+        a.set_zero();
         LIMB_T *a_arr = a.array();
         const LIMB_T *b_arr = b.array();
         const LIMB_T *c_arr = c.array();
@@ -74,13 +74,6 @@ class GEC_EMPTY_BASES MontgomeryOps
                          CmpEnum::Lt) {
             seq_sub<LIMB_N>(a_arr, a.mod().array());
         }
-    }
-
-    GEC_HD GEC_INLINE static void mul(Core &GEC_RSTRCT a,
-                                      const Core &GEC_RSTRCT b,
-                                      const Core &GEC_RSTRCT c) {
-        a.set_zero();
-        add_mul(a, b, c);
     }
 
     template <typename CTX>
@@ -188,8 +181,7 @@ class GEC_EMPTY_BASES CarryFreeMontgomeryOps
   public:
     GEC_HD GEC_INLINE static void to_montgomery(Core &GEC_RSTRCT a,
                                                 const Core &GEC_RSTRCT b) {
-        a.set_zero();
-        add_mul(a, b, a.r_sqr().array());
+        mul(a, b, a.r_sqr().array());
     }
     GEC_HD GEC_INLINE static void from_montgomery(Core &GEC_RSTRCT a,
                                                   const Core &GEC_RSTRCT b) {
@@ -214,9 +206,10 @@ class GEC_EMPTY_BASES CarryFreeMontgomeryOps
         }
     }
 
-    GEC_HD static void add_mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                               const Core &GEC_RSTRCT c) {
+    GEC_HD static void mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                           const Core &GEC_RSTRCT c) {
         using namespace utils;
+        a.set_zero();
         LIMB_T *a_arr = a.array();
         const LIMB_T *b_arr = b.array();
         const LIMB_T *c_arr = c.array();
@@ -235,13 +228,6 @@ class GEC_EMPTY_BASES CarryFreeMontgomeryOps
             CmpEnum::Lt) {
             seq_sub<LIMB_N>(a_arr, a.mod().array());
         }
-    }
-
-    GEC_HD GEC_INLINE static void mul(Core &GEC_RSTRCT a,
-                                      const Core &GEC_RSTRCT b,
-                                      const Core &GEC_RSTRCT c) {
-        a.set_zero();
-        add_mul(a, b, c);
     }
 
     template <typename CTX>
@@ -358,8 +344,7 @@ class GEC_EMPTY_BASES AVX2MontgomeryOps<Core, uint32_t, 8>
   public:
     GEC_H GEC_INLINE static void to_montgomery(Core &GEC_RSTRCT a,
                                                const Core &GEC_RSTRCT b) {
-        a.set_zero();
-        add_mul(a, b, a.r_sqr());
+        mul(a, b, a.r_sqr());
     }
     GEC_H GEC_INLINE static void from_montgomery(Core &GEC_RSTRCT a,
                                                  const Core &GEC_RSTRCT b) {
@@ -408,8 +393,8 @@ class GEC_EMPTY_BASES AVX2MontgomeryOps<Core, uint32_t, 8>
         }
     }
 
-    GEC_H static void add_mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                              const Core &GEC_RSTRCT c) {
+    GEC_H static void mul(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                          const Core &GEC_RSTRCT c) {
         using namespace utils;
         using V = __m256i *;
         using CV = const __m256i *;
@@ -425,7 +410,7 @@ class GEC_EMPTY_BASES AVX2MontgomeryOps<Core, uint32_t, 8>
         __m256i lm = _mm256_loadu_si256(reinterpret_cast<CV>(least_mask));
         __m256i cr = _mm256_loadu_si256(reinterpret_cast<CV>(cir_right));
         __m256i vm = _mm256_loadu_si256(reinterpret_cast<CV>(a.mod().array()));
-        __m256i va = _mm256_loadu_si256(reinterpret_cast<CV>(a_arr));
+        __m256i va = _mm256_setzero_si256();
         __m256i vb = _mm256_loadu_si256(reinterpret_cast<CV>(b_arr));
         __m256i vc = _mm256_loadu_si256(reinterpret_cast<CV>(c_arr));
         __m256i c0 = _mm256_broadcastd_epi32(_mm256_castsi256_si128(vc));
@@ -469,13 +454,6 @@ class GEC_EMPTY_BASES AVX2MontgomeryOps<Core, uint32_t, 8>
                                        a_arr, a.mod().array()) != CmpEnum::Lt) {
             seq_sub<LIMB_N>(a_arr, a.mod().array());
         }
-    }
-
-    GEC_H GEC_INLINE static void mul(Core &GEC_RSTRCT a,
-                                     const Core &GEC_RSTRCT b,
-                                     const Core &GEC_RSTRCT c) {
-        a.set_zero();
-        add_mul(a, b, c);
     }
 
     template <typename CTX>

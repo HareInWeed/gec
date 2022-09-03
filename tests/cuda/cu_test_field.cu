@@ -243,7 +243,8 @@ TEST_CASE("addc_cc_", "[cuda][intrinsics]") {
     CUDA_REQUIRE(cudaFree(d_carries));
 }
 
-def_array(SmallMod, LIMB_T, 3, 0xb, 0x0, 0x7);
+using SmallArray = gec::bigint::ArrayBE<LIMB_T, 3>;
+GEC_DEF(SmallMod, static const SmallArray, 0x0, 0xb, 0x7);
 
 template <typename Rng>
 struct test_rng_init;
@@ -315,7 +316,7 @@ static void test_sampling(size_t seed) {
 TEST_CASE("cuda random sampling", "[add_group][field][random][cuda]") {
     using F1 = Field160;
     using F2 = Field160_2;
-    using G = ADD_GROUP(LIMB_T, 3, alignof(LIMB_T), SmallMod);
+    using G = GEC_BASE_ADD_GROUP(decltype(SmallMod), SmallMod);
 
     std::random_device rd;
 

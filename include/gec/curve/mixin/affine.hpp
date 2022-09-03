@@ -13,9 +13,10 @@ namespace curve {
  *
  * TODO: list `FIELD_T` requirement
  */
-template <typename Core, typename FIELD_T>
-class GEC_EMPTY_BASES Affine : protected CRTP<Core, Affine<Core, FIELD_T>> {
-    friend CRTP<Core, Affine<Core, FIELD_T>>;
+template <typename Core, typename FIELD_T, bool InfYZero = true>
+class GEC_EMPTY_BASES AffineCoordinate
+    : protected CRTP<Core, AffineCoordinate<Core, FIELD_T, InfYZero>> {
+    friend CRTP<Core, AffineCoordinate<Core, FIELD_T, InfYZero>>;
 
     using F = FIELD_T;
 
@@ -23,12 +24,18 @@ class GEC_EMPTY_BASES Affine : protected CRTP<Core, Affine<Core, FIELD_T>> {
     using Field = FIELD_T;
 
     GEC_HD GEC_INLINE bool is_inf() const {
-        return this->core().x().is_zero() && this->core().y().is_zero();
+        return this->core().x().is_zero() &&
+               (InfYZero ? this->core().y().is_zero()
+                         : this->core().y().is_mul_id());
     }
 
     GEC_HD GEC_INLINE void set_inf() {
         this->core().x().set_zero();
-        this->core().y().set_zero();
+        if (InfYZero) {
+            this->core().y().set_zero();
+        } else {
+            this->core().y().set_mul_id();
+        }
     }
 
     template <typename F_CTX>
@@ -158,6 +165,13 @@ class GEC_EMPTY_BASES Affine : protected CRTP<Core, Affine<Core, FIELD_T>> {
                                       const Core &GEC_RSTRCT b) {
         a.x() = b.x();
         F::neg(a.y(), b.y());
+    }
+
+    GEC_HD GEC_INLINE static void to_affine(Core &) {
+        // added for consistant interface across different coordinate, no op
+    }
+    GEC_HD GEC_INLINE static void from_affine(Core &) {
+        // added for consistant interface across different coordinate, no op
     }
 };
 

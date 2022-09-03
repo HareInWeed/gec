@@ -8,6 +8,7 @@
 #include "utils/crtp.hpp"
 #include "utils/cuda_utils.cuh"
 #include "utils/hash.hpp"
+#include "utils/macros.hpp"
 #include "utils/misc.hpp"
 #include "utils/operators.hpp"
 #include "utils/prime.hpp"
