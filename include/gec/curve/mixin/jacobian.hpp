@@ -40,22 +40,14 @@ class GEC_EMPTY_BASES JacobianCoordinate
         this->core().z().set_zero();
     }
 
-    template <typename F_CTX>
-    GEC_HD static bool on_curve(const Core &GEC_RSTRCT a,
-                                F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F, F, F, F>();
-
-        auto &l = ctx_view.template get<0>();
-        auto &r = ctx_view.template get<1>();
-        auto &t1 = ctx_view.template get<2>();
-        auto &t2 = ctx_view.template get<3>();
-
+    GEC_HD static bool on_curve(const Core &GEC_RSTRCT a) {
 #ifdef __CUDACC__
         // suppress false positive NULL reference warning in nvcc
         GEC_NV_DIAGNOSTIC_PUSH
         GEC_NV_DIAG_SUPPRESS(284)
 #endif // __CUDACC__
 
+        F l, r, t1, t2;
         if (a.b() != nullptr || a.a() != nullptr) {
             F::mul(t1, a.z(), a.z()); // z^2
             F::mul(t2, t1, t1);       // z^4
@@ -86,18 +78,15 @@ class GEC_EMPTY_BASES JacobianCoordinate
 #endif // __CUDACC__
     }
 
-    template <typename F_CTX>
-    GEC_HD static void to_affine(Core &GEC_RSTRCT a, F_CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void to_affine(Core &GEC_RSTRCT a) {
         if (a.z().is_mul_id()) {
             return;
         } else if (a.is_inf()) {
             a.set_affine_inf();
         } else {
-            auto &ctx_view = ctx.template view_as<F, F>();
-            auto &t1 = ctx_view.template get<0>();
-            auto &t2 = ctx_view.template get<1>();
 
-            F::inv(a.z(), ctx);       // z^-1
+            F::inv(a.z());            // z^-1
+            F t1, t2;                 //
             F::mul(t1, a.z(), a.z()); // z^-2
             F::mul(t2, a.x(), t1);    // x z^-2
             a.x() = t2;               //
@@ -120,11 +109,7 @@ class GEC_EMPTY_BASES JacobianCoordinate
         }
     }
 
-    template <typename F_CTX>
-    GEC_HD static bool eq(const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                          F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F, F, F, F>();
-
+    GEC_HD static bool eq(const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         bool a_inf = a.is_inf();
         bool b_inf = b.is_inf();
         if (a_inf && b_inf) { // both infinity
@@ -134,10 +119,7 @@ class GEC_EMPTY_BASES JacobianCoordinate
         } else if (a.z() == b.z()) { // z1 == z2
             return a.x() == b.x() && a.y() == b.y();
         } else { // z1 != z2
-            auto &ta = ctx_view.template get<0>();
-            auto &tb = ctx_view.template get<1>();
-            auto &tc = ctx_view.template get<2>();
-            auto &td = ctx_view.template get<3>();
+            F ta, tb, tc, td;
 
             F::mul(tc, a.z(), a.z()); // z1^2
             F::mul(td, b.z(), b.z()); // z2^2
@@ -161,78 +143,60 @@ class GEC_EMPTY_BASES JacobianCoordinate
 
     /** @brief add distinct point with some precomputed value
      *
-     * ctx.get<0>() == a == x1 z2^2
-     * ctx.get<1>() == b == x2 z1^2
-     * ctx.get<2>() == c == y1 z2^3
-     * ctx.get<3>() == d == y2 z1^3
+     * ta == x1 z2^2
+     * tb == x2 z1^2
+     * tc == y1 z2^3
+     * td == y2 z1^3
      */
-    template <typename F_CTX>
     GEC_HD static void
     add_distinct_inner(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                       const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F, F, F, F>();
-
-        auto &t1 = ctx_view.template get<0>();
-        auto &t2 = ctx_view.template get<1>();
-        auto &t3 = ctx_view.template get<2>();
-        auto &t4 = ctx_view.template get<3>();
-
-        F::sub(t2, t1);           // e = b - a
-        F::sub(t4, t3);           // f = d - c
-        F::mul(a.z(), t2, t2);    // e^2
-        F::mul(a.y(), t1, a.z()); // a e^2
-        F::mul(t1, a.z(), t2);    // e^3
-        F::mul(a.z(), t3, t1);    // c e^3
-        F::add(t3, a.y(), a.y()); // 2 a e^2
-        F::mul(a.x(), t4, t4);    // f^2
-        F::sub(a.x(), t3);        // f^2 - 2 a e^2
-        F::sub(a.x(), t1);        // x = f^2 - 2 a e^2 - e^3
-        F::sub(t1, a.y(), a.x()); // a e^2 - x
-        F::mul(a.y(), t4, t1);    // f (a e^2 - x)
+                       const Core &GEC_RSTRCT c, FIELD_T &GEC_RSTRCT ta,
+                       FIELD_T &GEC_RSTRCT tb, FIELD_T &GEC_RSTRCT tc,
+                       FIELD_T &GEC_RSTRCT td) {
+        F::sub(tb, ta);           // e = b - a
+        F::sub(td, tc);           // f = d - c
+        F::mul(a.z(), tb, tb);    // e^2
+        F::mul(a.y(), ta, a.z()); // a e^2
+        F::mul(ta, a.z(), tb);    // e^3
+        F::mul(a.z(), tc, ta);    // c e^3
+        F::add(tc, a.y(), a.y()); // 2 a e^2
+        F::mul(a.x(), td, td);    // f^2
+        F::sub(a.x(), tc);        // f^2 - 2 a e^2
+        F::sub(a.x(), ta);        // x = f^2 - 2 a e^2 - e^3
+        F::sub(ta, a.y(), a.x()); // a e^2 - x
+        F::mul(a.y(), td, ta);    // f (a e^2 - x)
         F::sub(a.y(), a.z());     // y = f (a e^2 - x) - c e^3
-        F::mul(t1, b.z(), c.z()); // z1 z2
-        F::mul(a.z(), t1, t2);    // z = z1 z2 e
+        F::mul(ta, b.z(), c.z()); // z1 z2
+        F::mul(a.z(), ta, tb);    // z = z1 z2 e
     }
 
-    template <typename F_CTX>
-    GEC_HD static void
-    add_distinct(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                 const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F, F, F, F, F>();
+    GEC_HD static void add_distinct(Core &GEC_RSTRCT a,
+                                    const Core &GEC_RSTRCT b,
+                                    const Core &GEC_RSTRCT c) {
+        F ta, tb, tc, td;
+        {
+            F t;
+            F::mul(tc, c.z(), c.z()); // z2^2
+            F::mul(t, tc, c.z());     // z2^3
+            F::mul(ta, tc, b.x());    // a = x1 z2^2
+            F::mul(tc, t, b.y());     // c = y1 z2^3
 
-        auto &ta = ctx_view.template get<0>();
-        auto &tb = ctx_view.template get<1>();
-        auto &tc = ctx_view.template get<2>();
-        auto &td = ctx_view.template get<3>();
-        auto &t = ctx_view.template get<4>();
-
-        F::mul(tc, c.z(), c.z()); // z2^2
-        F::mul(t, tc, c.z());     // z2^3
-        F::mul(ta, tc, b.x());    // a = x1 z2^2
-        F::mul(tc, t, b.y());     // c = y1 z2^3
-
-        F::mul(td, b.z(), b.z()); // z1^2
-        F::mul(t, td, b.z());     // z1^3
-        F::mul(tb, td, c.x());    // b = x2 z1^2
-        F::mul(td, t, c.y());     // d = y2 z1^3
-
-        add_distinct_inner(a, b, c, ctx);
+            F::mul(td, b.z(), b.z()); // z1^2
+            F::mul(t, td, b.z());     // z1^3
+            F::mul(tb, td, c.x());    // b = x2 z1^2
+            F::mul(td, t, c.y());     // d = y2 z1^3
+        }
+        add_distinct_inner(a, b, c, ta, tb, tc, td);
     }
 
-    template <typename F_CTX>
-    GEC_HD static void add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                                F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F, F, F>();
-
-        auto &t4 = ctx_view.template get<0>();
-        auto &t5 = ctx_view.template get<1>();
-
+    GEC_HD static void add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
 #ifdef __CUDACC__
         // suppress false positive NULL reference warning in nvcc
         GEC_NV_DIAGNOSTIC_PUSH
         GEC_NV_DIAG_SUPPRESS(284)
 #endif // __CUDACC__
 
+        F t4, t5;
         F::mul(t4, b.x(), b.x());        // x1^2
         F::add(t5, t4, t4);              // 2 x1^2
         F::add(t5, t4);                  // 3 x1^2
@@ -261,38 +225,34 @@ class GEC_EMPTY_BASES JacobianCoordinate
 #endif // __CUDACC__
     }
 
-    template <typename F_CTX>
     GEC_HD static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                           const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F, F, F, F, F>();
-
+                           const Core &GEC_RSTRCT c) {
         // checking for infinity here is not necessary
         if (b.is_inf()) {
             a = c;
         } else if (c.is_inf()) {
             a = b;
         } else {
-            auto &ta = ctx_view.template get<0>();
-            auto &tb = ctx_view.template get<1>();
-            auto &tc = ctx_view.template get<2>();
-            auto &td = ctx_view.template get<3>();
-            auto &t = ctx_view.template get<4>();
+            {
+                F ta, tb, tc, td;
+                {
+                    F t;
+                    F::mul(tc, c.z(), c.z()); // z2^2
+                    F::mul(t, tc, c.z());     // z2^3
+                    F::mul(ta, tc, b.x());    // a = x1 z2^2
+                    F::mul(tc, t, b.y());     // c = y1 z2^3
 
-            F::mul(tc, c.z(), c.z()); // z2^2
-            F::mul(t, tc, c.z());     // z2^3
-            F::mul(ta, tc, b.x());    // a = x1 z2^2
-            F::mul(tc, t, b.y());     // c = y1 z2^3
-
-            F::mul(td, b.z(), b.z()); // z1^2
-            F::mul(t, td, b.z());     // z1^3
-            F::mul(tb, td, c.x());    // b = x2 z1^2
-            F::mul(td, t, c.y());     // d = y2 z1^3
-
-            if (ta == tb && tc == td) {
-                add_self(a, b, ctx);
-            } else {
-                add_distinct_inner(a, b, c, ctx);
+                    F::mul(td, b.z(), b.z()); // z1^2
+                    F::mul(t, td, b.z());     // z1^3
+                    F::mul(tb, td, c.x());    // b = x2 z1^2
+                    F::mul(td, t, c.y());     // d = y2 z1^3
+                }
+                if (ta != tb || tc != td) {
+                    add_distinct_inner(a, b, c, ta, tb, tc, td);
+                    return;
+                }
             }
+            add_self(a, b);
         }
     }
 

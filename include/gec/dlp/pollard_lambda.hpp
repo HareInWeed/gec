@@ -27,22 +27,13 @@ namespace dlp {
  *
  * `a` must be strictly less than `b`, otherwise the behaviour is undefined.
  */
-template <typename S, typename P, typename Rng, typename Ctx>
+template <typename S, typename P, typename Rng>
 GEC_H void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl, P *GEC_RSTRCT pl,
                           const S &GEC_RSTRCT bound, const S &GEC_RSTRCT a,
                           const S &GEC_RSTRCT b, const P &GEC_RSTRCT g,
-                          const P &GEC_RSTRCT h, GecRng<Rng> &rng,
-                          Ctx &GEC_RSTRCT ctx) {
+                          const P &GEC_RSTRCT h, GecRng<Rng> &rng) {
     using F = typename P::Field;
-    auto &ctx_view = ctx.template view_as<P, P, P, S, S, S>();
-    auto &p1 = ctx_view.template get<0>();
-    auto &p2 = ctx_view.template get<1>();
-    auto &temp = ctx_view.template get<2>();
-    auto &d = ctx_view.template get<3>();
-    auto &idx = ctx_view.template get<4>();
-    ctx_view.template get<5>().set_one();
-    const auto &one = ctx_view.template get<5>();
-    auto &rest_ctx = ctx_view.rest();
+    P p1, p2, temp;
 
     while (true) {
         P *u = &p1, *v = &p2, *tmp = &temp;
@@ -60,19 +51,21 @@ GEC_H void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl, P *GEC_RSTRCT pl,
         for (size_t i = 0; i < m; ++i) {
             typename F::LimbT e = sl[i].array()[0];
             sl[i].set_pow2(e);
-            P::mul(pl[i], sl[i], g, rest_ctx);
+            P::mul(pl[i], sl[i], g);
         }
 
-        S::sample_inclusive(x, a, b, rng, rest_ctx);
-        P::mul(*u, x, g, rest_ctx);
+        S::sample_inclusive(x, a, b, rng);
+        P::mul(*u, x, g);
+        S idx;
+        const S one(1);
         for (idx.set_zero(); idx < bound; S::add(idx, one)) {
             size_t i = u->x().array()[0] % m;
             S::add(x, sl[i]);
-            P::add(*tmp, *u, pl[i], rest_ctx);
+            P::add(*tmp, *u, pl[i]);
             utils::swap(u, tmp);
         }
 
-        d.set_zero();
+        S d(0);
         *v = h;
         for (idx.set_zero(); idx < bound; S::add(idx, one)) {
             if (P::eq(*u, *v)) {
@@ -81,7 +74,7 @@ GEC_H void pollard_lambda(S &GEC_RSTRCT x, S *GEC_RSTRCT sl, P *GEC_RSTRCT pl,
             }
             size_t idx = v->x().array()[0] % m;
             S::add(d, sl[idx]);
-            P::add(*tmp, *v, pl[idx], rest_ctx);
+            P::add(*tmp, *v, pl[idx]);
             utils::swap(v, tmp);
         }
     }
@@ -149,7 +142,6 @@ void *worker(void *data_ptr) {
     P p1, p2;
     P *u = &p1, *tmp = &p2;
     S x, j;
-    typename P::template Context<> ctx;
     auto rng = make_gec_rng(Rng((unsigned int)(local.seed)));
 
     while (true) {
@@ -167,7 +159,7 @@ void *worker(void *data_ptr) {
                 // TODO: maybe using multithread to generate the jump table?
                 LimbT e = shared.sl[i].array()[0];
                 shared.sl[i].set_pow2(e);
-                P::mul(shared.pl[i], shared.sl[i], shared.g, ctx);
+                P::mul(shared.pl[i], shared.sl[i], shared.g);
             }
 #ifdef GEC_DEBUG
             printf("[worker %03zu]: jump table generated\n", local.id);
@@ -178,12 +170,12 @@ void *worker(void *data_ptr) {
 
         // setting traps
         S &t = shared.xs[local.id];
-        S::sample_inclusive(t, shared.a, shared.b, rng, ctx);
-        P::mul(*u, t, shared.g, ctx);
+        S::sample_inclusive(t, shared.a, shared.b, rng);
+        P::mul(*u, t, shared.g);
         for (j.set_zero(); j < shared.bound; S::add(j, 1)) {
             size_t i = u->x().array()[0] % m;
             S::add(t, shared.sl[i]);
-            P::add(*tmp, *u, shared.pl[i], ctx);
+            P::add(*tmp, *u, shared.pl[i]);
             utils::swap(u, tmp);
 #ifdef GEC_DEBUG
             if (!(utils::LowerKMask<LimbT, 20>::value & j.array()[0])) {
@@ -220,9 +212,9 @@ void *worker(void *data_ptr) {
         pthread_barrier_wait(&shared.barrier);
 
         // start searching
-        S::sample_inclusive(x, shared.a, shared.b, rng, ctx);
-        P::mul(*tmp, x, shared.g, ctx);
-        P::add(*u, shared.h, *tmp, ctx);
+        S::sample_inclusive(x, shared.a, shared.b, rng);
+        P::mul(*tmp, x, shared.g);
+        P::add(*u, shared.h, *tmp);
         for (j.set_zero(); j < shared.bound; S::add(j, 1)) {
             if (shutdown) {
                 break;
@@ -240,7 +232,7 @@ void *worker(void *data_ptr) {
             }
             size_t i = u->x().array()[0] % m;
             S::add(x, shared.sl[i]);
-            P::add(*tmp, *u, shared.pl[i], ctx);
+            P::add(*tmp, *u, shared.pl[i]);
             utils::swap(u, tmp);
 #ifdef GEC_DEBUG
             if (!(utils::LowerKMask<LimbT, 20>::value & j.array()[0])) {
@@ -282,8 +274,6 @@ void multithread_pollard_lambda(S &GEC_RSTRCT x, const S &GEC_RSTRCT bound,
     using Data = WorkerData<S, P>;
 
     std::vector<pthread_t> workers(worker_n);
-
-    typename P::template Context<> ctx;
 
     S::sub(x, b, a);
     // with `a` less than `b`, `m` would not underflow
@@ -334,19 +324,12 @@ __global__ void init_wild_kernel(S *GEC_RSTRCT s, P *GEC_RSTRCT p, size_t n,
     using uint = unsigned int;
     const uint id = blockIdx.x * blockDim.x + threadIdx.x;
 
-    typename P::template Context<> ctx;
     if (id < n) {
-        auto &ctx_view = ctx.template view_as<P, P, S>();
-        P &local_p = ctx_view.template get<0>();
-        P &natural_p = ctx_view.template get<1>();
-        S &local_s = ctx_view.template get<2>();
-        auto &rest_ctx = ctx_view.rest();
+        S local_s(id * step);
 
-        local_s.set_zero();
-        local_s.array()[0] = id * step;
-
-        P::mul(local_p, local_s, cd_g<P>, rest_ctx);
-        P::add(natural_p, local_p, cd_h<P>, rest_ctx);
+        P local_p, natural_p;
+        P::mul(local_p, local_s, cd_g<P>);
+        P::add(natural_p, local_p, cd_h<P>);
         s[id] = local_s;
         p[id] = natural_p;
     }
@@ -357,15 +340,12 @@ __global__ void init_tame_kernel(S *GEC_RSTRCT s, P *GEC_RSTRCT p, size_t n,
     using uint = unsigned int;
     const uint id = blockIdx.x * blockDim.x + threadIdx.x;
 
-    typename P::template Context<> ctx;
     if (id < n) {
-        auto &ctx_view = ctx.template view_as<P, S>();
-        P &local_p = ctx_view.template get<0>();
-        S &local_s = ctx_view.template get<1>();
-        auto &rest_ctx = ctx_view.rest();
-
+        S local_s;
         S::add(local_s, cd_middle<S>, id * step);
-        P::mul(local_p, local_s, cd_g<P>, rest_ctx);
+
+        P local_p;
+        P::mul(local_p, local_s, cd_g<P>);
 
         s[id] = local_s;
         p[id] = local_p;
@@ -403,7 +383,6 @@ searching_kernel(volatile bool *GEC_RSTRCT done, size_t shift, P *p_buffer,
         return;
     }
 
-    typename P::template Context<> ctx;
     typename P::Hasher hasher;
 
     S x = xs[id];
@@ -433,7 +412,7 @@ searching_kernel(volatile bool *GEC_RSTRCT done, size_t shift, P *p_buffer,
         size_t i = GEC_SRC_.x().array()[0] % l_len;
         // size_t i = GEC_SRC_.x().array()[0] & jump_mask;
         S::add(x, sl[i]);
-        P::add(GEC_DEST_, GEC_SRC_, pl[i], ctx);
+        P::add(GEC_DEST_, GEC_SRC_, pl[i]);
         GEC_RELOAD_;
     }
 shutdown:
@@ -522,8 +501,6 @@ GEC_H cudaError_t cu_pollard_lambda(
     VP pl(l_len);
     P *d_pl = nullptr;
 
-    typename P::template Context<> ctx;
-
     S *d_wxs = nullptr;
     P *d_wilds = nullptr;
     S *d_wx_buf = nullptr;
@@ -603,7 +580,7 @@ GEC_H cudaError_t cu_pollard_lambda(
             // `shift_left` directly, otherwise `mul_pow2` should be used
             // instead.
             sl[i].shift_left(e);
-            P::mul(pl[i], sl[i], g, ctx);
+            P::mul(pl[i], sl[i], g);
         }
     }
 

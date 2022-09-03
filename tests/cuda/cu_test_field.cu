@@ -271,19 +271,17 @@ __global__ static void test_sampling_kernel(size_t seed, Int *x) {
 
     auto rng = test_rng_init<Rng>::call(seed, id);
 
-    typename Int::template Context<> ctx;
-
     Int::sample(x[0], rng);
 
     Int::sample_non_zero(x[1], rng);
 
     Int::sample(x[2], x[1], rng);
 
-    Int::sample(x[3], x[2], x[1], rng, ctx);
+    Int::sample(x[3], x[2], x[1], rng);
 
     Int::sample_inclusive(x[4], x[1], rng);
 
-    Int::sample_inclusive(x[5], x[2], x[1], rng, ctx);
+    Int::sample_inclusive(x[5], x[2], x[1], rng);
 }
 
 template <typename Int, typename Rng>

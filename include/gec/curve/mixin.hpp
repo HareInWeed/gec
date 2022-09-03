@@ -4,7 +4,6 @@
 
 #include "mixin/arr_get_comp.hpp"
 #include "mixin/compwise_eq.hpp"
-#include "mixin/context.hpp"
 #include "mixin/get_comp.hpp"
 #include "mixin/hasher.hpp"
 #include "mixin/named_comp.hpp"
@@ -32,7 +31,6 @@ template <typename Core, typename FT, const FT *A, const FT *B,
 class BasicCurveMixin : public CurveParams<Core, FT, A, B, d_A, d_B>,
                         public ScalerMul<Core>,
                         public LiftX<Core, FT>,
-                        public WithPointContext<Core>,
                         public WithPointHasher<Core>,
                         public PointOstream<Core>,
                         public PointPrint<Core> {

@@ -76,26 +76,19 @@ class GEC_EMPTY_BASES MontgomeryOps
         }
     }
 
-    template <typename CTX>
-    GEC_HD GEC_INLINE static void
-    inv(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+    GEC_HD GEC_INLINE static void inv(Core &GEC_RSTRCT a,
+                                      const Core &GEC_RSTRCT b) {
         a = b;
-        inv(a, ctx);
+        inv(a);
     }
 
-    template <typename CTX>
-    GEC_HD static void inv(Core &GEC_RSTRCT a, CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<Core, Core, Core>();
-
+    GEC_HD static void inv(Core &GEC_RSTRCT a) {
         using utils::CmpEnum;
         constexpr size_t LimbBit = utils::type_bits<LIMB_T>::value;
         constexpr size_t Bits = LimbBit * LIMB_N;
         constexpr LIMB_T mask = LIMB_T(1) << (LimbBit - 1);
 
-        auto &r = ctx_view.template get<0>();
-        auto &s = ctx_view.template get<1>();
-        auto &t = ctx_view.template get<2>();
-
+        Core r, s, t;
         LIMB_T *a_arr = a.array();
         LIMB_T *r_arr = r.array();
         LIMB_T *s_arr = s.array();
@@ -230,26 +223,19 @@ class GEC_EMPTY_BASES CarryFreeMontgomeryOps
         }
     }
 
-    template <typename CTX>
-    GEC_HD GEC_INLINE static void
-    inv(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+    GEC_HD GEC_INLINE static void inv(Core &GEC_RSTRCT a,
+                                      const Core &GEC_RSTRCT b) {
         a = b;
-        inv(a, ctx);
+        inv(a);
     }
 
-    template <typename CTX>
-    GEC_HD static void inv(Core &GEC_RSTRCT a, CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<Core, Core, Core>();
-
+    GEC_HD static void inv(Core &GEC_RSTRCT a) {
         using utils::CmpEnum;
         constexpr size_t LimbBit = utils::type_bits<LIMB_T>::value;
         constexpr size_t Bits = LimbBit * LIMB_N;
         constexpr LIMB_T mask = LIMB_T(1) << (LimbBit - 1);
 
-        auto &r = ctx_view.template get<0>();
-        auto &s = ctx_view.template get<1>();
-        auto &t = ctx_view.template get<2>();
-
+        Core r, s, t;
         LIMB_T *a_arr = a.array();
         LIMB_T *r_arr = r.array();
         LIMB_T *s_arr = s.array();
@@ -456,26 +442,19 @@ class GEC_EMPTY_BASES AVX2MontgomeryOps<Core, uint32_t, 8>
         }
     }
 
-    template <typename CTX>
-    GEC_H GEC_INLINE static void
-    inv(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+    GEC_H GEC_INLINE static void inv(Core &GEC_RSTRCT a,
+                                     const Core &GEC_RSTRCT b) {
         a = b;
-        inv(a, ctx);
+        inv(a);
     }
 
-    template <typename CTX>
-    GEC_H static void inv(Core &GEC_RSTRCT a, CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<Core, Core, Core>();
-
+    GEC_H static void inv(Core &GEC_RSTRCT a) {
         using utils::CmpEnum;
         constexpr size_t LimbBit = utils::type_bits<LIMB_T>::value;
         constexpr size_t Bits = LimbBit * LIMB_N;
         constexpr LIMB_T mask = LIMB_T(1) << (LimbBit - 1);
 
-        auto &r = ctx_view.template get<0>();
-        auto &s = ctx_view.template get<1>();
-        auto &t = ctx_view.template get<2>();
-
+        Core r, s, t;
         LIMB_T *a_arr = a.array();
         LIMB_T *r_arr = r.array();
         LIMB_T *s_arr = s.array();

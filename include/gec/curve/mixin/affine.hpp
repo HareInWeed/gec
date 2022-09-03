@@ -2,7 +2,6 @@
 #ifndef GEC_CURVE_MIXIN_AFFINE_HPP
 #define GEC_CURVE_MIXIN_AFFINE_HPP
 
-#include <gec/utils/context.hpp>
 #include <gec/utils/crtp.hpp>
 
 namespace gec {
@@ -38,28 +37,15 @@ class GEC_EMPTY_BASES AffineCoordinate
         }
     }
 
-    template <typename F_CTX>
-    GEC_HD GEC_INLINE static bool eq(const Core &GEC_RSTRCT a,
-                                     const Core &GEC_RSTRCT b, F_CTX &) {
-        return eq(a, b);
-    }
-
     GEC_HD GEC_INLINE static bool eq(const Core &GEC_RSTRCT a,
                                      const Core &GEC_RSTRCT b) {
         return a.x() == b.x() && a.y() == b.y();
     }
 
-    template <typename F_CTX>
-    GEC_HD static bool on_curve(const Core &GEC_RSTRCT a,
-                                F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F, F, F>();
-
+    GEC_HD static bool on_curve(const Core &GEC_RSTRCT a) {
         if (a.is_inf()) {
             return true;
         }
-        auto &l = ctx_view.template get<0>();
-        auto &r = ctx_view.template get<1>();
-        auto &t = ctx_view.template get<2>();
 
 #ifdef __CUDACC__
         // suppress false positive NULL reference warning
@@ -67,6 +53,7 @@ class GEC_EMPTY_BASES AffineCoordinate
         GEC_NV_DIAG_SUPPRESS(284)
 #endif // __CUDACC__
 
+        F t, l, r;
         F::mul(l, a.y(), a.y());      // left = y^2
         F::mul(t, a.x(), a.x());      // x^2
         F::mul(r, t, a.x());          // x^3
@@ -84,18 +71,14 @@ class GEC_EMPTY_BASES AffineCoordinate
 #endif // __CUDACC__
     }
 
-    template <typename F_CTX>
-    GEC_HD static void
-    add_distinct(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                 const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F, F, F, F>();
-        auto &inv_ctx = ctx.template view_as<F>().rest();
+    GEC_HD static void add_distinct(Core &GEC_RSTRCT a,
+                                    const Core &GEC_RSTRCT b,
+                                    const Core &GEC_RSTRCT c) {
 
-        auto &d = ctx_view.template get<0>();
-        auto &l = ctx_view.template get<1>();
-
+        F d;                         //
         F::sub(d, b.x(), c.x());     // x1 - x2
-        F::inv(d, inv_ctx);          // 1 / (x1 - x2)
+        F::inv(d);                   // 1 / (x1 - x2)
+        F l;                         //
         F::sub(a.y(), b.y(), c.y()); // y1 - y2
         F::mul(l, a.y(), d);         // l = (y1 - y2) / (x1 - x2)
         F::mul(a.y(), l, l);         // l^2
@@ -106,17 +89,11 @@ class GEC_EMPTY_BASES AffineCoordinate
         F::sub(a.y(), b.y());        // y = l (x1 - x) - y1
     }
 
-    template <typename F_CTX>
-    GEC_HD static void add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                                F_CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         if (b.y().is_zero()) {
             a.set_inf();
             return;
         }
-        auto &ctx_view = ctx.template view_as<F>();
-        auto &d = ctx_view.template get<0>();
-        auto &inv_ctx = ctx_view.rest();
-        auto &l = inv_ctx.template view_as<F>().template get<0>();
 
 #ifdef __CUDACC__
         // suppress false positive NULL reference warning
@@ -124,8 +101,10 @@ class GEC_EMPTY_BASES AffineCoordinate
         GEC_NV_DIAG_SUPPRESS(284)
 #endif // __CUDACC__
 
+        F d;
         F::add(d, b.y(), b.y());     // 2 y1
-        F::inv(d, inv_ctx);          // (2 y1)^-1
+        F::inv(d);                   // (2 y1)^-1
+        F l;                         //
         F::mul(a.y(), b.x(), b.x()); // x1^2
         F::add(a.x(), a.y(), a.y()); // 2 x1^2
         F::add(a.x(), a.y());        // 3 x1^2
@@ -145,17 +124,15 @@ class GEC_EMPTY_BASES AffineCoordinate
 #endif // __CUDACC__
     }
 
-    template <typename F_CTX>
-    GEC_HD static void add(Core &GEC_RSTRCT a, const Core &b, const Core &c,
-                           F_CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void add(Core &GEC_RSTRCT a, const Core &b, const Core &c) {
         if (b.is_inf()) {
             a = c;
         } else if (c.is_inf()) {
             a = b;
         } else if (b.x() != c.x()) {
-            add_distinct(a, b, c, ctx);
+            add_distinct(a, b, c);
         } else if (b.y() == c.y()) {
-            add_self(a, b, ctx);
+            add_self(a, b);
         } else {
             a.set_inf();
         }

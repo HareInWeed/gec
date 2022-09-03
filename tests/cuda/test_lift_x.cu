@@ -17,8 +17,6 @@ TEST_CASE("lift_x", "[curve][jacobian]") {
     using S = secp256k1::Scaler;
     using secp256k1::Gen;
 
-    C::Context<> ctx;
-
     F x;
     C p1, p2;
     S s;
@@ -35,10 +33,10 @@ TEST_CASE("lift_x", "[curve][jacobian]") {
 
     for (int k = 0; k < 500; ++k) {
         S::sample(s, data_rng);
-        C::mul(p1, s, Gen, ctx);
-        C::to_affine(p1, ctx);
+        C::mul(p1, s, Gen);
+        C::to_affine(p1);
         CAPTURE(p1);
-        REQUIRE(C::lift_x(p2, p1.x(), p1.y().array()[0] & 0x1, rng, ctx));
+        REQUIRE(C::lift_x(p2, p1.x(), p1.y().array()[0] & 0x1, rng));
         CAPTURE(p2);
         REQUIRE(p1.x() == p2.x());
         REQUIRE(p1.y() == p2.y());
@@ -49,9 +47,9 @@ TEST_CASE("lift_x", "[curve][jacobian]") {
         bool bit = gen(data_rng.get_rng()) & 0x1;
         CAPTURE(x, bit);
 
-        C::lift_x_with_inc(p2, x, bit, rng, ctx);
+        C::lift_x_with_inc(p2, x, bit, rng);
 
-        REQUIRE(C::on_curve(p2, ctx));
+        REQUIRE(C::on_curve(p2));
         REQUIRE((p2.y().array()[0] & 0x1) == bit);
     }
 }

@@ -24,10 +24,8 @@ TEST_CASE("affine", "[curve][affine]") {
     using C = CurveA;
     using F = Field160;
 
-    C::Context<> ctx;
-
     C test(F(1), F(1));
-    REQUIRE(!C::on_curve(test, ctx));
+    REQUIRE(!C::on_curve(test));
 
     C p1;
     F::to_montgomery(
@@ -37,7 +35,7 @@ TEST_CASE("affine", "[curve][affine]") {
         p1.y(), //
         {0xa43c088fu, 0xa471d05cu, 0x3d1bed80u, 0xb89428beu, 0x84e54faeu});
     CAPTURE(p1);
-    REQUIRE(C::on_curve(p1, ctx));
+    REQUIRE(C::on_curve(p1));
 
     C p2;
     F::to_montgomery(
@@ -47,13 +45,13 @@ TEST_CASE("affine", "[curve][affine]") {
         p2.y(), //
         {0x99056d94u, 0xe6864afau, 0xa034f181u, 0xd8b4192fu, 0x1cbedd98u});
     CAPTURE(p2);
-    REQUIRE(C::on_curve(p2, ctx));
+    REQUIRE(C::on_curve(p2));
 
     C sum, expected;
 
-    C::add(sum, p1, p2, ctx);
+    C::add(sum, p1, p2);
     CAPTURE(sum);
-    REQUIRE(C::on_curve(sum, ctx));
+    REQUIRE(C::on_curve(sum));
     F::to_montgomery(
         expected.x(), //
         {0x506c783fu, 0x82e6ba2fu, 0x323ddc50u, 0xffe966bfu, 0x41cb4178u});
@@ -61,12 +59,12 @@ TEST_CASE("affine", "[curve][affine]") {
         expected.y(), //
         {0x8fc3cd04u, 0x2e78553eu, 0xb84d4c96u, 0x196151feu, 0xe3bd209bu});
     CAPTURE(expected);
-    REQUIRE(C::on_curve(expected, ctx));
+    REQUIRE(C::on_curve(expected));
     REQUIRE(C::eq(expected, sum));
 
-    C::add(sum, p1, p1, ctx);
+    C::add(sum, p1, p1);
     CAPTURE(sum);
-    REQUIRE(C::on_curve(sum, ctx));
+    REQUIRE(C::on_curve(sum));
     F::to_montgomery(
         expected.x(), //
         {0x6b52f5f8u, 0x836d4559u, 0x4eb4f96fu, 0x11b16271u, 0xb9194d96u});
@@ -74,12 +72,12 @@ TEST_CASE("affine", "[curve][affine]") {
         expected.y(), //
         {0x1fd6f136u, 0xcd8ecae6u, 0xbec3bb77u, 0xa5bdc183u, 0x842648beu});
     CAPTURE(expected);
-    REQUIRE(C::on_curve(expected, ctx));
+    REQUIRE(C::on_curve(expected));
     REQUIRE(C::eq(expected, sum));
 
-    C::add(sum, p2, p2, ctx);
+    C::add(sum, p2, p2);
     CAPTURE(sum);
-    REQUIRE(C::on_curve(sum, ctx));
+    REQUIRE(C::on_curve(sum));
     F::to_montgomery(
         expected.x(), //
         {0x34aabf2eu, 0xf06c1194u, 0xbd316d0au, 0x3a407ef7u, 0x850f874eu});
@@ -87,27 +85,25 @@ TEST_CASE("affine", "[curve][affine]") {
         expected.y(), //
         {0x1870fd80u, 0xe627d83bu, 0x7af69418u, 0xad073ee5u, 0xba3606e5u});
     CAPTURE(expected);
-    REQUIRE(C::on_curve(expected, ctx));
+    REQUIRE(C::on_curve(expected));
     REQUIRE(C::eq(expected, sum));
 
     p2.set_inf();
-    C::add(sum, p1, p2, ctx);
+    C::add(sum, p1, p2);
     CAPTURE(sum);
-    REQUIRE(C::on_curve(sum, ctx));
+    REQUIRE(C::on_curve(sum));
     REQUIRE(C::eq(p1, sum));
 
     p1.set_inf();
-    C::add(sum, p1, p2, ctx);
+    C::add(sum, p1, p2);
     CAPTURE(sum);
-    REQUIRE(C::on_curve(sum, ctx));
+    REQUIRE(C::on_curve(sum));
     REQUIRE(sum.is_inf());
 }
 
 TEST_CASE("affine bench", "[curve][affine][bench]") {
     using C = CurveA2;
     using F = Field160_2;
-
-    C::Context<> ctx;
 
     C p1;
     F::mul(p1.x(), {0x0ee27967u, 0x5de1bde5faf553e9u, 0x2185fec743e7dd56u},
@@ -123,7 +119,7 @@ TEST_CASE("affine bench", "[curve][affine][bench]") {
 
     C sum;
     BENCHMARK("add") {
-        C::add(sum, p1, p2, ctx);
+        C::add(sum, p1, p2);
         return &sum;
     };
 }
@@ -131,8 +127,6 @@ TEST_CASE("affine bench", "[curve][affine][bench]") {
 TEST_CASE("projective", "[curve][projective]") {
     using C = CurveP;
     using F = Field160;
-
-    C::Context<> ctx;
 
     C p1;
     F::mul(p1.x(),
@@ -143,7 +137,7 @@ TEST_CASE("projective", "[curve][projective]") {
            F::r_sqr());
     C::from_affine(p1);
     CAPTURE(p1);
-    REQUIRE(C::on_curve(p1, ctx));
+    REQUIRE(C::on_curve(p1));
 
     C p2;
     F::mul(p2.x(),
@@ -154,12 +148,12 @@ TEST_CASE("projective", "[curve][projective]") {
            F::r_sqr());
     C::from_affine(p2);
     CAPTURE(p2);
-    REQUIRE(C::on_curve(p2, ctx));
+    REQUIRE(C::on_curve(p2));
 
     C sum;
-    C::add(sum, p1, p2, ctx);
+    C::add(sum, p1, p2);
     CAPTURE(sum);
-    REQUIRE(C::on_curve(sum, ctx));
+    REQUIRE(C::on_curve(sum));
 
     C expected;
     F::mul(expected.x(),
@@ -170,34 +164,32 @@ TEST_CASE("projective", "[curve][projective]") {
            F::r_sqr());
     C::from_affine(expected);
     CAPTURE(expected);
-    REQUIRE(C::on_curve(expected, ctx));
+    REQUIRE(C::on_curve(expected));
 
-    CHECK(C::eq(expected, sum, ctx));
+    CHECK(C::eq(expected, sum));
 }
 
 TEST_CASE("projective bench", "[curve][projective][bench]") {
     using C = CurveP2;
     using F = Field160_2;
 
-    C::Context<> ctx;
-
     C p1;
-    F::mul(p1.x(), {0x0ee27967u, 0x5de1bde5faf553e9u, 0x2185fec743e7dd56u},
-           F::r_sqr());
-    F::mul(p1.y(), {0xa43c088fu, 0xa471d05c3d1bed80u, 0xb89428be84e54faeu},
-           F::r_sqr());
+    F::to_montgomery(p1.x(),
+                     {0x0ee27967u, 0x5de1bde5faf553e9u, 0x2185fec743e7dd56u});
+    F::to_montgomery(p1.y(),
+                     {0xa43c088fu, 0xa471d05c3d1bed80u, 0xb89428be84e54faeu});
     C::from_affine(p1);
 
     C p2;
-    F::mul(p2.x(), {0x16b60634u, 0xe1d3e8962879d7aau, 0x2c1672abde0252bbu},
-           F::r_sqr());
-    F::mul(p2.y(), {0x99056d94u, 0xe6864afaa034f181u, 0xd8b4192f1cbedd98u},
-           F::r_sqr());
+    F::to_montgomery(p2.x(),
+                     {0x16b60634u, 0xe1d3e8962879d7aau, 0x2c1672abde0252bbu});
+    F::to_montgomery(p2.y(),
+                     {0x99056d94u, 0xe6864afaa034f181u, 0xd8b4192f1cbedd98u});
     C::from_affine(p2);
 
     C sum;
     BENCHMARK("add") {
-        C::add(sum, p1, p2, ctx);
+        C::add(sum, p1, p2);
         return &sum;
     };
 }
@@ -205,8 +197,6 @@ TEST_CASE("projective bench", "[curve][projective][bench]") {
 TEST_CASE("jacobian", "[curve][jacobian]") {
     using C = CurveJ;
     using F = Field160;
-
-    C::Context<> ctx;
 
     C p1;
     F::mul(p1.x(),
@@ -216,7 +206,7 @@ TEST_CASE("jacobian", "[curve][jacobian]") {
            {0xa43c088fu, 0xa471d05cu, 0x3d1bed80u, 0xb89428beu, 0x84e54faeu},
            F::r_sqr());
     C::from_affine(p1);
-    REQUIRE(C::on_curve(p1, ctx));
+    REQUIRE(C::on_curve(p1));
 
     C p2;
     F::mul(p2.x(),
@@ -226,11 +216,11 @@ TEST_CASE("jacobian", "[curve][jacobian]") {
            {0x99056d94u, 0xe6864afau, 0xa034f181u, 0xd8b4192fu, 0x1cbedd98u},
            F::r_sqr());
     C::from_affine(p2);
-    REQUIRE(C::on_curve(p2, ctx));
+    REQUIRE(C::on_curve(p2));
 
     C sum;
-    C::add(sum, p1, p2, ctx);
-    REQUIRE(C::on_curve(sum, ctx));
+    C::add(sum, p1, p2);
+    REQUIRE(C::on_curve(sum));
 
     C expected;
     F::mul(expected.x(),
@@ -240,17 +230,15 @@ TEST_CASE("jacobian", "[curve][jacobian]") {
            {0x8fc3cd04u, 0x2e78553eu, 0xb84d4c96u, 0x196151feu, 0xe3bd209bu},
            F::r_sqr());
     C::from_affine(expected);
-    REQUIRE(C::on_curve(expected, ctx));
+    REQUIRE(C::on_curve(expected));
 
     CAPTURE(expected, sum);
-    CHECK(C::eq(expected, sum, ctx));
+    CHECK(C::eq(expected, sum));
 }
 
 TEST_CASE("jacobian bench", "[curve][jacobian][bench]") {
     using C = CurveJ2;
     using F = Field160_2;
-
-    C::Context<> ctx;
 
     C p1;
     F::mul(p1.x(), {0x0ee27967u, 0x5de1bde5faf553e9u, 0x2185fec743e7dd56u},
@@ -268,7 +256,7 @@ TEST_CASE("jacobian bench", "[curve][jacobian][bench]") {
 
     C sum;
     BENCHMARK("add") {
-        C::add(sum, p1, p2, ctx);
+        C::add(sum, p1, p2);
         return &sum;
     };
 }
@@ -283,8 +271,6 @@ TEST_CASE("affine scaler_mul", "[curve][affine][scaler_mul]") {
     INFO("seed: " << seed);
     auto rng = make_gec_rng(std::mt19937(seed));
 
-    C::Context<> ctx;
-
     C p;
     F::to_montgomery(
         p.x(), //
@@ -292,23 +278,23 @@ TEST_CASE("affine scaler_mul", "[curve][affine][scaler_mul]") {
     F::to_montgomery(
         p.y(), //
         {0x16a8c9aau, 0xc4ad5fdfu, 0x58163ef3u, 0x9de531f5u, 0xe9cb1575u});
-    REQUIRE(C::on_curve(p, ctx));
+    REQUIRE(C::on_curve(p));
     CAPTURE(p);
 
     C prod1, prod2, sum;
 
-    C::mul(prod1, 0, p, ctx);
+    C::mul(prod1, 0, p);
     CAPTURE(prod1);
     REQUIRE(prod1.is_inf());
 
-    C::mul(prod1, 1, p, ctx);
+    C::mul(prod1, 1, p);
     CAPTURE(prod1);
     REQUIRE(prod1.x() == p.x());
     REQUIRE(prod1.y() == p.y());
 
-    C::mul(prod1, S::mod(), p, ctx);
+    C::mul(prod1, S::mod(), p);
     CAPTURE(prod1);
-    REQUIRE(C::on_curve(prod1, ctx));
+    REQUIRE(C::on_curve(prod1));
     REQUIRE(prod1.is_inf());
 
     S s1, s2;
@@ -316,20 +302,20 @@ TEST_CASE("affine scaler_mul", "[curve][affine][scaler_mul]") {
         S::sample(s1, rng);
         S::neg(s2, s1);
 
-        C::mul(prod1, s1, p, ctx);
+        C::mul(prod1, s1, p);
         CAPTURE(prod1);
-        C::mul(prod2, s2, p, ctx);
+        C::mul(prod2, s2, p);
         CAPTURE(prod2);
-        C::add(sum, prod1, prod2, ctx);
+        C::add(sum, prod1, prod2);
         CAPTURE(sum);
         REQUIRE(sum.is_inf());
 
         S::add(s1, s2, 1);
-        C::mul(prod2, s1, p, ctx);
+        C::mul(prod2, s1, p);
         CAPTURE(prod2);
-        C::add(sum, prod1, prod2, ctx);
+        C::add(sum, prod1, prod2);
         CAPTURE(sum);
-        REQUIRE(C::eq(sum, p, ctx));
+        REQUIRE(C::eq(sum, p));
     }
 }
 
@@ -343,8 +329,6 @@ TEST_CASE("jacobian scaler_mul", "[curve][jacobian][scaler_mul]") {
     INFO("seed: " << seed);
     auto rng = make_gec_rng(std::mt19937(seed));
 
-    C::Context<> ctx;
-
     C p;
     F::to_montgomery(
         p.x(), //
@@ -353,22 +337,22 @@ TEST_CASE("jacobian scaler_mul", "[curve][jacobian][scaler_mul]") {
         p.y(), //
         {0x16a8c9aau, 0xc4ad5fdfu, 0x58163ef3u, 0x9de531f5u, 0xe9cb1575u});
     C::from_affine(p);
-    REQUIRE(C::on_curve(p, ctx));
+    REQUIRE(C::on_curve(p));
     CAPTURE(p);
 
     C prod1, prod2, sum;
 
-    C::mul(prod1, 0, p, ctx);
+    C::mul(prod1, 0, p);
     CAPTURE(prod1);
     REQUIRE(prod1.is_inf());
 
-    C::mul(prod1, 1, p, ctx);
+    C::mul(prod1, 1, p);
     CAPTURE(prod1);
     REQUIRE(prod1.x() == p.x());
     REQUIRE(prod1.y() == p.y());
     REQUIRE(prod1.z() == p.z());
 
-    C::mul(prod1, S::mod(), p, ctx);
+    C::mul(prod1, S::mod(), p);
     CAPTURE(prod1);
     REQUIRE(prod1.is_inf());
 
@@ -377,19 +361,19 @@ TEST_CASE("jacobian scaler_mul", "[curve][jacobian][scaler_mul]") {
         S::sample(s1, rng);
         S::neg(s2, s1);
 
-        C::mul(prod1, s1, p, ctx);
+        C::mul(prod1, s1, p);
         CAPTURE(prod1);
-        C::mul(prod2, s2, p, ctx);
+        C::mul(prod2, s2, p);
         CAPTURE(prod2);
-        C::add(sum, prod1, prod2, ctx);
+        C::add(sum, prod1, prod2);
         CAPTURE(sum);
         REQUIRE(sum.is_inf());
 
         S::add(s1, s2, 1);
-        C::mul(prod2, s1, p, ctx);
+        C::mul(prod2, s1, p);
         CAPTURE(prod2);
-        C::add(sum, prod1, prod2, ctx);
+        C::add(sum, prod1, prod2);
         CAPTURE(sum);
-        REQUIRE(C::eq(sum, p, ctx));
+        REQUIRE(C::eq(sum, p));
     }
 }

@@ -20,17 +20,15 @@ TEST_CASE("cu_pollard_rho", "[dlp][pollard_rho][multithread]") {
     CAPTURE(data_seed, seed);
     auto rng = make_gec_rng(std::mt19937(data_seed));
 
-    C::Context<> ctx;
-
     C h;
-    REQUIRE(C::on_curve(g, ctx));
+    REQUIRE(C::on_curve(g));
 
     S x;
     S::sample_non_zero(x, rng);
 
-    C::mul(h, x, g, ctx);
+    C::mul(h, x, g);
     CAPTURE(h);
-    REQUIRE(C::on_curve(h, ctx));
+    REQUIRE(C::on_curve(h));
 
     size_t l = 32;
     S c, d, mon_c, mon_d;
@@ -42,12 +40,12 @@ TEST_CASE("cu_pollard_rho", "[dlp][pollard_rho][multithread]") {
     CUDA_REQUIRE(cu_pollard_rho(c, d, l, mask, g, h, seed, 4, 32, 0x1000));
     S::to_montgomery(mon_c, c);
     S::to_montgomery(mon_d, d);
-    S::inv(mon_d, ctx);
+    S::inv(mon_d);
     S::mul(d, mon_c, mon_d);
     S::from_montgomery(c, d);
 
     C xg;
-    C::mul(xg, c, g, ctx);
+    C::mul(xg, c, g);
     CAPTURE(c, xg, h);
     REQUIRE(C::eq(xg, h));
 }

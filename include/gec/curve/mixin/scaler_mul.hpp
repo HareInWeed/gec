@@ -20,17 +20,17 @@ class GEC_EMPTY_BASES ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
 
   public:
     template <
-        size_t N, typename IntT, typename CTX,
+        size_t N, typename IntT,
         std::enable_if_t<std::numeric_limits<IntT>::is_integer> * = nullptr>
     GEC_HD static void mul(Core &GEC_RSTRCT a, const IntT *GEC_RSTRCT s,
-                           const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<Core>();
+                           const Core &GEC_RSTRCT b) {
+        Core ap;
 
-        auto &ap = ctx_view.template get<0>();
         bool in_dest = true;
 #define GEC_DEST_ (in_dest ? ap : a)
 #define GEC_SRC_ (in_dest ? a : ap)
 #define GEC_RELOAD_ (in_dest = !in_dest)
+
         a.set_inf();
         constexpr size_t Bits = utils::type_bits<IntT>::value;
         int i = N - 1, j = -1;
@@ -42,10 +42,10 @@ class GEC_EMPTY_BASES ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
         }
         for (; i >= 0; --i) {
             for (; j >= 0; --j) {
-                Core::add(GEC_DEST_, GEC_SRC_, GEC_SRC_, ctx_view.rest());
+                Core::add(GEC_DEST_, GEC_SRC_, GEC_SRC_);
                 GEC_RELOAD_;
                 if ((IntT(1) << j) & s[i]) {
-                    Core::add(GEC_DEST_, GEC_SRC_, b, ctx_view.rest());
+                    Core::add(GEC_DEST_, GEC_SRC_, b);
                     GEC_RELOAD_;
                 }
             }
@@ -54,27 +54,28 @@ class GEC_EMPTY_BASES ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
         if (!in_dest) {
             a = ap;
         }
+
 #undef GEC_DEST_
 #undef GEC_SRC_
 #undef GEC_RELOAD_
     }
 
     template <
-        typename IntT, typename CTX,
+        typename IntT,
         std::enable_if_t<std::numeric_limits<IntT>::is_integer> * = nullptr>
-    GEC_HD GEC_INLINE static void
-    mul(Core &GEC_RSTRCT a, const IntT &GEC_RSTRCT e, const Core &GEC_RSTRCT b,
-        CTX &GEC_RSTRCT ctx) {
-        mul<1>(a, &e, b, ctx);
+    GEC_HD GEC_INLINE static void mul(Core &GEC_RSTRCT a,
+                                      const IntT &GEC_RSTRCT e,
+                                      const Core &GEC_RSTRCT b) {
+        mul<1>(a, &e, b);
     }
 
     template <
-        typename IntT, typename CTX,
+        typename IntT,
         std::enable_if_t<!std::numeric_limits<IntT>::is_integer> * = nullptr>
-    GEC_HD GEC_INLINE static void
-    mul(Core &GEC_RSTRCT a, const IntT &GEC_RSTRCT e, const Core &GEC_RSTRCT b,
-        CTX &GEC_RSTRCT ctx) {
-        mul<IntT::LimbN>(a, e.array(), b, ctx);
+    GEC_HD GEC_INLINE static void mul(Core &GEC_RSTRCT a,
+                                      const IntT &GEC_RSTRCT e,
+                                      const Core &GEC_RSTRCT b) {
+        mul<IntT::LimbN>(a, e.array(), b);
     }
 };
 

@@ -123,7 +123,6 @@ struct CastSingleDivRemHelper<NeedR, TT, T, 0> {
  *          result value of `r` is undefined
  * @param a dividend
  * @param b divisor, single limb
- * @param ctx context
  */
 template <bool NeedR, typename TT, size_t N, typename T>
 GEC_HD void cast_single_div_rem(T *GEC_RSTRCT q, T &GEC_RSTRCT r,
@@ -352,7 +351,6 @@ struct SplitSingleDivRemHelper<NeedR, T, 0> {
  *          result value of `r` is undefined
  * @param a dividend
  * @param b divisor, single limb, if `b > `
- * @param ctx context
  */
 template <bool NeedR, size_t N, typename T>
 GEC_HD void split_single_div_rem(T *GEC_RSTRCT q, T &GEC_RSTRCT r,
@@ -440,57 +438,44 @@ struct DivRemHelper;
 
 template <size_t N, typename T>
 struct DivRemHelper<N, T, Method::Cast> {
-    template <typename CTX>
-    GEC_HD GEC_INLINE static void
-    div_rem(T *GEC_RSTRCT q, T *GEC_RSTRCT r, const T *GEC_RSTRCT a,
-            const T *GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+    GEC_HD GEC_INLINE static void div_rem(T *GEC_RSTRCT q, T *GEC_RSTRCT r,
+                                          const T *GEC_RSTRCT a,
+                                          const T *GEC_RSTRCT b) {
         using namespace ::gec::utils;
 #ifdef __CUDA_ARCH__
         using TT = typename DeviceCast2Uint<T>::type;
 #else
         using TT = typename HostCast2Uint<T>::type;
 #endif // __CUDA_ARCH__
-        auto &ctx_view = ctx.template view_as<T[N], T[N]>();
-        auto &nb = ctx_view.template get<0>();
-        auto &qb = ctx_view.template get<1>();
+        T nb[N], qb[N];
         fill_seq<N>(r, a);
         fill_seq<N>(nb, b);
         cast_div_rem<true, true, TT, N>(q, r, nb, qb);
     }
 
-    template <typename CTX>
     GEC_HD GEC_INLINE static void div(T *GEC_RSTRCT q, const T *GEC_RSTRCT a,
-                                      const T *GEC_RSTRCT b,
-                                      CTX &GEC_RSTRCT ctx) {
+                                      const T *GEC_RSTRCT b) {
         using namespace ::gec::utils;
 #ifdef __CUDA_ARCH__
         using TT = typename DeviceCast2Uint<T>::type;
 #else
         using TT = typename HostCast2Uint<T>::type;
 #endif // __CUDA_ARCH__
-        auto &ctx_view = ctx.template view_as<T[N], T[N], T[N]>();
-        auto &na = ctx_view.template get<0>();
-        auto &nb = ctx_view.template get<1>();
-        auto &qb = ctx_view.template get<2>();
+        T na[N], nb[N], qb[N];
         fill_seq<N>(na, a);
         fill_seq<N>(nb, b);
         cast_div_rem<true, false, TT, N>(q, na, nb, qb);
     }
 
-    template <typename CTX>
     GEC_HD GEC_INLINE static void rem(T *GEC_RSTRCT r, const T *GEC_RSTRCT a,
-                                      const T *GEC_RSTRCT b,
-                                      CTX &GEC_RSTRCT ctx) {
+                                      const T *GEC_RSTRCT b) {
         using namespace ::gec::utils;
 #ifdef __CUDA_ARCH__
         using TT = typename DeviceCast2Uint<T>::type;
 #else
         using TT = typename HostCast2Uint<T>::type;
 #endif // __CUDA_ARCH__
-        auto &ctx_view = ctx.template view_as<T[N], T[N], T[N]>();
-        auto &q = ctx_view.template get<0>();
-        auto &nb = ctx_view.template get<1>();
-        auto &qb = ctx_view.template get<2>();
+        T q[N], nb[N], qb[N];
         fill_seq<N>(r, a);
         fill_seq<N>(nb, b);
         cast_div_rem<false, true, TT, N>(q, r, nb, qb);
@@ -499,61 +484,41 @@ struct DivRemHelper<N, T, Method::Cast> {
 
 template <size_t N, typename T>
 struct DivRemHelper<N, T, Method::Split> {
-    template <typename CTX>
-    GEC_HD GEC_INLINE static void
-    div_rem(T *GEC_RSTRCT q, T *GEC_RSTRCT r, const T *GEC_RSTRCT a,
-            const T *GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+    GEC_HD GEC_INLINE static void div_rem(T *GEC_RSTRCT q, T *GEC_RSTRCT r,
+                                          const T *GEC_RSTRCT a,
+                                          const T *GEC_RSTRCT b) {
         using namespace ::gec::utils;
 #ifdef __CUDA_ARCH__
         using HT = typename DeviceCastHalfUint<T>::type;
 #else
         using HT = typename HostCastHalfUint<T>::type;
 #endif // __CUDA_ARCH__
-        auto &ctx_view =
-            ctx.template view_as<HT[2 * N], HT[2 * N], HT[2 * N], HT[2 * N]>();
-        auto &hq = ctx_view.template get<0>();
-        auto &hr = ctx_view.template get<1>();
-        auto &ha = ctx_view.template get<2>();
-        auto &hb = ctx_view.template get<3>();
+        HT hq[2 * N], hr[2 * N], ha[2 * N], hb[2 * N];
         split_div_rem<true, true, HT, N>(q, r, a, b, hq, hr, ha, hb);
     }
 
-    template <typename CTX>
     GEC_HD GEC_INLINE static void div(T *GEC_RSTRCT q, const T *GEC_RSTRCT a,
-                                      const T *GEC_RSTRCT b,
-                                      CTX &GEC_RSTRCT ctx) {
+                                      const T *GEC_RSTRCT b) {
         using namespace ::gec::utils;
 #ifdef __CUDA_ARCH__
         using HT = typename DeviceCastHalfUint<T>::type;
 #else
         using HT = typename HostCastHalfUint<T>::type;
 #endif // __CUDA_ARCH__
-        auto &ctx_view =
-            ctx.template view_as<HT[2 * N], HT[2 * N], HT[2 * N], HT[2 * N]>();
-        auto &hq = ctx_view.template get<0>();
-        auto &hr = ctx_view.template get<1>();
-        auto &ha = ctx_view.template get<2>();
-        auto &hb = ctx_view.template get<3>();
+        HT hq[2 * N], hr[2 * N], ha[2 * N], hb[2 * N];
         split_div_rem<true, false, HT, N>(q, (T *)(nullptr), a, b, hq, hr, ha,
                                           hb);
     }
 
-    template <typename CTX>
     GEC_HD GEC_INLINE static void rem(T *GEC_RSTRCT r, const T *GEC_RSTRCT a,
-                                      const T *GEC_RSTRCT b,
-                                      CTX &GEC_RSTRCT ctx) {
+                                      const T *GEC_RSTRCT b) {
         using namespace ::gec::utils;
 #ifdef __CUDA_ARCH__
         using HT = typename DeviceCastHalfUint<T>::type;
 #else
         using HT = typename HostCastHalfUint<T>::type;
 #endif // __CUDA_ARCH__
-        auto &ctx_view =
-            ctx.template view_as<HT[2 * N], HT[2 * N], HT[2 * N], HT[2 * N]>();
-        auto &hq = ctx_view.template get<0>();
-        auto &hr = ctx_view.template get<1>();
-        auto &ha = ctx_view.template get<2>();
-        auto &hb = ctx_view.template get<3>();
+        HT hq[2 * N], hr[2 * N], ha[2 * N], hb[2 * N];
         split_div_rem<false, true, HT, N>((T *)(nullptr), r, a, b, hq, hr, ha,
                                           hb);
     }
@@ -582,20 +547,17 @@ class GEC_EMPTY_BASES CastDivision
      *
      * the behaviour is undefined if b == 0
      *
-     * @tparam CTX context type
      * @param q quotient, \f$\lfoor a / b \rfloor\f$
      * @param r remainder, \f$a - q b\f$
      * @param a dividend
      * @param b divisor
-     * @param ctx context
      */
-    template <typename CTX>
     GEC_HD static void div_rem(Core &GEC_RSTRCT q, Core &GEC_RSTRCT r,
                                const Core &GEC_RSTRCT a,
-                               const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+                               const Core &GEC_RSTRCT b) {
         using namespace _division_;
         DivRemHelper<LIMB_N, LIMB_T, Method::Cast>::div_rem(
-            q.array(), r.array(), a.array(), b.array(), ctx);
+            q.array(), r.array(), a.array(), b.array());
     }
 
     /**
@@ -603,19 +565,16 @@ class GEC_EMPTY_BASES CastDivision
      *
      * the behaviour is undefined if b == 0
      *
-     * @tparam CTX context type
      * @param q quotient, \f$\lfoor a / b \rfloor\f$
      * @param a dividend
      * @param b divisor
-     * @param ctx context
      */
-    template <typename CTX>
-    GEC_HD GEC_INLINE static void
-    div(Core &GEC_RSTRCT q, const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-        CTX &GEC_RSTRCT ctx) {
+    GEC_HD GEC_INLINE static void div(Core &GEC_RSTRCT q,
+                                      const Core &GEC_RSTRCT a,
+                                      const Core &GEC_RSTRCT b) {
         using namespace _division_;
         DivRemHelper<LIMB_N, LIMB_T, Method::Cast>::div(q.array(), a.array(),
-                                                        b.array(), ctx);
+                                                        b.array());
     }
 
     /**
@@ -623,19 +582,16 @@ class GEC_EMPTY_BASES CastDivision
      *
      * the behaviour is undefined if b == 0
      *
-     * @tparam CTX context type
      * @param r remainder, \f$a - \lfoor a / b \rfloor b\f$
      * @param a dividend
      * @param b divisor
-     * @param ctx context
      */
-    template <typename CTX>
-    GEC_HD GEC_INLINE static void
-    rem(const Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
-        const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+    GEC_HD GEC_INLINE static void rem(const Core &GEC_RSTRCT r,
+                                      const Core &GEC_RSTRCT a,
+                                      const Core &GEC_RSTRCT b) {
         using namespace _division_;
         DivRemHelper<LIMB_N, LIMB_T, Method::Cast>::rem(r.array(), a.array(),
-                                                        b.array(), ctx);
+                                                        b.array());
     }
 };
 
@@ -659,20 +615,17 @@ class GEC_EMPTY_BASES SplitDivision
      *
      * the behaviour is undefined if b == 0
      *
-     * @tparam CTX context type
      * @param q quotient, \f$\lfoor a / b \rfloor\f$
      * @param r remainder, \f$a - q b\f$
      * @param a dividend
      * @param b divisor
-     * @param ctx context
      */
-    template <typename CTX>
     GEC_HD static void div_rem(Core &GEC_RSTRCT q, Core &GEC_RSTRCT r,
                                const Core &GEC_RSTRCT a,
-                               const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+                               const Core &GEC_RSTRCT b) {
         using namespace _division_;
         DivRemHelper<LIMB_N, LIMB_T, Method::Split>::div_rem(
-            q.array(), r.array(), a.array(), b.array(), ctx);
+            q.array(), r.array(), a.array(), b.array());
     }
 
     /**
@@ -680,19 +633,16 @@ class GEC_EMPTY_BASES SplitDivision
      *
      * the behaviour is undefined if b == 0
      *
-     * @tparam CTX context type
      * @param q quotient, \f$\lfoor a / b \rfloor\f$
      * @param a dividend
      * @param b divisor
-     * @param ctx context
      */
-    template <typename CTX>
-    GEC_HD GEC_INLINE static void
-    div(Core &GEC_RSTRCT q, const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-        CTX &GEC_RSTRCT ctx) {
+    GEC_HD GEC_INLINE static void div(Core &GEC_RSTRCT q,
+                                      const Core &GEC_RSTRCT a,
+                                      const Core &GEC_RSTRCT b) {
         using namespace _division_;
         DivRemHelper<LIMB_N, LIMB_T, Method::Split>::div(q.array(), a.array(),
-                                                         b.array(), ctx);
+                                                         b.array());
     }
 
     /**
@@ -700,19 +650,16 @@ class GEC_EMPTY_BASES SplitDivision
      *
      * the behaviour is undefined if b == 0
      *
-     * @tparam CTX context type
      * @param r remainder, \f$a - \lfoor a / b \rfloor b\f$
      * @param a dividend
      * @param b divisor
-     * @param ctx context
      */
-    template <typename CTX>
-    GEC_HD GEC_INLINE static void
-    rem(const Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a,
-        const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+    GEC_HD GEC_INLINE static void rem(const Core &GEC_RSTRCT r,
+                                      const Core &GEC_RSTRCT a,
+                                      const Core &GEC_RSTRCT b) {
         using namespace _division_;
         DivRemHelper<LIMB_N, LIMB_T, Method::Split>::rem(r.array(), a.array(),
-                                                         b.array(), ctx);
+                                                         b.array());
     }
 };
 
@@ -737,17 +684,14 @@ class GEC_EMPTY_BASES Division
      *
      * the behaviour is undefined if b == 0
      *
-     * @tparam CTX context type
      * @param q quotient, \f$\lfoor a / b \rfloor\f$
      * @param r remainder, \f$a - q b\f$
      * @param a dividend
      * @param b divisor
-     * @param ctx context
      */
-    template <typename CTX>
     GEC_HD static void div_rem(Core &GEC_RSTRCT q, Core &GEC_RSTRCT r,
                                const Core &GEC_RSTRCT a,
-                               const Core &GEC_RSTRCT b, CTX &GEC_RSTRCT ctx) {
+                               const Core &GEC_RSTRCT b) {
         using namespace ::gec::utils;
         using namespace _division_;
         DivRemHelper<LIMB_N, LIMB_T,
@@ -758,7 +702,7 @@ class GEC_EMPTY_BASES Division
 #endif // __CUDA_ARCH__
                          ? Method::Cast
                          : Method::Split>::div_rem(q.array(), r.array(),
-                                                   a.array(), b.array(), ctx);
+                                                   a.array(), b.array());
     }
 
     /**
@@ -766,16 +710,13 @@ class GEC_EMPTY_BASES Division
      *
      * the behaviour is undefined if b == 0
      *
-     * @tparam CTX context type
      * @param q quotient, \f$\lfoor a / b \rfloor\f$
      * @param a dividend
      * @param b divisor
-     * @param ctx context
      */
-    template <typename CTX>
-    GEC_HD GEC_INLINE static void
-    div(Core &GEC_RSTRCT q, const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-        CTX &GEC_RSTRCT ctx) {
+    GEC_HD GEC_INLINE static void div(Core &GEC_RSTRCT q,
+                                      const Core &GEC_RSTRCT a,
+                                      const Core &GEC_RSTRCT b) {
         using namespace ::gec::utils;
         using namespace _division_;
         DivRemHelper<LIMB_N, LIMB_T,
@@ -785,8 +726,7 @@ class GEC_EMPTY_BASES Division
                      HostCast2Uint<LIMB_T>::value
 #endif // __CUDA_ARCH__
                          ? Method::Cast
-                         : Method::Split>::div(q.array(), a.array(), b.array(),
-                                               ctx);
+                         : Method::Split>::div(q.array(), a.array(), b.array());
     }
 
     /**
@@ -794,16 +734,13 @@ class GEC_EMPTY_BASES Division
      *
      * the behaviour is undefined if b == 0
      *
-     * @tparam CTX context type
      * @param r remainder, \f$a - \lfoor a / b \rfloor b\f$
      * @param a dividend
      * @param b divisor
-     * @param ctx context
      */
-    template <typename CTX>
-    GEC_HD GEC_INLINE static void
-    rem(Core &GEC_RSTRCT r, const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-        CTX &GEC_RSTRCT ctx) {
+    GEC_HD GEC_INLINE static void rem(Core &GEC_RSTRCT r,
+                                      const Core &GEC_RSTRCT a,
+                                      const Core &GEC_RSTRCT b) {
         using namespace ::gec::utils;
         using namespace _division_;
         DivRemHelper<LIMB_N, LIMB_T,
@@ -813,8 +750,7 @@ class GEC_EMPTY_BASES Division
                      HostCast2Uint<LIMB_T>::value
 #endif // __CUDA_ARCH__
                          ? Method::Cast
-                         : Method::Split>::rem(r.array(), a.array(), b.array(),
-                                               ctx);
+                         : Method::Split>::rem(r.array(), a.array(), b.array());
     }
 };
 

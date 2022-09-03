@@ -145,7 +145,6 @@ TEST_CASE("random sampling", "[add_group][field][random]") {
 #define test(Int)                                                              \
     do {                                                                       \
         Int x, y, z;                                                           \
-        Int::Context<> ctx;                                                    \
         for (int k = 0; k < 10000; ++k) {                                      \
             Int::sample(x, rng);                                               \
             REQUIRE(x < Int::mod());                                           \
@@ -157,14 +156,14 @@ TEST_CASE("random sampling", "[add_group][field][random]") {
             Int::sample(y, x, rng);                                            \
             REQUIRE(y < x);                                                    \
                                                                                \
-            Int::sample(z, y, x, rng, ctx);                                    \
+            Int::sample(z, y, x, rng);                                         \
             REQUIRE(z < x);                                                    \
             REQUIRE(y <= z);                                                   \
                                                                                \
             Int::sample_inclusive(z, x, rng);                                  \
             REQUIRE(z <= x);                                                   \
                                                                                \
-            Int::sample_inclusive(z, y, x, rng, ctx);                          \
+            Int::sample_inclusive(z, y, x, rng);                               \
             REQUIRE(z <= x);                                                   \
             REQUIRE(y <= z);                                                   \
         }                                                                      \
@@ -484,7 +483,6 @@ TEST_CASE("256 montgomery bench", "[ring][avx2][bench]") {
 
 TEST_CASE("montgomery inv", "[field]") {
     using F = Field160;
-    F::Context<> ctx;
 
     std::random_device rd;
     auto seed = rd();
@@ -504,7 +502,7 @@ TEST_CASE("montgomery inv", "[field]") {
         // a = Field(0x31a50ad6u, 0x93f524b7u, 0xa6ea2efeu, 0xed31237au,
         //           0x2d2731f7u);
         F::to_montgomery(mon_a, a);
-        F::inv(inv_a, mon_a, ctx);
+        F::inv(inv_a, mon_a);
         F::mul(mon_prod, mon_a, inv_a);
         F::from_montgomery(prod, mon_prod);
         CAPTURE(prod);
@@ -523,7 +521,6 @@ TEST_CASE("montgomery exp", "[field]") {
     std::uniform_int_distribution<LIMB_T> dis_u32(
         std::numeric_limits<LIMB_T>::min(), std::numeric_limits<LIMB_T>::max());
 
-    F::Context<> ctx;
     F mod_m, a, mon_a, mon_exp_a, exp_a;
     F::sub(mod_m, F::mod(), 1);
 
@@ -537,17 +534,17 @@ TEST_CASE("montgomery exp", "[field]") {
         //           0x2d2731f7u);
         F::to_montgomery(mon_a, a);
 
-        F::pow(mon_exp_a, mon_a, 1u, ctx);
+        F::pow(mon_exp_a, mon_a, 1u);
         REQUIRE(mon_exp_a == mon_a);
 
-        F::pow(mon_exp_a, mon_a, 0u, ctx);
+        F::pow(mon_exp_a, mon_a, 0u);
         F::from_montgomery(exp_a, mon_exp_a);
         REQUIRE(exp_a.is_one());
 
-        F::pow(mon_exp_a, mon_a, F::mod(), ctx);
+        F::pow(mon_exp_a, mon_a, F::mod());
         REQUIRE(mon_exp_a == mon_a); // Fermat's Little Theorem
 
-        F::pow(mon_exp_a, mon_a, mod_m, ctx);
+        F::pow(mon_exp_a, mon_a, mod_m);
         F::from_montgomery(exp_a, mon_exp_a);
         REQUIRE(exp_a.is_one()); // Fermat's Little Theorem
     }
@@ -651,10 +648,9 @@ TEST_CASE("montgomery inv bench", "[field][bench]") {
     {
         using F = Field160;
         const F &mon_x = *reinterpret_cast<const F *>(mon_x0.array());
-        F::Context<> ctx;
         BENCHMARK("32-bits montgomery inv") {
             F inv_x;
-            F::inv(inv_x, mon_x, ctx);
+            F::inv(inv_x, mon_x);
             return inv_x;
         };
     }
@@ -662,10 +658,9 @@ TEST_CASE("montgomery inv bench", "[field][bench]") {
     {
         using F = Field160_2;
         const F &mon_x = reinterpret_cast<const F &>(mon_x0);
-        F::Context<> ctx;
         BENCHMARK("64-bits montgomery inv") {
             F inv_x;
-            F::inv(inv_x, mon_x, ctx);
+            F::inv(inv_x, mon_x);
             return inv_x;
         };
     }
@@ -675,15 +670,13 @@ template <typename F>
 static void test_mod_sqrt(std::random_device::result_type seed) {
     CAPTURE(seed);
 
-    typename F::template Context<> ctx;
-
     auto rng = make_gec_rng(std::mt19937(seed));
     F x, xx, sqrt, sqr;
     for (int k = 0; k < 1000; ++k) {
         F::sample(x, rng);
         F::mul(xx, x, x);
         CAPTURE(x, xx);
-        REQUIRE(F::mod_sqrt(sqrt, xx, ctx, rng));
+        REQUIRE(F::mod_sqrt(sqrt, xx, rng));
         CAPTURE(sqrt);
         F::mul(sqr, sqrt, sqrt);
         REQUIRE(xx == sqr);

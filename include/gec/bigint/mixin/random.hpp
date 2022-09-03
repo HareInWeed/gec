@@ -271,14 +271,15 @@ class GEC_EMPTY_BASES BasicRandom
     sample(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT upper, GecRng<Rng> &rng) {
         sample_exclusive_raw(a, upper.array(), rng);
     }
-    template <typename Rng, typename Ctx>
+    template <typename Rng>
     GEC_HD GEC_INLINE static void
     sample(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT lower,
-           const Core &GEC_RSTRCT upper, GecRng<Rng> &rng, Ctx &ctx) {
-        auto &ctx_view = ctx.template view_as<Core>();
-        auto &span = ctx_view.template get<0>();
-        Core::sub(span, upper, lower);
-        sample_exclusive_raw(a, span.array(), rng);
+           const Core &GEC_RSTRCT upper, GecRng<Rng> &rng) {
+        {
+            Core span;
+            Core::sub(span, upper, lower);
+            sample_exclusive_raw(a, span.array(), rng);
+        }
         Core::add(a, lower);
     }
 
@@ -288,14 +289,15 @@ class GEC_EMPTY_BASES BasicRandom
                                                    GecRng<Rng> &rng) {
         sample_inclusive_raw(a, upper.array(), rng);
     }
-    template <typename Rng, typename Ctx>
+    template <typename Rng>
     GEC_HD GEC_INLINE static void
     sample_inclusive(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT lower,
-                     const Core &GEC_RSTRCT upper, GecRng<Rng> &rng, Ctx &ctx) {
-        auto &ctx_view = ctx.template view_as<Core>();
-        auto &span = ctx_view.template get<0>();
-        Core::sub(span, upper, lower);
-        sample_inclusive(a, span, rng);
+                     const Core &GEC_RSTRCT upper, GecRng<Rng> &rng) {
+        {
+            Core span;
+            Core::sub(span, upper, lower);
+            sample_inclusive(a, span, rng);
+        }
         Core::add(a, lower);
     }
 

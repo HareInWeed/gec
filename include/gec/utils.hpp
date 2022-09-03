@@ -4,7 +4,6 @@
 
 #include "utils/arithmetic.hpp"
 #include "utils/basic.hpp"
-#include "utils/context.hpp"
 #include "utils/crtp.hpp"
 #include "utils/cuda_utils.cuh"
 #include "utils/hash.hpp"

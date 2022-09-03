@@ -5,7 +5,6 @@
 #include "mixin/add_sub.hpp"
 #include "mixin/bit_ops.hpp"
 #include "mixin/constants.hpp"
-#include "mixin/context.hpp"
 #include "mixin/division.hpp"
 #include "mixin/exp.hpp"
 #include "mixin/hasher.hpp"
@@ -32,7 +31,6 @@ class GEC_EMPTY_BASES BigintMixin : public Constants<Core, T, N>,
                                     public Division<Core, T, N>,
                                     public BigintRandom<Core, T, N>,
                                     public WithArrayHasher<Core>,
-                                    public WithBigintContext<Core>,
                                     public ArrayOstream<Core, T, N>,
                                     public ArrayPrint<Core, T, N> {};
 
@@ -45,7 +43,6 @@ class GEC_EMPTY_BASES AddGroupFunctions : public VtCompare<Core, T, N>,
                                           public Division<Core, T, N>,
                                           public ModRandom<Core, T, N>,
                                           public WithArrayHasher<Core>,
-                                          public WithBigintContext<Core>,
                                           public ArrayOstream<Core, T, N>,
                                           public ArrayPrint<Core, T, N> {};
 

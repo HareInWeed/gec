@@ -26,38 +26,30 @@ namespace gec {
 
 namespace dlp {
 
-template <typename S, typename P, typename Ctx, typename Rng>
+template <typename S, typename P, typename Rng>
 GEC_HD void pollard_rho(S &c,
                         S &d2, // TODO: require general int inv
                         size_t l, S *al, S *bl, P *pl, const P &g, const P &h,
-                        GecRng<Rng> &rng, Ctx &ctx) {
-    auto &ctx_view = ctx.template view_as<P, P, P, P, P, S, S>();
+                        GecRng<Rng> &rng) {
+    P ag, bh, temp, x1, x2;
 
-    auto &ag = ctx_view.template get<0>();
-    auto &bh = ctx_view.template get<1>();
-    auto &temp = ctx_view.template get<2>();
-    auto &x1 = ctx_view.template get<3>();
-    auto &x2 = ctx_view.template get<4>();
-
-    auto &c2 = ctx_view.template get<5>();
-    auto &d = ctx_view.template get<6>();
-    auto &rest_ctx = ctx_view.rest();
+    S c2, d;
     P *tmp = &temp, *x = &x1;
 
     do {
         for (size_t k = 0; k < l; ++k) {
             S::sample(al[k], rng);
             S::sample(bl[k], rng);
-            P::mul(ag, al[k], g, rest_ctx);
-            P::mul(bh, bl[k], h, rest_ctx);
-            P::add(pl[k], ag, bh, rest_ctx);
+            P::mul(ag, al[k], g);
+            P::mul(bh, bl[k], h);
+            P::add(pl[k], ag, bh);
         }
 
         S::sample(c, rng);
         S::sample(d, rng);
-        P::mul(ag, c, g, rest_ctx);
-        P::mul(bh, d, h, rest_ctx);
-        P::add(*x, ag, bh, rest_ctx);
+        P::mul(ag, c, g);
+        P::mul(bh, d, h);
+        P::add(*x, ag, bh);
         c2 = c;
         d2 = d;
         x2 = *x;
@@ -67,19 +59,19 @@ GEC_HD void pollard_rho(S &c,
             i = x->x().array()[0] % l;
             S::add(c, al[i]);
             S::add(d, bl[i]);
-            P::add(*tmp, *x, pl[i], rest_ctx);
+            P::add(*tmp, *x, pl[i]);
             utils::swap(x, tmp);
 
             i = x2.x().array()[0] % l;
             S::add(c2, al[i]);
             S::add(d2, bl[i]);
-            P::add(*tmp, x2, pl[i], rest_ctx);
+            P::add(*tmp, x2, pl[i]);
 
             i = tmp->x().array()[0] % l;
             S::add(c2, al[i]);
             S::add(d2, bl[i]);
-            P::add(x2, *tmp, pl[i], rest_ctx);
-        } while (!P::eq(*x, x2, rest_ctx));
+            P::add(x2, *tmp, pl[i]);
+        } while (!P::eq(*x, x2));
 
     } while (d == d2);
 
@@ -146,20 +138,16 @@ void *worker(void *data_ptr) {
     SharedData<S, P> &shared = local.shared;
     volatile bool &done = shared.done;
     auto rng = make_gec_rng(Rng(local.seed));
-    typename P::template Context<> ctx;
     Coefficient<S> coeff;
-    auto &ctx_view = ctx.template view_as<P, P, P, P>();
-    auto &p1 = ctx_view.template get<0>();
-    auto &p2 = ctx_view.template get<1>();
-    auto &xg = ctx_view.template get<2>();
-    auto &yh = ctx_view.template get<3>();
+
+    P p1, p2, xg, yh;
     P *p = &p1, *tmp = &p2;
 
     S::sample(coeff.x, rng);
     S::sample(coeff.y, rng);
-    P::mul(xg, coeff.x, shared.g, ctx_view.rest());
-    P::mul(yh, coeff.y, shared.h, ctx_view.rest());
-    P::add(*p, xg, yh, ctx_view.rest());
+    P::mul(xg, coeff.x, shared.g);
+    P::mul(yh, coeff.y, shared.h);
+    P::add(*p, xg, yh);
 
     size_t l = shared.pl.size();
     int i;
@@ -192,7 +180,7 @@ void *worker(void *data_ptr) {
         i = p->x().array()[0] % l;
         S::add(coeff.x, shared.al[i]);
         S::add(coeff.y, shared.bl[i]);
-        P::add(*tmp, *p, shared.pl[i], ctx.template view_as<P, P>().rest());
+        P::add(*tmp, *p, shared.pl[i]);
         utils::swap(p, tmp);
     }
 }
@@ -211,15 +199,13 @@ void multithread_pollard_rho(S &c,
 
     Shared shared(l, worker_n, mask, g, h, c, d2);
 
-    typename P::template Context<> ctx;
-
     P ag, bh;
     for (size_t k = 0; k < l; ++k) {
         S::sample(shared.al[k], rng);
         S::sample(shared.bl[k], rng);
-        P::mul(ag, shared.al[k], g, ctx);
-        P::mul(bh, shared.bl[k], h, ctx);
-        P::add(shared.pl[k], ag, bh, ctx);
+        P::mul(ag, shared.al[k], g);
+        P::mul(bh, shared.bl[k], h);
+        P::add(shared.pl[k], ag, bh);
     }
 
     std::vector<pthread_t> workers(worker_n);
@@ -274,21 +260,12 @@ __global__ void init_ps_kernel(P *GEC_RSTRCT init_ps,
 
     size_t id = blockIdx.x * blockDim.x + threadIdx.x;
 
-    typename P::template Context<> ctx;
-    auto ctx_view = ctx.template view_as<P, P, P, S, S>();
-    auto &p = ctx_view.template get<0>();
-    auto &xg = ctx_view.template get<1>();
-    auto &yh = ctx_view.template get<2>();
-    auto &x = ctx_view.template get<3>();
-    auto &y = ctx_view.template get<4>();
-    auto &rest_ctx = ctx_view.rest();
+    S x(init_xs[id]), y(init_ys[id]);
 
-    x = init_xs[id];
-    y = init_ys[id];
-
-    P::mul(xg, x, cd_g<P>, rest_ctx);
-    P::mul(yh, y, cd_h<P>, rest_ctx);
-    P::add(p, xg, yh, rest_ctx);
+    P p, xg, yh;
+    P::mul(xg, x, cd_g<P>);
+    P::mul(yh, y, cd_h<P>);
+    P::add(p, xg, yh);
 
     init_ps[id] = p;
 }
@@ -312,14 +289,8 @@ __global__ void searching_kernel(volatile bool *GEC_RSTRCT done,
     using F = typename P::Field;
     using LT = typename F::LimbT;
 
-    typename P::template Context<> ctx;
-    auto &ctx_view = ctx.template view_as<P, P>();
-    auto &p1 = ctx_view.template get<0>();
-    auto &p2 = ctx_view.template get<1>();
-    auto &rest_ctx = ctx_view.rest();
-
-    S x = init_xs[id], y = init_ys[id];
-    p1 = init_ps[id];
+    S x(init_xs[id]), y(init_ys[id]);
+    P p1(init_ps[id]), p2;
 
     bool in_p1 = true;
 #define GEC_DEST_ (in_p1 ? p2 : p1)
@@ -345,7 +316,7 @@ __global__ void searching_kernel(volatile bool *GEC_RSTRCT done,
         i = GEC_SRC_.x().array()[0] % l;
         S::add(x, al[i]);
         S::add(y, bl[i]);
-        P::add(GEC_DEST_, GEC_SRC_, pl[i], rest_ctx);
+        P::add(GEC_DEST_, GEC_SRC_, pl[i]);
         GEC_RELOAD_;
     }
 
@@ -407,8 +378,6 @@ cudaError_t cu_pollard_rho(S &c,
     std::vector<P> pl(l);
     P *d_pl = nullptr;
 
-    typename P::template Context<> ctx;
-
     GecRng<cuRng> *d_rng = nullptr;
     S *d_init_xs = nullptr, *d_init_ys = nullptr;
     P *d_init_ps = nullptr;
@@ -469,9 +438,9 @@ cudaError_t cu_pollard_rho(S &c,
     for (size_t k = 0; k < l; ++k) {
         S::sample(al[k], rng);
         S::sample(bl[k], rng);
-        P::mul(ag, al[k], g, ctx);
-        P::mul(bh, bl[k], h, ctx);
-        P::add(pl[k], ag, bh, ctx);
+        P::mul(ag, al[k], g);
+        P::mul(bh, bl[k], h);
+        P::add(pl[k], ag, bh);
     }
 
     _CUDA_CHECK_(cudaMemcpyAsync(d_al, al.data(), sizeof(S) * l,

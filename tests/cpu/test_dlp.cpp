@@ -34,20 +34,18 @@ TEST_CASE("pollard_rho", "[dlp][pollard_rho]") {
     INFO("seed: " << seed);
     auto rng = make_gec_rng(std::mt19937(seed));
 
-    C::Context<> ctx;
-
     C h;
-    REQUIRE(C::on_curve(g, ctx));
+    REQUIRE(C::on_curve(g));
 
-    C::mul(h, S::mod(), g, ctx);
+    C::mul(h, S::mod(), g);
     CAPTURE(h);
     REQUIRE(h.is_inf());
 
     S x;
     S::sample_non_zero(x, rng);
 
-    C::mul(h, x, g, ctx);
-    REQUIRE(C::on_curve(h, ctx));
+    C::mul(h, x, g);
+    REQUIRE(C::on_curve(h));
 
     constexpr size_t l = 16;
     S al[l], bl[l];
@@ -55,15 +53,15 @@ TEST_CASE("pollard_rho", "[dlp][pollard_rho]") {
 
     S c, d, mon_c, mon_d;
 
-    pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx);
+    pollard_rho(c, d, l, al, bl, pl, g, h, rng);
     S::to_montgomery(mon_c, c);
     S::to_montgomery(mon_d, d);
-    S::inv(mon_d, ctx);
+    S::inv(mon_d);
     S::mul(d, mon_c, mon_d);
     S::from_montgomery(c, d);
 
     C xg;
-    C::mul(xg, c, g, ctx);
+    C::mul(xg, c, g);
     CAPTURE(c, xg, h);
     REQUIRE(C::eq(xg, h));
 }
@@ -83,17 +81,15 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
         using C = Dlp3CurveA;
         const C &g = Dlp3Gen1;
 
-        C::Context<> ctx;
-
         C h;
-        REQUIRE(C::on_curve(g, ctx));
+        REQUIRE(C::on_curve(g));
 
-        C::mul(h, S::mod(), g, ctx);
+        C::mul(h, S::mod(), g);
         CAPTURE(h);
         REQUIRE(h.is_inf());
 
-        C::mul(h, x, g, ctx);
-        REQUIRE(C::on_curve(h, ctx));
+        C::mul(h, x, g);
+        REQUIRE(C::on_curve(h));
 
         constexpr size_t l = 16;
         S al[l], bl[l];
@@ -102,10 +98,10 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
         S c, d, mon_c, mon_d;
 
         BENCHMARK("pollard rho") {
-            pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx);
+            pollard_rho(c, d, l, al, bl, pl, g, h, rng);
             S::to_montgomery(mon_c, c);
             S::to_montgomery(mon_d, d);
-            S::inv(mon_d, ctx);
+            S::inv(mon_d);
             S::mul(d, mon_c, mon_d);
             S::from_montgomery(c, d);
             return c.array()[0];
@@ -117,17 +113,15 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
         using C = AVX2Dlp3CurveA;
         const C &g = reinterpret_cast<const C &>(Dlp3Gen1);
 
-        C::Context<> ctx;
-
         C h;
-        REQUIRE(C::on_curve(g, ctx));
+        REQUIRE(C::on_curve(g));
 
-        C::mul(h, S::mod(), g, ctx);
+        C::mul(h, S::mod(), g);
         CAPTURE(h);
         REQUIRE(h.is_inf());
 
-        C::mul(h, x, g, ctx);
-        REQUIRE(C::on_curve(h, ctx));
+        C::mul(h, x, g);
+        REQUIRE(C::on_curve(h));
 
         constexpr size_t l = 16;
         S al[l], bl[l];
@@ -136,10 +130,10 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
         S c, d, mon_c, mon_d;
 
         BENCHMARK("avx2 pollard rho") {
-            pollard_rho(c, d, l, al, bl, pl, g, h, rng, ctx);
+            pollard_rho(c, d, l, al, bl, pl, g, h, rng);
             S::to_montgomery(mon_c, c);
             S::to_montgomery(mon_d, d);
-            S::inv(mon_d, ctx);
+            S::inv(mon_d);
             S::mul(d, mon_c, mon_d);
             S::from_montgomery(c, d);
             return c.array()[0];
@@ -158,20 +152,18 @@ TEST_CASE("pollard_lambda", "[dlp][pollard_lambda]") {
     INFO("seed: " << seed);
     auto rng = make_gec_rng(std::mt19937(seed));
 
-    C::Context<> ctx;
-
     C h;
-    REQUIRE(C::on_curve(g, ctx));
+    REQUIRE(C::on_curve(g));
 
-    C::mul(h, S::mod(), g, ctx);
+    C::mul(h, S::mod(), g);
     CAPTURE(h);
     REQUIRE(h.is_inf());
 
     S x0, lower(1 << 3), upper((1 << 3) + (1 << 15)), bound(1 << 8);
-    S::sample_inclusive(x0, lower, upper, rng, ctx);
+    S::sample_inclusive(x0, lower, upper, rng);
 
-    C::mul(h, x0, g, ctx);
-    REQUIRE(C::on_curve(h, ctx));
+    C::mul(h, x0, g);
+    REQUIRE(C::on_curve(h));
 
     size_t l = 15;
     std::vector<S> sl(l);
@@ -179,11 +171,10 @@ TEST_CASE("pollard_lambda", "[dlp][pollard_lambda]") {
 
     S x;
 
-    pollard_lambda(x, sl.data(), pl.data(), bound, lower, upper, g, h, rng,
-                   ctx);
+    pollard_lambda(x, sl.data(), pl.data(), bound, lower, upper, g, h, rng);
 
     C xg;
-    C::mul(xg, x, g, ctx);
+    C::mul(xg, x, g);
     CAPTURE(x, xg, h);
     REQUIRE(C::eq(xg, h));
 }
@@ -201,20 +192,18 @@ TEST_CASE("multithread_pollard_rho", "[dlp][pollard_rho][multithread]") {
     INFO("seed: " << seed);
     auto rng = make_gec_rng(std::mt19937(seed));
 
-    C::Context<> ctx;
-
     C h;
-    REQUIRE(C::on_curve(g, ctx));
+    REQUIRE(C::on_curve(g));
 
-    C::mul(h, S::mod(), g, ctx);
+    C::mul(h, S::mod(), g);
     CAPTURE(h);
     REQUIRE(h.is_inf());
 
     S x;
     S::sample_non_zero(x, rng);
 
-    C::mul(h, x, g, ctx);
-    REQUIRE(C::on_curve(h, ctx));
+    C::mul(h, x, g);
+    REQUIRE(C::on_curve(h));
 
     size_t l = 16;
     size_t worker_n = 8;
@@ -225,12 +214,12 @@ TEST_CASE("multithread_pollard_rho", "[dlp][pollard_rho][multithread]") {
     multithread_pollard_rho(c, d, l, worker_n, mask, g, h, rng);
     S::to_montgomery(mon_c, c);
     S::to_montgomery(mon_d, d);
-    S::inv(mon_d, ctx);
+    S::inv(mon_d);
     S::mul(d, mon_c, mon_d);
     S::from_montgomery(c, d);
 
     C xg;
-    C::mul(xg, c, g, ctx);
+    C::mul(xg, c, g);
     CAPTURE(c, xg, h);
     REQUIRE(C::eq(xg, h));
 }
@@ -251,17 +240,15 @@ TEST_CASE("multithread_pollard_rho bench",
         const C &g = reinterpret_cast<const C &>(Dlp3Gen1);
         using F = C::Field;
 
-        C::Context<> ctx;
-
         C h;
-        REQUIRE(C::on_curve(g, ctx));
+        REQUIRE(C::on_curve(g));
 
-        C::mul(h, S::mod(), g, ctx);
+        C::mul(h, S::mod(), g);
         CAPTURE(h);
         REQUIRE(h.is_inf());
 
-        C::mul(h, x, g, ctx);
-        REQUIRE(C::on_curve(h, ctx));
+        C::mul(h, x, g);
+        REQUIRE(C::on_curve(h));
 
         size_t l = 16;
         size_t worker_n = 8;
@@ -282,7 +269,7 @@ TEST_CASE("multithread_pollard_rho bench",
                 multithread_pollard_rho(c, d, l, worker_n, mask, g, h, rng);
                 S::to_montgomery(mon_c, c);
                 S::to_montgomery(mon_d, d);
-                S::inv(mon_d, ctx);
+                S::inv(mon_d);
                 S::mul(d, mon_c, mon_d);
                 S::from_montgomery(c, d);
                 return c.array()[0];
@@ -297,17 +284,15 @@ TEST_CASE("multithread_pollard_rho bench",
         const C &g = *reinterpret_cast<const C *>(Dlp3Gen1.array());
         using F = C::Field;
 
-        C::Context<> ctx;
-
         C h;
-        REQUIRE(C::on_curve(g, ctx));
+        REQUIRE(C::on_curve(g));
 
-        C::mul(h, S::mod(), g, ctx);
+        C::mul(h, S::mod(), g);
         CAPTURE(h);
         REQUIRE(h.is_inf());
 
-        C::mul(h, x, g, ctx);
-        REQUIRE(C::on_curve(h, ctx));
+        C::mul(h, x, g);
+        REQUIRE(C::on_curve(h));
 
         size_t l = 16;
         size_t worker_n = 8;
@@ -328,7 +313,7 @@ TEST_CASE("multithread_pollard_rho bench",
                 multithread_pollard_rho(c, d, l, worker_n, mask, g, h, rng);
                 S::to_montgomery(mon_c, c);
                 S::to_montgomery(mon_d, d);
-                S::inv(mon_d, ctx);
+                S::inv(mon_d);
                 S::mul(d, mon_c, mon_d);
                 S::from_montgomery(c, d);
                 return c.array()[0];
@@ -348,26 +333,24 @@ TEST_CASE("multithread_pollard_lambda", "[dlp][pollard_lambda][multithread]") {
     CAPTURE(seed);
     auto rng = make_gec_rng(std::mt19937(seed));
 
-    C::Context<> ctx;
-
     C h;
-    REQUIRE(C::on_curve(g, ctx));
+    REQUIRE(C::on_curve(g));
 
-    C::mul(h, S::mod(), g, ctx);
+    C::mul(h, S::mod(), g);
     CAPTURE(h);
     REQUIRE(h.is_inf());
 
     S x0, lower(1 << 3), upper((1 << 3) + (1 << 15)), bound(1 << 5);
-    S::sample_inclusive(x0, lower, upper, rng, ctx);
+    S::sample_inclusive(x0, lower, upper, rng);
 
-    C::mul(h, x0, g, ctx);
-    REQUIRE(C::on_curve(h, ctx));
+    C::mul(h, x0, g);
+    REQUIRE(C::on_curve(h));
 
     S x;
     multithread_pollard_lambda(x, bound, 8, lower, upper, g, h, rng);
 
     C xg;
-    C::mul(xg, x, g, ctx);
+    C::mul(xg, x, g);
     CAPTURE(x, xg, h);
     REQUIRE(C::eq(xg, h));
 }
@@ -383,20 +366,18 @@ TEST_CASE("multithread_pollard_lambda bench",
     INFO("seed: " << seed);
     auto rng = make_gec_rng(std::mt19937(seed));
 
-    C::Context<> ctx;
-
     C h;
-    REQUIRE(C::on_curve(g, ctx));
+    REQUIRE(C::on_curve(g));
 
-    C::mul(h, S::mod(), g, ctx);
+    C::mul(h, S::mod(), g);
     CAPTURE(h);
     REQUIRE(h.is_inf());
 
     S x0, lower(1 << 3), upper((1 << 3) + (1 << 15)), bound(1 << 5);
-    S::sample_inclusive(x0, lower, upper, rng, ctx);
+    S::sample_inclusive(x0, lower, upper, rng);
 
-    C::mul(h, x0, g, ctx);
-    REQUIRE(C::on_curve(h, ctx));
+    C::mul(h, x0, g);
+    REQUIRE(C::on_curve(h));
 
     size_t l = 15;
     std::vector<S> sl(l);

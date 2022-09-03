@@ -40,18 +40,14 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
         this->core().z().set_zero();
     }
 
-    template <typename F_CTX>
-    GEC_HD static void to_affine(Core &GEC_RSTRCT a, F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F>();
-
+    GEC_HD static void to_affine(Core &GEC_RSTRCT a) {
         if (a.z().is_mul_id()) {
             return;
         } else if (a.is_inf()) {
             a.set_affine_inf();
         } else {
-            auto &t1 = ctx_view.template get<0>();
-
-            F::inv(a.z(), ctx);
+            F::inv(a.z());
+            F t1;
             F::mul(t1, a.x(), a.z());
             a.x() = t1;
             F::mul(t1, a.y(), a.z());
@@ -72,21 +68,14 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
         }
     }
 
-    template <typename F_CTX>
-    GEC_HD static bool on_curve(const Core &GEC_RSTRCT a, F_CTX &ctx) {
-        auto &ctx_view = ctx.template view_as<F, F, F, F>();
-
-        auto &l = ctx_view.template get<0>();
-        auto &r = ctx_view.template get<1>();
-        auto &t1 = ctx_view.template get<2>();
-        auto &t2 = ctx_view.template get<3>();
-
+    GEC_HD static bool on_curve(const Core &GEC_RSTRCT a) {
 #ifdef __CUDACC__
         // suppress false positive NULL reference warning
         GEC_NV_DIAGNOSTIC_PUSH
         GEC_NV_DIAG_SUPPRESS(284)
 #endif // __CUDACC__
 
+        F l, r, t1, t2;
         if (a.a() != nullptr || a.b() != nullptr) {
             F::mul(t2, a.z(), a.z()); // z^2
         }                             //
@@ -113,11 +102,7 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
 #endif // __CUDACC__
     }
 
-    template <typename F_CTX>
-    GEC_HD static bool eq(const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                          F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F, F>();
-
+    GEC_HD static bool eq(const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         bool a_inf = a.is_inf();
         bool b_inf = b.is_inf();
         if (a_inf && b_inf) { // both infinity
@@ -127,8 +112,7 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
         } else if (a.z() == b.z()) { // z1 == z2
             return a.x() == b.x() && a.y() == b.y();
         } else { // z1 != z2
-            auto &p1 = ctx_view.template get<0>();
-            auto &p2 = ctx_view.template get<1>();
+            F p1, p2;
             // check x1 z2 == x2 z1
             F::mul(p1, a.x(), b.z());
             F::mul(p2, b.x(), a.z());
@@ -145,35 +129,24 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
         }
     }
 
-    template <typename F_CTX>
-    GEC_HD static void
-    add_distinct(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                 const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F, F, F, F>();
+    GEC_HD static void add_distinct(Core &GEC_RSTRCT a,
+                                    const Core &GEC_RSTRCT b,
+                                    const Core &GEC_RSTRCT c) {
+        F x1z2, x2z1, y1z2, y2z1;
 
-        auto &x1z2 = ctx_view.template get<0>();
-        auto &x2z1 = ctx_view.template get<1>();
-        auto &y1z2 = ctx_view.template get<2>();
-        auto &y2z1 = ctx_view.template get<3>();
-
-        F::mul(x1z2, b.x(), c.z()); // x1 z2
-        F::mul(x2z1, c.x(), b.z()); // x2 z1
-        F::mul(y1z2, b.y(), c.z()); // y1 z2
-        F::mul(y2z1, c.y(), b.z()); // y2 z1
-        add_distinct_inner(a, b, c, ctx);
+        F::mul(x1z2, b.x(), c.z());
+        F::mul(x2z1, c.x(), b.z());
+        F::mul(y1z2, b.y(), c.z());
+        F::mul(y2z1, c.y(), b.z());
+        add_distinct_inner(a, b, c, x1z2, x2z1, y1z2, y2z1);
     }
 
-    template <typename F_CTX>
     GEC_HD static void
     add_distinct_inner(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                       const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F, F, F, F, F>();
-
-        auto &x1z2 = ctx_view.template get<0>();
-        auto &x2z1 = ctx_view.template get<1>();
-        auto &y1z2 = ctx_view.template get<2>();
-        auto &y2z1 = ctx_view.template get<3>();
-        auto &t = ctx_view.template get<4>();
+                       const Core &GEC_RSTRCT c, FIELD_T &GEC_RSTRCT x1z2,
+                       FIELD_T &GEC_RSTRCT x2z1, FIELD_T &GEC_RSTRCT y1z2,
+                       FIELD_T &GEC_RSTRCT y2z1) {
+        F t;
 
         F::sub(y2z1, y1z2);          // a = y2 z1 - y1 z2
         F::sub(x2z1, x1z2);          // b = x2 z1 - x1 z2
@@ -194,20 +167,14 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
         F::mul(a.x(), y1z2, x2z1);   // x = b c
     }
 
-    template <typename F_CTX>
-    GEC_HD static void add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                                F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F, F, F>();
-
-        auto &t1 = ctx_view.template get<0>();
-        auto &t2 = ctx_view.template get<1>();
-        auto &t3 = ctx_view.template get<2>();
-
+    GEC_HD static void add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
 #ifdef __CUDACC__
         // suppress false positive NULL reference warning
         GEC_NV_DIAGNOSTIC_PUSH
         GEC_NV_DIAG_SUPPRESS(284)
 #endif // __CUDACC__
+
+        F t1, t2, t3;
 
         F::mul(t3, b.x(), b.x());       // x1^2
         F::add(t2, t3, t3);             // 2 x1^2
@@ -240,31 +207,27 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
 #endif // __CUDACC__
     }
 
-    template <typename F_CTX>
     GEC_HD static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                           const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<F, F, F, F>();
-
+                           const Core &GEC_RSTRCT c) {
         // checking for infinity here is not necessary
         if (b.is_inf()) {
             a = c;
         } else if (c.is_inf()) {
             a = b;
         } else {
-            auto &x1z2 = ctx_view.template get<0>();
-            auto &x2z1 = ctx_view.template get<1>();
-            auto &y1z2 = ctx_view.template get<2>();
-            auto &y2z1 = ctx_view.template get<3>();
+            {
+                F x1z2, x2z1, y1z2, y2z1;
+                F::mul(x1z2, b.x(), c.z()); // x1 z2
+                F::mul(x2z1, c.x(), b.z()); // x2 z1
+                F::mul(y1z2, b.y(), c.z()); // y1 z2
+                F::mul(y2z1, c.y(), b.z()); // y2 z1
 
-            F::mul(x1z2, b.x(), c.z()); // x1 z2
-            F::mul(x2z1, c.x(), b.z()); // x2 z1
-            F::mul(y1z2, b.y(), c.z()); // y1 z2
-            F::mul(y2z1, c.y(), b.z()); // y2 z1
-            if (x1z2 == x2z1 && y1z2 == y2z1) {
-                add_self(a, b, ctx);
-            } else {
-                add_distinct_inner(a, b, c, ctx);
+                if (x1z2 != x2z1 || y1z2 != y2z1) {
+                    add_distinct_inner(a, b, c, x1z2, x2z1, y1z2, y2z1);
+                    return;
+                }
             }
+            add_self(a, b);
         }
     }
 

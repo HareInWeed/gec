@@ -22,22 +22,20 @@ TEST_CASE("cu_pollard_lambda", "[dlp][pollard_lambda][cuda]") {
     CAPTURE(data_seed, seed);
     auto rng = make_gec_rng(std::mt19937(data_seed));
 
-    C::Context<> ctx;
-
     C h;
-    REQUIRE(C::on_curve(g, ctx));
+    REQUIRE(C::on_curve(g));
 
     {
-        C::mul(h, S::mod(), g, ctx);
+        C::mul(h, S::mod(), g);
         CAPTURE(h);
         REQUIRE(h.is_inf());
     }
 
     S x0, lower(1 << 3), upper((1 << 3) + (1 << 15));
-    S::sample_inclusive(x0, lower, upper, rng, ctx);
+    S::sample_inclusive(x0, lower, upper, rng);
 
-    C::mul(h, x0, g, ctx);
-    REQUIRE(C::on_curve(h, ctx));
+    C::mul(h, x0, g);
+    REQUIRE(C::on_curve(h));
 
     CAPTURE(g, lower, upper, x0, h);
 
@@ -49,7 +47,7 @@ TEST_CASE("cu_pollard_lambda", "[dlp][pollard_lambda][cuda]") {
         cu_pollard_lambda(x, lower, upper, g, h, mask, seed, 6, 4, 32, 0x1000));
 
     C xg;
-    C::mul(xg, x, g, ctx);
+    C::mul(xg, x, g);
     CAPTURE(x, xg);
     REQUIRE(C::eq(xg, h));
 }

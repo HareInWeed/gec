@@ -42,9 +42,15 @@ class LiftX : protected CRTP<Core, LiftX<Core, FIELD_T>> {
      * @return true lifting succeeded
      * @return false lifting failed
      */
-    template <typename Rng, typename CTX>
-    static bool lift_x(Core &a, const FIELD_T &x, GecRng<Rng> &rng, CTX &ctx) {
+    template <typename Rng>
+    static bool lift_x(Core &a, const FIELD_T &x, GecRng<Rng> &rng) {
         F x2, x3;
+
+#ifdef __CUDACC__
+        // suppress false positive NULL reference warning
+        GEC_NV_DIAGNOSTIC_PUSH
+        GEC_NV_DIAG_SUPPRESS(284)
+#endif // __CUDACC__
 
         F::mul(x2, x, x);          // x^2
         F::mul(x3, x2, x);         // x^3
@@ -56,7 +62,11 @@ class LiftX : protected CRTP<Core, LiftX<Core, FIELD_T>> {
             F::add(x3, *a.b());    // x^3 + a x + b
         }                          //
 
-        bool flag = F::mod_sqrt(a.y(), x3, ctx, rng);
+#ifdef __CUDACC__
+        GEC_NV_DIAGNOSTIC_POP
+#endif // __CUDACC__
+
+        bool flag = F::mod_sqrt(a.y(), x3, rng);
 
         if (flag) {
             a.x() = x;
@@ -75,10 +85,10 @@ class LiftX : protected CRTP<Core, LiftX<Core, FIELD_T>> {
      * @return true lifting succeeded
      * @return false lifting failed
      */
-    template <typename Rng, typename CTX>
-    static bool lift_x(Core &a, const FIELD_T &x, bool y_bit, GecRng<Rng> &rng,
-                       CTX &ctx) {
-        if (lift_x(a, x, rng, ctx)) {
+    template <typename Rng>
+    static bool lift_x(Core &a, const FIELD_T &x, bool y_bit,
+                       GecRng<Rng> &rng) {
+        if (lift_x(a, x, rng)) {
             match_y_bit(a, y_bit);
             return true;
         } else {
@@ -93,17 +103,16 @@ class LiftX : protected CRTP<Core, LiftX<Core, FIELD_T>> {
      * @param a result point on curve
      * @param x x coordinate of the point
      */
-    template <typename Rng, typename CTX>
-    static void lift_x_with_inc(Core &a, const FIELD_T &x, GecRng<Rng> &rng,
-                                CTX &ctx) {
-        if (lift_x(a, x, rng, ctx)) {
+    template <typename Rng>
+    static void lift_x_with_inc(Core &a, const FIELD_T &x, GecRng<Rng> &rng) {
+        if (lift_x(a, x, rng)) {
             return;
         }
 
         F tmp;
 
         F::add(tmp, x, F::mul_id());
-        while (!lift_x(a, tmp, rng, ctx)) {
+        while (!lift_x(a, tmp, rng)) {
             F::add(tmp, F::mul_id());
         }
     }
@@ -115,10 +124,10 @@ class LiftX : protected CRTP<Core, LiftX<Core, FIELD_T>> {
      * @param a result point on curve
      * @param x x coordinate of the point
      */
-    template <typename Rng, typename CTX>
+    template <typename Rng>
     static void lift_x_with_inc(Core &a, const FIELD_T &x, bool y_bit,
-                                GecRng<Rng> &rng, CTX &ctx) {
-        lift_x_with_inc(a, x, rng, ctx);
+                                GecRng<Rng> &rng) {
+        lift_x_with_inc(a, x, rng);
         match_y_bit(a, y_bit);
     }
 };

@@ -428,8 +428,6 @@ static void test_division(std::random_device::result_type seed) {
     CAPTURE(seed);
     auto rng = make_gec_rng(std::mt19937(seed));
 
-    typename Int::template Context<> ctx;
-
     T prod[2 * N];
 
     Int a, b, q, r, q1, r1;
@@ -440,10 +438,10 @@ static void test_division(std::random_device::result_type seed) {
         CAPTURE(upper);
         for (int k = 0; k < 1000; ++k) {
             Int::sample(a, rng);
-            Int::sample(b, lower, upper, rng, ctx);
+            Int::sample(b, lower, upper, rng);
             CAPTURE(a, b);
 
-            Int::div_rem(q, r, a, b, ctx);
+            Int::div_rem(q, r, a, b);
             CAPTURE(q, r);
 
             // product
@@ -466,9 +464,9 @@ static void test_division(std::random_device::result_type seed) {
                 REQUIRE(prod[k] == a.array()[k]);
             }
 
-            Int::div(q1, a, b, ctx);
+            Int::div(q1, a, b);
             REQUIRE(q == q1);
-            Int::rem(r1, a, b, ctx);
+            Int::rem(r1, a, b);
             REQUIRE(r == r1);
         }
     }

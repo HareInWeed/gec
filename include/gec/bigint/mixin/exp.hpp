@@ -20,13 +20,11 @@ class GEC_EMPTY_BASES Exponentiation
 
   public:
     template <
-        size_t N, typename IntT, typename CTX,
+        size_t N, typename IntT,
         std::enable_if_t<std::numeric_limits<IntT>::is_integer> * = nullptr>
     GEC_HD static void pow(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                           const IntT *GEC_RSTRCT e, CTX &GEC_RSTRCT ctx) {
-        auto &ctx_view = ctx.template view_as<Core>();
-
-        auto &ap = ctx_view.template get<0>();
+                           const IntT *GEC_RSTRCT e) {
+        Core ap;
 
         bool in_dest = true;
 #define GEC_DEST_ (in_dest ? ap : a)
@@ -61,21 +59,21 @@ class GEC_EMPTY_BASES Exponentiation
     }
 
     template <
-        typename IntT, typename CTX,
+        typename IntT,
         std::enable_if_t<std::numeric_limits<IntT>::is_integer> * = nullptr>
-    GEC_HD GEC_INLINE static void
-    pow(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT &GEC_RSTRCT e,
-        CTX &GEC_RSTRCT ctx) {
-        pow<1>(a, b, &e, ctx);
+    GEC_HD GEC_INLINE static void pow(Core &GEC_RSTRCT a,
+                                      const Core &GEC_RSTRCT b,
+                                      const IntT &GEC_RSTRCT e) {
+        pow<1>(a, b, &e);
     }
 
     template <
-        typename IntT, typename CTX,
+        typename IntT,
         std::enable_if_t<!std::numeric_limits<IntT>::is_integer> * = nullptr>
-    GEC_HD GEC_INLINE static void
-    pow(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b, const IntT &GEC_RSTRCT e,
-        CTX &GEC_RSTRCT ctx) {
-        pow<IntT::LimbN>(a, b, e.array(), ctx);
+    GEC_HD GEC_INLINE static void pow(Core &GEC_RSTRCT a,
+                                      const Core &GEC_RSTRCT b,
+                                      const IntT &GEC_RSTRCT e) {
+        pow<IntT::LimbN>(a, b, e.array());
     }
 };
 

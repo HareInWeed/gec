@@ -32,22 +32,18 @@ class GEC_EMPTY_BASES JacobianM
         // TODO
     }
 
-    template <typename F_CTX>
-    GEC_HD static void
-    add_distinct(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                 const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void add_distinct(Core &GEC_RSTRCT a,
+                                    const Core &GEC_RSTRCT b,
+                                    const Core &GEC_RSTRCT c) {
         //  TODO
     }
 
-    template <typename F_CTX>
-    GEC_HD static void add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                                F_CTX &GEC_RSTRCT ctx) {
+    GEC_HD static void add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
         //  TODO
     }
 
-    template <typename F_CTX>
     GEC_HD static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                           const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
+                           const Core &GEC_RSTRCT c) {
         //  TODO
     }
 
