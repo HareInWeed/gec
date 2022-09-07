@@ -196,7 +196,7 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
 
     template <typename F_CTX>
     GEC_HD static void add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                                F_CTX &ctx) {
+                                F_CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<F, F, F>();
 
         auto &t1 = ctx_view.template get<0>();
@@ -242,7 +242,7 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
 
     template <typename F_CTX>
     GEC_HD static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                           const Core &GEC_RSTRCT c, F_CTX &ctx) {
+                           const Core &GEC_RSTRCT c, F_CTX &GEC_RSTRCT ctx) {
         auto &ctx_view = ctx.template view_as<F, F, F, F>();
 
         // checking for infinity here is not necessary

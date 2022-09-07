@@ -15,12 +15,6 @@ if(GEC_ENABLE_CUDA)
     check_language(CUDA)
 endif()
 
-# Only do these if this is the main project, and not if it is included through
-# `add_subdirectory`
-if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-    include(CTest)
-endif()
-
 add_library(gec INTERFACE)
 target_include_directories(gec INTERFACE "./include")
 target_compile_features(gec INTERFACE cxx_std_14)
@@ -81,6 +75,12 @@ if(GEC_ENABLE_CUDA)
     set_target_properties(sm2 PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 endif()
 
-if(BUILD_TESTING)
-    add_subdirectory(tests)
+# Only do these if this is the main project, and not if it is included through
+# `add_subdirectory`
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    include(CTest)
+
+    if(BUILD_TESTING)
+        add_subdirectory(tests)
+    endif()
 endif()
