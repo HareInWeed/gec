@@ -17,6 +17,35 @@ class GEC_EMPTY_BASES JacobianCoordinate
 
     using F = FIELD_T;
 
+    /** @brief add distinct point with some precomputed value
+     *
+     * ta == x1 z2^2
+     * tb == x2 z1^2
+     * tc == y1 z2^3
+     * td == y2 z1^3
+     */
+    GEC_INLINE GEC_HD static void
+    add_distinct_inner(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                       const Core &GEC_RSTRCT c, FIELD_T &GEC_RSTRCT ta,
+                       FIELD_T &GEC_RSTRCT tb, FIELD_T &GEC_RSTRCT tc,
+                       FIELD_T &GEC_RSTRCT td) {
+        F::sub(tb, ta);           // e = b - a
+        F::sub(td, tc);           // f = d - c
+        F::mul(a.z(), tb, tb);    // e^2
+        F::mul(a.y(), ta, a.z()); // a e^2
+        F::mul(ta, a.z(), tb);    // e^3
+        F::mul(a.z(), tc, ta);    // c e^3
+        F::add(tc, a.y(), a.y()); // 2 a e^2
+        F::mul(a.x(), td, td);    // f^2
+        F::sub(a.x(), tc);        // f^2 - 2 a e^2
+        F::sub(a.x(), ta);        // x = f^2 - 2 a e^2 - e^3
+        F::sub(ta, a.y(), a.x()); // a e^2 - x
+        F::mul(a.y(), td, ta);    // f (a e^2 - x)
+        F::sub(a.y(), a.z());     // y = f (a e^2 - x) - c e^3
+        F::mul(ta, b.z(), c.z()); // z1 z2
+        F::mul(a.z(), ta, tb);    // z = z1 z2 e
+    }
+
   public:
     using Field = FIELD_T;
 
@@ -141,35 +170,6 @@ class GEC_EMPTY_BASES JacobianCoordinate
         }
     }
 
-    /** @brief add distinct point with some precomputed value
-     *
-     * ta == x1 z2^2
-     * tb == x2 z1^2
-     * tc == y1 z2^3
-     * td == y2 z1^3
-     */
-    GEC_HD static void
-    add_distinct_inner(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                       const Core &GEC_RSTRCT c, FIELD_T &GEC_RSTRCT ta,
-                       FIELD_T &GEC_RSTRCT tb, FIELD_T &GEC_RSTRCT tc,
-                       FIELD_T &GEC_RSTRCT td) {
-        F::sub(tb, ta);           // e = b - a
-        F::sub(td, tc);           // f = d - c
-        F::mul(a.z(), tb, tb);    // e^2
-        F::mul(a.y(), ta, a.z()); // a e^2
-        F::mul(ta, a.z(), tb);    // e^3
-        F::mul(a.z(), tc, ta);    // c e^3
-        F::add(tc, a.y(), a.y()); // 2 a e^2
-        F::mul(a.x(), td, td);    // f^2
-        F::sub(a.x(), tc);        // f^2 - 2 a e^2
-        F::sub(a.x(), ta);        // x = f^2 - 2 a e^2 - e^3
-        F::sub(ta, a.y(), a.x()); // a e^2 - x
-        F::mul(a.y(), td, ta);    // f (a e^2 - x)
-        F::sub(a.y(), a.z());     // y = f (a e^2 - x) - c e^3
-        F::mul(ta, b.z(), c.z()); // z1 z2
-        F::mul(a.z(), ta, tb);    // z = z1 z2 e
-    }
-
     GEC_HD static void add_distinct(Core &GEC_RSTRCT a,
                                     const Core &GEC_RSTRCT b,
                                     const Core &GEC_RSTRCT c) {
@@ -229,9 +229,9 @@ class GEC_EMPTY_BASES JacobianCoordinate
                            const Core &GEC_RSTRCT c) {
         // checking for infinity here is not necessary
         if (b.is_inf()) {
-            a = c;
+            a.set_inf();
         } else if (c.is_inf()) {
-            a = b;
+            a.set_inf();
         } else {
             {
                 F ta, tb, tc, td;

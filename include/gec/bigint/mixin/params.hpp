@@ -27,7 +27,7 @@ class GEC_EMPTY_BASES AddGroupRawParams
 
 template <class Core, typename Base, const Base *MOD,
           const Base *d_MOD = nullptr>
-class AddGroupParams
+class GEC_EMPTY_BASES AddGroupParams
     : protected CRTP<Core, AddGroupParams<Core, Base, MOD, d_MOD>> {
     friend CRTP<Core, AddGroupParams<Core, Base, MOD, d_MOD>>;
 

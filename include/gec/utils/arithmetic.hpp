@@ -761,7 +761,7 @@ GEC_HD GEC_INLINE void uint_mul_lh(T &GEC_RSTRCT l, T &GEC_RSTRCT h,
  */
 template <size_t N, typename T>
 GEC_HD GEC_INLINE T seq_add_mul_limb(T *GEC_RSTRCT a, const T *GEC_RSTRCT b,
-                                     const T &x) {
+                                     const T &GEC_RSTRCT x) {
     // x * b[4] - -
     // x * b[3]   - -
     // x * b[2]     - -

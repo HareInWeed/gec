@@ -17,6 +17,32 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
     friend CRTP<Core, ProjectiveCoordinate<Core, FIELD_T, InfYZero>>;
     using F = FIELD_T;
 
+    GEC_HD GEC_INLINE static void
+    add_distinct_inner(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
+                       const Core &GEC_RSTRCT c, FIELD_T &GEC_RSTRCT x1z2,
+                       FIELD_T &GEC_RSTRCT x2z1, FIELD_T &GEC_RSTRCT y1z2,
+                       FIELD_T &GEC_RSTRCT y2z1) {
+        F t;
+
+        F::sub(y2z1, y1z2);          // a = y2 z1 - y1 z2
+        F::sub(x2z1, x1z2);          // b = x2 z1 - x1 z2
+        F::mul(a.y(), x2z1, x2z1);   // b^2
+        F::mul(t, a.y(), x1z2);      // b^2 x1 z2
+        F::mul(a.x(), a.y(), x2z1);  // b^3
+        F::mul(x1z2, a.x(), y1z2);   // b^3 y1 z2
+        F::mul(a.z(), y2z1, y2z1);   // a^2
+        F::mul(a.y(), b.z(), c.z()); // z1 z2
+        F::mul(y1z2, a.y(), a.z());  // a^2 z1 z2
+        F::mul(a.z(), a.x(), a.y()); // z = b^3 z1 z2
+        F::add(a.y(), t, t);         // 2 b^2 x1 z2
+        F::sub(y1z2, a.y());         // a^2 z1 z2 - 2 b^2 x1 z2
+        F::sub(y1z2, a.x());         // c = a^2 z1 z2 - 2 b^2 x1 z2 - b^3
+        F::sub(t, y1z2);             // b^2 x1 z2 - c
+        F::mul(a.y(), t, y2z1);      // a (b^2 x1 z2 - c)
+        F::sub(a.y(), x1z2);         // y = a (b^2 x1 z2 - c) - b^3 y1 z2
+        F::mul(a.x(), y1z2, x2z1);   // x = b c
+    }
+
   public:
     using Field = FIELD_T;
 
@@ -141,32 +167,6 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
         add_distinct_inner(a, b, c, x1z2, x2z1, y1z2, y2z1);
     }
 
-    GEC_HD static void
-    add_distinct_inner(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,
-                       const Core &GEC_RSTRCT c, FIELD_T &GEC_RSTRCT x1z2,
-                       FIELD_T &GEC_RSTRCT x2z1, FIELD_T &GEC_RSTRCT y1z2,
-                       FIELD_T &GEC_RSTRCT y2z1) {
-        F t;
-
-        F::sub(y2z1, y1z2);          // a = y2 z1 - y1 z2
-        F::sub(x2z1, x1z2);          // b = x2 z1 - x1 z2
-        F::mul(a.y(), x2z1, x2z1);   // b^2
-        F::mul(t, a.y(), x1z2);      // b^2 x1 z2
-        F::mul(a.x(), a.y(), x2z1);  // b^3
-        F::mul(x1z2, a.x(), y1z2);   // b^3 y1 z2
-        F::mul(a.z(), y2z1, y2z1);   // a^2
-        F::mul(a.y(), b.z(), c.z()); // z1 z2
-        F::mul(y1z2, a.y(), a.z());  // a^2 z1 z2
-        F::mul(a.z(), a.x(), a.y()); // z = b^3 z1 z2
-        F::add(a.y(), t, t);         // 2 b^2 x1 z2
-        F::sub(y1z2, a.y());         // a^2 z1 z2 - 2 b^2 x1 z2
-        F::sub(y1z2, a.x());         // c = a^2 z1 z2 - 2 b^2 x1 z2 - b^3
-        F::sub(t, y1z2);             // b^2 x1 z2 - c
-        F::mul(a.y(), t, y2z1);      // a (b^2 x1 z2 - c)
-        F::sub(a.y(), x1z2);         // y = a (b^2 x1 z2 - c) - b^3 y1 z2
-        F::mul(a.x(), y1z2, x2z1);   // x = b c
-    }
-
     GEC_HD static void add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
 #ifdef __CUDACC__
         // suppress false positive NULL reference warning
@@ -211,9 +211,9 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
                            const Core &GEC_RSTRCT c) {
         // checking for infinity here is not necessary
         if (b.is_inf()) {
-            a = c;
+            a.set_inf();
         } else if (c.is_inf()) {
-            a = b;
+            a.set_inf();
         } else {
             {
                 F x1z2, x2z1, y1z2, y2z1;
