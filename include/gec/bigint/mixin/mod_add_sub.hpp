@@ -10,6 +10,8 @@ namespace gec {
 
 namespace bigint {
 
+namespace _mod_add_sub_ {
+
 template <class Core, size_t K, typename LIMB_T, size_t LIMB_N>
 struct MulPow2Helper {
     GEC_HD GEC_INLINE static void call(Core &GEC_RSTRCT a) {
@@ -30,6 +32,8 @@ template <class Core, typename LIMB_T, size_t LIMB_N>
 struct MulPow2Helper<Core, 0, LIMB_T, LIMB_N> {
     GEC_HD GEC_INLINE static void call(Core &GEC_RSTRCT) {}
 };
+
+} // namespace _mod_add_sub_
 
 /** @brief mixin that enables addition and subtraction operation
  *
@@ -135,15 +139,17 @@ class GEC_EMPTY_BASES ModAddSub
      */
     template <size_t K>
     GEC_HD static void mul_pow2(Core &GEC_RSTRCT a) {
-        MulPow2Helper<Core, K, LIMB_T, LIMB_N>::call(a);
+        _mod_add_sub_::MulPow2Helper<Core, K, LIMB_T, LIMB_N>::call(a);
     }
 
     /** @brief a = 2 * a (mod MOD)
      */
     GEC_HD static void add_self(Core &GEC_RSTRCT a) {
-        MulPow2Helper<Core, 1, LIMB_T, LIMB_N>::call(a);
+        _mod_add_sub_::MulPow2Helper<Core, 1, LIMB_T, LIMB_N>::call(a);
     }
 };
+
+namespace _mod_add_sub_ {
 
 template <class Core, size_t K, typename LIMB_T, size_t LIMB_N,
           const LIMB_T *MOD>
@@ -163,6 +169,8 @@ struct CarryFreeMulPow2Helper<Core, 0, LIMB_T, LIMB_N, MOD> {
     GEC_HD GEC_INLINE static void call(Core &GEC_RSTRCT) {}
 };
 
+} // namespace _mod_add_sub_
+
 /** @brief Mixin that enables addition and subtraction operation without
  * checking for carry bit
  *
@@ -175,9 +183,9 @@ struct CarryFreeMulPow2Helper<Core, 0, LIMB_T, LIMB_N, MOD> {
  * require `Core::is_zero`, `Core::set_zero` methods
  */
 template <class Core, typename LIMB_T, size_t LIMB_N>
-class GEC_EMPTY_BASES ModAddSubMixinCarryFree
-    : protected CRTP<Core, ModAddSubMixinCarryFree<Core, LIMB_T, LIMB_N>> {
-    friend CRTP<Core, ModAddSubMixinCarryFree<Core, LIMB_T, LIMB_N>>;
+class GEC_EMPTY_BASES ModAddSubCarryFree
+    : protected CRTP<Core, ModAddSubCarryFree<Core, LIMB_T, LIMB_N>> {
+    friend CRTP<Core, ModAddSubCarryFree<Core, LIMB_T, LIMB_N>>;
 
   public:
     /** @brief a = b + c (mod MOD)
@@ -274,15 +282,15 @@ class GEC_EMPTY_BASES ModAddSubMixinCarryFree
      */
     template <size_t K>
     GEC_HD static void mul_pow2(Core &GEC_RSTRCT a) {
-        CarryFreeMulPow2Helper<Core, K, LIMB_T, LIMB_N, a.mod().array()>::call(
-            a);
+        _mod_add_sub_::CarryFreeMulPow2Helper<Core, K, LIMB_T, LIMB_N,
+                                              a.mod().array()>::call(a);
     }
 
     /** @brief a = 2 * a (mod MOD)
      */
     GEC_HD static void add_self(Core &GEC_RSTRCT a) {
-        CarryFreeMulPow2Helper<Core, 1, LIMB_T, LIMB_N, a.mod().array()>::call(
-            a);
+        _mod_add_sub_::CarryFreeMulPow2Helper<Core, 1, LIMB_T, LIMB_N,
+                                              a.mod().array()>::call(a);
     }
 };
 
