@@ -6,6 +6,7 @@
 
 using namespace gec;
 using namespace bigint;
+using namespace gec::bigint::literal;
 
 using Bigint160 = Bigint<LIMB_T, LN_160>;
 using Bigint160_2 = Bigint<LIMB2_T, LN2_160>;
@@ -86,56 +87,44 @@ TEST_CASE("bigint comparison", "[bigint]") {
 }
 
 TEST_CASE("bigint shift", "[bigint]") {
-    Bigint160 e(0xf005000fu, 0xf004000fu, 0xf003000fu, 0xf002000fu,
-                0xf001000fu);
+    Bigint160 e(0xf005000f'f004000f'f003000f'f002000f'f001000f_int);
 
     e.shift_right<0>();
-    REQUIRE(Bigint160(0xf005000fu, 0xf004000fu, 0xf003000fu, 0xf002000fu,
-                      0xf001000fu) == e);
+    REQUIRE(Bigint160(0xf005000f'f004000f'f003000f'f002000f'f001000f_int) == e);
 
     e.shift_right<3>();
-    REQUIRE(Bigint160(0x1e00a001u, 0xfe008001u, 0xfe006001u, 0xfe004001u,
-                      0xfe002001u) == e);
+    REQUIRE(Bigint160(0x1e00a001'fe008001'fe006001'fe004001'fe002001_int) == e);
 
     e.shift_right<32>();
-    REQUIRE(Bigint160(0x00000000u, 0x1e00a001u, 0xfe008001u, 0xfe006001u,
-                      0xfe004001u) == e);
+    REQUIRE(Bigint160(0x00000000'1e00a001'fe008001'fe006001'fe004001_int) == e);
 
     e.shift_right<33>();
-    REQUIRE(Bigint160(0x00000000u, 0x00000000u, 0x0f005000u, 0xff004000u,
-                      0xff003000u) == e);
+    REQUIRE(Bigint160(0x00000000'00000000'0f005000'ff004000'ff003000_int) == e);
 
     e.shift_right<66>();
-    REQUIRE(Bigint160(0x00000000u, 0x00000000u, 0x00000000u, 0x00000000u,
-                      0x03c01400u) == e);
+    REQUIRE(Bigint160(0x00000000'00000000'00000000'00000000'03c01400_int) == e);
 
     e.shift_right<32 * 5>();
     REQUIRE(e.is_zero());
 
     // e.shift_right<32 * 5 + 1>(); // don't do that
 
-    e = Bigint160(0xf005000fu, 0xf004000fu, 0xf003000fu, 0xf002000fu,
-                  0xf001000fu);
+    e = Bigint160(0xf005000f'f004000f'f003000f'f002000f'f001000f_int);
 
     e.shift_left<0>();
-    REQUIRE(Bigint160(0xf005000fu, 0xf004000fu, 0xf003000fu, 0xf002000fu,
-                      0xf001000fu) == e);
+    REQUIRE(Bigint160(0xf005000f'f004000f'f003000f'f002000f'f001000f_int) == e);
 
     e.shift_left<3>();
-    REQUIRE(Bigint160(0x8028007fu, 0x8020007fu, 0x8018007fu, 0x8010007fu,
-                      0x80080078u) == e);
+    REQUIRE(Bigint160(0x8028007f'8020007f'8018007f'8010007f'80080078_int) == e);
 
     e.shift_left<32>();
-    REQUIRE(Bigint160(0x8020007fu, 0x8018007fu, 0x8010007fu, 0x80080078u,
-                      0x00000000u) == e);
+    REQUIRE(Bigint160(0x8020007f'8018007f'8010007f'80080078'00000000_int) == e);
 
     e.shift_left<33>();
-    REQUIRE(Bigint160(0x003000ffu, 0x002000ffu, 0x001000f0u, 0x000000000u,
-                      0x00000000u) == e);
+    REQUIRE(Bigint160(0x003000ff'002000ff'001000f0'00000000'00000000_int) == e);
     // 003000ff 002000ff 001000f0 00000000 00000000
     e.shift_left<66>();
-    REQUIRE(Bigint160(0x004003c0u, 0x00000000u, 0x00000000u, 0x00000000u,
-                      0x00000000) == e);
+    REQUIRE(Bigint160(0x004003c0'00000000'00000000'00000000'00000000_int) == e);
 
     e.shift_left<32 * 5>();
     REQUIRE(e.is_zero());
@@ -145,22 +134,18 @@ TEST_CASE("bigint shift", "[bigint]") {
 
 TEST_CASE("bigint bit operations", "[bigint]") {
     using F = Bigint160;
-    F a(0x0ffff000u, 0x0000ffffu, 0xffffffffu, 0xffffffffu, 0x00000000u);
-    F b(0x000ffff0u, 0xffff0000u, 0x00000000u, 0xffff0000u, 0x00000000u);
+    F a(0x0ffff000'0000ffff'ffffffff'ffffffff'00000000_int);
+    F b(0x000ffff0'ffff0000'00000000'ffff0000'00000000_int);
     F c;
 
     c.bit_and(a, b);
-    REQUIRE(F(0x000ff000u, 0x00000000u, 0x00000000u, 0xffff0000u,
-              0x00000000u) == c);
+    REQUIRE(F(0x000ff000'00000000'00000000'ffff0000'00000000_int) == c);
     c.bit_or(a, b);
-    REQUIRE(F(0x0ffffff0u, 0xffffffffu, 0xffffffffu, 0xffffffffu,
-              0x00000000u) == c);
+    REQUIRE(F(0x0ffffff0'ffffffff'ffffffff'ffffffff'00000000_int) == c);
     c.bit_not(a);
-    REQUIRE(F(0xf0000fffu, 0xffff0000u, 0x00000000u, 0x00000000u,
-              0xffffffffu) == c);
+    REQUIRE(F(0xf0000fff'ffff0000'00000000'00000000'ffffffff_int) == c);
     c.bit_xor(a, b);
-    REQUIRE(F(0x0ff00ff0u, 0xffffffffu, 0xffffffffu, 0x0000ffffu,
-              0x00000000u) == c);
+    REQUIRE(F(0x0ff00ff0'ffffffff'ffffffff'0000ffff'00000000_int) == c);
 
     REQUIRE(155 == a.most_significant_bit());
     REQUIRE(4 == a.leading_zeros());
@@ -242,13 +227,15 @@ TEST_CASE("bigint add", "[bigint]") {
     REQUIRE(Bigint160(0x20) == e);
     REQUIRE(!carry);
 
-    carry = Bigint160::add(e, Bigint160(0xa2000000u), Bigint160(0x5f000000u));
-    REQUIRE(Bigint160(0, 0, 0, 0x1u, 0x01000000u) == e);
+    carry =
+        Bigint160::add(e, Bigint160(0xa2000000_int), Bigint160(0x5f000000_int));
+    REQUIRE(Bigint160(0x1'01000000_int) == e);
     REQUIRE(!carry);
 
-    carry = Bigint160::add(e, Bigint160(0xa2000000u, 0x5f000000u, 0, 0, 0),
-                           Bigint160(0x5f000000u, 0xa2000000u, 0, 0, 0));
-    REQUIRE(Bigint160(0x01000001u, 0x01000000u, 0, 0, 0) == e);
+    carry = Bigint160::add(
+        e, Bigint160(0xa2000000'5f000000'00000000'00000000'00000000_int),
+        Bigint160(0x5f000000'a2000000'00000000'00000000'00000000_int));
+    REQUIRE(Bigint160(0x01000001'01000000'00000000'00000000'00000000_int) == e);
     REQUIRE(carry);
 
     e = Bigint160();
@@ -261,14 +248,15 @@ TEST_CASE("bigint add", "[bigint]") {
     REQUIRE(Bigint160(0x20) == e);
     REQUIRE(!carry);
 
-    e = Bigint160(0xa2000000u);
-    carry = Bigint160::add(e, Bigint160(0x5f000000u));
-    REQUIRE(Bigint160(0, 0, 0, 0x1u, 0x01000000u) == e);
+    e = Bigint160(0xa2000000_int);
+    carry = Bigint160::add(e, Bigint160(0x5f000000_int));
+    REQUIRE(Bigint160(0x1'01000000_int) == e);
     REQUIRE(!carry);
 
-    e = Bigint160(0xa2000000u, 0x5f000000u, 0, 0, 0);
-    carry = Bigint160::add(e, Bigint160(0x5f000000u, 0xa2000000u, 0, 0, 0));
-    REQUIRE(Bigint160(0x01000001u, 0x01000000u, 0, 0, 0) == e);
+    e = Bigint160(0xa2000000'5f000000'00000000'00000000'00000000_int);
+    carry = Bigint160::add(
+        e, Bigint160(0x5f000000'a2000000'00000000'00000000'00000000_int));
+    REQUIRE(Bigint160(0x01000001'01000000'00000000'00000000'00000000_int) == e);
     REQUIRE(carry);
 }
 
@@ -284,33 +272,26 @@ TEST_CASE("bigint sub", "[bigint]") {
     REQUIRE(Bigint160(0xee) == e);
     REQUIRE(!borrow);
 
-    borrow =
-        Bigint160::sub(e, Bigint160(0x10000000u, 0, 0, 0, 0), Bigint160(0x1));
-    REQUIRE(Bigint160(0x0fffffffu, 0xffffffffu, 0xffffffffu, 0xffffffffu,
-                      0xffffffffu) == e);
+    borrow = Bigint160::sub(
+        e, Bigint160(0x10000000'00000000'00000000'00000000'00000000_int),
+        Bigint160(0x1));
+    REQUIRE(Bigint160(0x0fffffff'ffffffff'ffffffff'ffffffff'ffffffff_int) == e);
     REQUIRE(!borrow);
 
     borrow = Bigint160::sub(e, Bigint160(0, 0, 0, 0, 0), Bigint160(0x1));
-    REQUIRE(Bigint160(0xffffffffu, 0xffffffffu, 0xffffffffu, 0xffffffffu,
-                      0xffffffffu) == e);
+    REQUIRE(Bigint160(0xffffffff'ffffffff'ffffffff'ffffffff'ffffffff_int) == e);
     REQUIRE(borrow);
 
-    borrow = Bigint160::sub(e,
-                            Bigint160(0x96eb8e57u, 0xa17e5730u, 0x336ebe5eu,
-                                      0x553bdef2u, 0xfc26eb86u),
-                            Bigint160(0x438ab2ceu, 0xa07f9675u, 0x30debdd3u,
-                                      0xc9446c1bu, 0x85b4ff59u));
-    REQUIRE(Bigint160(0x5360db89u, 0x00fec0bbu, 0x0290008au, 0x8bf772d7u,
-                      0x7671ec2du) == e);
+    borrow = Bigint160::sub(
+        e, Bigint160(0x96eb8e57'a17e5730'336ebe5e'553bdef2'fc26eb86_int),
+        Bigint160(0x438ab2ce'a07f9675'30debdd3'c9446c1b'85b4ff59_int));
+    REQUIRE(Bigint160(0x5360db89'00fec0bb'0290008a'8bf772d7'7671ec2d_int) == e);
     REQUIRE(!borrow);
 
-    borrow = Bigint160::sub(e,
-                            Bigint160(0x01a8b80cu, 0x425b5530u, 0xc29ce6b1u,
-                                      0xebc4a008u, 0x107bb597u),
-                            Bigint160(0x54e006b4u, 0x731480edu, 0x56e01a41u,
-                                      0x2aa50851u, 0x852f86a2u));
-    REQUIRE(Bigint160(0xacc8b157u, 0xcf46d443u, 0x6bbccc70u, 0xc11f97b6u,
-                      0x8b4c2ef5u) == e);
+    borrow = Bigint160::sub(
+        e, Bigint160(0x01a8b80c'425b5530'c29ce6b1'ebc4a008'107bb597_int),
+        Bigint160(0x54e006b4'731480ed'56e01a41'2aa50851'852f86a2_int));
+    REQUIRE(Bigint160(0xacc8b157'cf46d443'6bbccc70'c11f97b6'8b4c2ef5_int) == e);
     REQUIRE(borrow);
 
     e = Bigint160();
@@ -323,32 +304,26 @@ TEST_CASE("bigint sub", "[bigint]") {
     REQUIRE(Bigint160(0xee) == e);
     REQUIRE(!borrow);
 
-    e = Bigint160(0x10000000u, 0, 0, 0, 0);
+    e = Bigint160(0x10000000'00000000'00000000'00000000'00000000_int);
     borrow = Bigint160::sub(e, Bigint160(0x1));
-    REQUIRE(Bigint160(0x0fffffffu, 0xffffffffu, 0xffffffffu, 0xffffffffu,
-                      0xffffffffu) == e);
+    REQUIRE(Bigint160(0x0fffffff'ffffffff'ffffffff'ffffffff'ffffffff_int) == e);
     REQUIRE(!borrow);
 
     e = Bigint160(0, 0, 0, 0, 0);
     borrow = Bigint160::sub(e, Bigint160(0x1));
-    REQUIRE(Bigint160(0xffffffffu, 0xffffffffu, 0xffffffffu, 0xffffffffu,
-                      0xffffffffu) == e);
+    REQUIRE(Bigint160(0xffffffff'ffffffff'ffffffff'ffffffff'ffffffff_int) == e);
     REQUIRE(borrow);
 
-    e = Bigint160(0x96eb8e57u, 0xa17e5730u, 0x336ebe5eu, 0x553bdef2u,
-                  0xfc26eb86u);
-    borrow = Bigint160::sub(e, Bigint160(0x438ab2ceu, 0xa07f9675u, 0x30debdd3u,
-                                         0xc9446c1bu, 0x85b4ff59u));
-    REQUIRE(Bigint160(0x5360db89u, 0x00fec0bbu, 0x0290008au, 0x8bf772d7u,
-                      0x7671ec2du) == e);
+    e = Bigint160(0x96eb8e57'a17e5730'336ebe5e'553bdef2'fc26eb86_int);
+    borrow = Bigint160::sub(
+        e, Bigint160(0x438ab2ce'a07f9675'30debdd3'c9446c1b'85b4ff59_int));
+    REQUIRE(Bigint160(0x5360db89'00fec0bb'0290008a'8bf772d7'7671ec2d_int) == e);
     REQUIRE(!borrow);
 
-    e = Bigint160(0x01a8b80cu, 0x425b5530u, 0xc29ce6b1u, 0xebc4a008u,
-                  0x107bb597u);
-    borrow = Bigint160::sub(e, Bigint160(0x54e006b4u, 0x731480edu, 0x56e01a41u,
-                                         0x2aa50851u, 0x852f86a2u));
-    REQUIRE(Bigint160(0xacc8b157u, 0xcf46d443u, 0x6bbccc70u, 0xc11f97b6u,
-                      0x8b4c2ef5u) == e);
+    e = Bigint160(0x01a8b80c'425b5530'c29ce6b1'ebc4a008'107bb597_int);
+    borrow = Bigint160::sub(
+        e, Bigint160(0x54e006b4'731480ed'56e01a41'2aa50851'852f86a2_int));
+    REQUIRE(Bigint160(0xacc8b157'cf46d443'6bbccc70'c11f97b6'8b4c2ef5_int) == e);
     REQUIRE(borrow);
 }
 

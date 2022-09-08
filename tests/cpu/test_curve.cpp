@@ -9,6 +9,7 @@
 
 using namespace gec;
 using namespace bigint;
+using namespace gec::bigint::literal;
 using namespace curve;
 
 TEST_CASE("point", "[curve]") {
@@ -28,22 +29,18 @@ TEST_CASE("affine", "[curve][affine]") {
     REQUIRE(!C::on_curve(test));
 
     C p1;
-    F::to_montgomery(
-        p1.x(), //
-        {0x0ee27967u, 0x5de1bde5u, 0xfaf553e9u, 0x2185fec7u, 0x43e7dd56u});
-    F::to_montgomery(
-        p1.y(), //
-        {0xa43c088fu, 0xa471d05cu, 0x3d1bed80u, 0xb89428beu, 0x84e54faeu});
+    F::to_montgomery(p1.x(), //
+                     0x0ee27967'5de1bde5'faf553e9'2185fec7'43e7dd56_int);
+    F::to_montgomery(p1.y(), //
+                     0xa43c088f'a471d05c'3d1bed80'b89428be'84e54fae_int);
     CAPTURE(p1);
     REQUIRE(C::on_curve(p1));
 
     C p2;
-    F::to_montgomery(
-        p2.x(), //
-        {0x16b60634u, 0xe1d3e896u, 0x2879d7aau, 0x2c1672abu, 0xde0252bbu});
-    F::to_montgomery(
-        p2.y(), //
-        {0x99056d94u, 0xe6864afau, 0xa034f181u, 0xd8b4192fu, 0x1cbedd98u});
+    F::to_montgomery(p2.x(), //
+                     0x16b60634'e1d3e896'2879d7aa'2c1672ab'de0252bb_int);
+    F::to_montgomery(p2.y(), //
+                     0x99056d94'e6864afa'a034f181'd8b4192f'1cbedd98_int);
     CAPTURE(p2);
     REQUIRE(C::on_curve(p2));
 

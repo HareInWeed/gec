@@ -12,19 +12,19 @@ using namespace gec::bigint::literal;
 namespace _secp256k1_ {
 
 const FBase MOD( //
-    0xffffffff'ffffffff'f'ffffffff'fffffff'ffffffff'ffffffff'fffffffe'fffffc2f_int);
+    0xffffffff'ffffffff'ffffffff'ffffffff'ffffffff'ffffffff'fffffffe'fffffc2f_int);
 const FBase RR( //
     0x01'000007a2'000e90a1_int);
 const FBase ONE_R( //
     0x1'000003d1_int);
 
 #ifdef __CUDACC__
-__constant__ constexpr const FBase d_MOD( //
+__constant__ const FBase d_MOD( //
     0xffffffff'ffffffff'ffffffff'ffffffff'ffffffff'ffffffff'fffffffe'fffffc2f_int);
-__constant__ constexpr const FBase d_RR( //
+__constant__ const FBase d_RR( //
     0x1'000007a2'000e90a1_int);
-__constant__ constexpr const FBase d_ONE_R( //
-    0x1000003d1_int);
+__constant__ const FBase d_ONE_R( //
+    0x1'000003d1_int);
 #endif // __CUDACC__
 
 const SBase CARD( //

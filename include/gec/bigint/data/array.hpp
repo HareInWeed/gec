@@ -45,7 +45,8 @@ class GEC_EMPTY_BASES Array {
 
     template <unsigned First, typename Rest>
     GEC_HD GEC_INLINE constexpr Array(
-        const literal::Cons<unsigned, First, Rest> &) noexcept {
+        const literal::Cons<unsigned, First, Rest> &) noexcept
+        : arr() {
         using namespace literal;
         using L =
             TakeExact_t<ToLimbArray_t<Cons<unsigned, First, Rest>, LIMB_T>,

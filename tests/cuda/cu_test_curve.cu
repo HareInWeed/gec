@@ -13,6 +13,7 @@
 using namespace gec;
 using namespace bigint;
 using namespace curve;
+using namespace gec::bigint::literal;
 
 __global__ static void test_point_kernel(Point<Field160, 2> *dest) {
     using F = Field160;
@@ -64,22 +65,18 @@ TEST_CASE("cuda affine", "[curve][affine][cuda]") {
     REQUIRE(!C::on_curve(test));
 
     C p1, *d_p1 = nullptr;
-    F::to_montgomery(
-        p1.x(), //
-        {0x0ee27967u, 0x5de1bde5u, 0xfaf553e9u, 0x2185fec7u, 0x43e7dd56u});
-    F::to_montgomery(
-        p1.y(), //
-        {0xa43c088fu, 0xa471d05cu, 0x3d1bed80u, 0xb89428beu, 0x84e54faeu});
+    F::to_montgomery(p1.x(), //
+                     0x0ee27967'5de1bde5'faf553e9'2185fec7'43e7dd56_int);
+    F::to_montgomery(p1.y(), //
+                     0xa43c088f'a471d05c'3d1bed80'b89428be'84e54fae_int);
     CAPTURE(p1);
     REQUIRE(C::on_curve(p1));
 
     C p2, *d_p2 = nullptr;
-    F::to_montgomery(
-        p2.x(), //
-        {0x16b60634u, 0xe1d3e896u, 0x2879d7aau, 0x2c1672abu, 0xde0252bbu});
-    F::to_montgomery(
-        p2.y(), //
-        {0x99056d94u, 0xe6864afau, 0xa034f181u, 0xd8b4192fu, 0x1cbedd98u});
+    F::to_montgomery(p2.x(), //
+                     0x16b60634'e1d3e896'2879d7aa'2c1672ab'de0252bb_int);
+    F::to_montgomery(p2.y(), //
+                     0x99056d94'e6864afa'a034f181'd8b4192f'1cbedd98_int);
     CAPTURE(p2);
     REQUIRE(C::on_curve(p2));
 
@@ -97,12 +94,10 @@ TEST_CASE("cuda affine", "[curve][affine][cuda]") {
     CUDA_REQUIRE(cudaMemcpy(&sum, d_sum, sizeof(C), cudaMemcpyDeviceToHost));
     CAPTURE(sum);
     REQUIRE(C::on_curve(sum));
-    F::to_montgomery(
-        expected.x(), //
-        {0x506c783fu, 0x82e6ba2fu, 0x323ddc50u, 0xffe966bfu, 0x41cb4178u});
-    F::to_montgomery(
-        expected.y(), //
-        {0x8fc3cd04u, 0x2e78553eu, 0xb84d4c96u, 0x196151feu, 0xe3bd209bu});
+    F::to_montgomery(expected.x(), //
+                     0x506c783f'82e6ba2f'323ddc50'ffe966bf'41cb4178_int);
+    F::to_montgomery(expected.y(), //
+                     0x8fc3cd04'2e78553e'b84d4c96'196151fe'e3bd209b_int);
     CAPTURE(expected);
     REQUIRE(C::on_curve(expected));
     REQUIRE(C::eq(expected, sum));
@@ -113,12 +108,10 @@ TEST_CASE("cuda affine", "[curve][affine][cuda]") {
     CUDA_REQUIRE(cudaMemcpy(&sum, d_sum, sizeof(C), cudaMemcpyDeviceToHost));
     CAPTURE(sum);
     REQUIRE(C::on_curve(sum));
-    F::to_montgomery(
-        expected.x(), //
-        {0x6b52f5f8u, 0x836d4559u, 0x4eb4f96fu, 0x11b16271u, 0xb9194d96u});
-    F::to_montgomery(
-        expected.y(), //
-        {0x1fd6f136u, 0xcd8ecae6u, 0xbec3bb77u, 0xa5bdc183u, 0x842648beu});
+    F::to_montgomery(expected.x(), //
+                     0x6b52f5f8'836d4559'4eb4f96f'11b16271'b9194d96_int);
+    F::to_montgomery(expected.y(), //
+                     0x1fd6f136'cd8ecae6'bec3bb77'a5bdc183'842648be_int);
     CAPTURE(expected);
     REQUIRE(C::on_curve(expected));
     REQUIRE(C::eq(expected, sum));
@@ -129,12 +122,10 @@ TEST_CASE("cuda affine", "[curve][affine][cuda]") {
     CUDA_REQUIRE(cudaMemcpy(&sum, d_sum, sizeof(C), cudaMemcpyDeviceToHost));
     CAPTURE(sum);
     REQUIRE(C::on_curve(sum));
-    F::to_montgomery(
-        expected.x(), //
-        {0x34aabf2eu, 0xf06c1194u, 0xbd316d0au, 0x3a407ef7u, 0x850f874eu});
-    F::to_montgomery(
-        expected.y(), //
-        {0x1870fd80u, 0xe627d83bu, 0x7af69418u, 0xad073ee5u, 0xba3606e5u});
+    F::to_montgomery(expected.x(), //
+                     0x34aabf2e'f06c1194'bd316d0a'3a407ef7'850f874e_int);
+    F::to_montgomery(expected.y(), //
+                     0x1870fd80'e627d83b'7af69418'ad073ee5'ba3606e5_int);
     CAPTURE(expected);
     REQUIRE(C::on_curve(expected));
     REQUIRE(C::eq(expected, sum));
@@ -175,12 +166,10 @@ TEST_CASE("cuda affine scaler_mul", "[curve][affine][scaler_mul]") {
     auto rng = make_gec_rng(std::mt19937(seed));
 
     C p;
-    F::to_montgomery(
-        p.x(), //
-        {0x1e3b0742u, 0xebf7d73fu, 0xf1a78116u, 0x4c46739au, 0x153663f3u});
-    F::to_montgomery(
-        p.y(), //
-        {0x16a8c9aau, 0xc4ad5fdfu, 0x58163ef3u, 0x9de531f5u, 0xe9cb1575u});
+    F::to_montgomery(p.x(), //
+                     0x1e3b0742'ebf7d73f'f1a78116'4c46739a'153663f3_int);
+    F::to_montgomery(p.y(), //
+                     0x16a8c9aa'c4ad5fdf'58163ef3'9de531f5'e9cb1575_int);
     REQUIRE(C::on_curve(p));
     CAPTURE(p);
 

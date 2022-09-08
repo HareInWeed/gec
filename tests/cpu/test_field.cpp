@@ -5,6 +5,7 @@
 
 using namespace gec;
 using namespace bigint;
+using namespace gec::bigint::literal;
 
 TEST_CASE("add group neg", "[add_group][field]") {
     using F = Field160;
@@ -12,18 +13,14 @@ TEST_CASE("add group neg", "[add_group][field]") {
     F::neg(e, F());
     REQUIRE(e.is_zero());
 
-    F::neg(e, F(0x1u));
-    REQUIRE(F(0xb77902abu, 0xd8db9627u, 0xf5d7cecau, 0x5c17ef6cu,
-              0x5e3b0968u) == e);
+    F::neg(e, F(0x1));
+    REQUIRE(F(0xb77902ab'd8db9627'f5d7ceca'5c17ef6c'5e3b0968_int) == e);
 
-    F::neg(e,
-           F(0xb77902abu, 0xd8db9627u, 0xf5d7cecau, 0x5c17ef6cu, 0x5e3b0968u));
-    REQUIRE(F(0x1u) == e);
+    F::neg(e, F(0xb77902ab'd8db9627'f5d7ceca'5c17ef6c'5e3b0968_int));
+    REQUIRE(F(0x1_int) == e);
 
-    F::neg(e,
-           F(0x5bbc8155u, 0xec6dcb13u, 0xfaebe765u, 0x2e0bf7b6u, 0x2f1d84b4u));
-    REQUIRE(F(0x5bbc8155u, 0xec6dcb13u, 0xfaebe765u, 0x2e0bf7b6u,
-              0x2f1d84b5u) == e);
+    F::neg(e, F(0x5bbc8155'ec6dcb13'faebe765'2e0bf7b6'2f1d84b4_int));
+    REQUIRE(F(0x5bbc8155'ec6dcb13'faebe765'2e0bf7b6'2f1d84b5_int) == e);
 }
 
 TEST_CASE("add group add", "[add_group][field]") {
@@ -36,26 +33,19 @@ TEST_CASE("add group add", "[add_group][field]") {
     F::add(e, F(1), F(2));
     REQUIRE(F(3) == e);
 
-    F::add(e, F(0x2),
-           F(0xb77902abu, 0xd8db9627u, 0xf5d7cecau, 0x5c17ef6cu, 0x5e3b0966u));
-    REQUIRE(F(0xb77902abu, 0xd8db9627u, 0xf5d7cecau, 0x5c17ef6cu,
-              0x5e3b0968u) == e);
+    F::add(e, F(0x2), F(0xb77902ab'd8db9627'f5d7ceca'5c17ef6c'5e3b0966_int));
+    REQUIRE(F(0xb77902ab'd8db9627'f5d7ceca'5c17ef6c'5e3b0968_int) == e);
 
-    F::add(e, F(0x2),
-           F(0xb77902abu, 0xd8db9627u, 0xf5d7cecau, 0x5c17ef6cu, 0x5e3b0968u));
+    F::add(e, F(0x2), F(0xb77902ab'd8db9627'f5d7ceca'5c17ef6c'5e3b0968_int));
     REQUIRE(F(0x1) == e);
 
-    F::add(e,
-           F(0x0d1f4b5bu, 0x8005d7aau, 0x4fed62acu, 0x03831479u, 0x83ccd32du),
-           F(0x1cfaec75u, 0x7faf7c19u, 0xd3121b9eu, 0xded3ca3bu, 0x952e1b38u));
-    REQUIRE(F(0x2a1a37d0u, 0xffb553c4u, 0x22ff7e4au, 0xe256deb5u,
-              0x18faee65u) == e);
+    F::add(e, F(0x0d1f4b5b'8005d7aa'4fed62ac'03831479'83ccd32d_int),
+           F(0x1cfaec75'7faf7c19'd3121b9e'ded3ca3b'952e1b38_int));
+    REQUIRE(F(0x2a1a37d0'ffb553c4'22ff7e4a'e256deb5'18faee65_int) == e);
 
-    F::add(e,
-           F(0x8f566078u, 0xb1d6a8dfu, 0xd5af7fadu, 0xaa89f612u, 0x240a6b52u),
-           F(0x4a617461u, 0x4c8165c6u, 0xf378a372u, 0x8d6cccb6u, 0xd07f7850u));
-    REQUIRE(F(0x223ed22eu, 0x257c787eu, 0xd3505455u, 0xdbded35cu,
-              0x964eda39u) == e);
+    F::add(e, F(0x8f566078'b1d6a8df'd5af7fad'aa89f612'240a6b52_int),
+           F(0x4a617461'4c8165c6'f378a372'8d6cccb6'd07f7850_int));
+    REQUIRE(F(0x223ed22e'257c787e'd3505455'dbded35c'964eda39_int) == e);
 }
 
 TEST_CASE("add group sub", "[add_group][field]") {
@@ -68,26 +58,20 @@ TEST_CASE("add group sub", "[add_group][field]") {
     F::sub(e, F(0xf0), F(0x2));
     REQUIRE(F(0xee) == e);
 
-    F::sub(e,
-           F(0xb77902abu, 0xd8db9627u, 0xf5d7cecau, 0x5c17ef6cu, 0x5e3b0968u),
-           F(0xb77902abu, 0xd8db9627u, 0xf5d7cecau, 0x5c17ef6cu, 0x5e3b0966u));
+    F::sub(e, F(0xb77902ab'd8db9627'f5d7ceca'5c17ef6c'5e3b0968_int),
+           F(0xb77902ab'd8db9627'f5d7ceca'5c17ef6c'5e3b0966_int));
     REQUIRE(F(0x2) == e);
 
     F::sub(e, F(0x1), F(0x2));
-    REQUIRE(F(0xb77902abu, 0xd8db9627u, 0xf5d7cecau, 0x5c17ef6cu,
-              0x5e3b0968u) == e);
+    REQUIRE(F(0xb77902ab'd8db9627'f5d7ceca'5c17ef6c'5e3b0968_int) == e);
 
-    F::sub(e,
-           F(0x2a1a37d0u, 0xffb553c4u, 0x22ff7e4au, 0xe256deb5u, 0x18faee65u),
-           F(0x1cfaec75u, 0x7faf7c19u, 0xd3121b9eu, 0xded3ca3bu, 0x952e1b38u));
-    REQUIRE(F(0x0d1f4b5bu, 0x8005d7aau, 0x4fed62acu, 0x03831479u,
-              0x83ccd32du) == e);
+    F::sub(e, F(0x2a1a37d0'ffb553c4'22ff7e4a'e256deb5'18faee65_int),
+           F(0x1cfaec75'7faf7c19'd3121b9e'ded3ca3b'952e1b38_int));
+    REQUIRE(F(0x0d1f4b5b'8005d7aa'4fed62ac'03831479'83ccd32d_int) == e);
 
-    F::sub(e,
-           F(0x223ed22eu, 0x257c787eu, 0xd3505455u, 0xdbded35cu, 0x964eda39u),
-           F(0x4a617461u, 0x4c8165c6u, 0xf378a372u, 0x8d6cccb6u, 0xd07f7850u));
-    REQUIRE(F(0x8f566078u, 0xb1d6a8dfu, 0xd5af7fadu, 0xaa89f612u,
-              0x240a6b52u) == e);
+    F::sub(e, F(0x223ed22e'257c787e'd3505455'dbded35c'964eda39_int),
+           F(0x4a617461'4c8165c6'f378a372'8d6cccb6'd07f7850_int));
+    REQUIRE(F(0x8f566078'b1d6a8df'd5af7fad'aa89f612'240a6b52_int) == e);
 }
 
 TEST_CASE("mul_pow2", "[add_group][field]") {
@@ -270,12 +254,11 @@ TEST_CASE("montgomery mul", "[ring][field]") {
     F::from_montgomery(b, a);
     REQUIRE(F(0) == b);
 
-    F::to_montgomery(a, F(0xffffffffu));
-    REQUIRE(F(0xad37b410u, 0x255c6eb2u, 0x7601a883u, 0x659883e8u,
-              0x070707fcu) == a);
+    F::to_montgomery(a, F(0xffffffff_int));
+    REQUIRE(F(0xad37b410'255c6eb2'7601a883'659883e8'070707fc_int) == a);
 
     F::from_montgomery(b, a);
-    REQUIRE(F(0xffffffffu) == b);
+    REQUIRE(F(0xffffffff_int) == b);
 
     F c, d, e;
     do {
@@ -322,11 +305,10 @@ TEST_CASE("montgomery mul", "[ring][field]") {
     REQUIRE(l == xy.array()[0]);
     REQUIRE(h == xy.array()[1]);
 
-    mon_x = F(0xa5481e14u, 0x293b3c7du, 0xb85ecae1u, 0x83d79492u, 0xcd652763u);
-    mon_y = F(0x93d20f51u, 0x898541bbu, 0x74aa1184u, 0xbccb10b2u, 0x47f79c2cu);
+    mon_x = F(0xa5481e14'293b3c7d'b85ecae1'83d79492'cd652763_int);
+    mon_y = F(0x93d20f51'898541bb'74aa1184'bccb10b2'47f79c2c_int);
     F::mul(mon_xy, mon_x, mon_y);
-    REQUIRE(F(0x4886fd54u, 0x272469d8u, 0x0a283135u, 0xa3e81093u,
-              0xa1c4f697u) == mon_xy);
+    REQUIRE(F(0x4886fd54'272469d8'0a283135'a3e81093'a1c4f697_int) == mon_xy);
 }
 
 #ifdef GEC_ENABLE_AVX2
@@ -341,10 +323,10 @@ TEST_CASE("avx2 montgomery", "[ring][avx2]") {
     INFO("seed: " << seed);
     auto rng = make_gec_rng(std::mt19937(seed));
 
-    Array256 x_arr(0x1f82f372u, 0x62639538u, 0xca640ff9u, 0xed12396au,
-                   0x9c4d50dau, 0xff21e339u, 0xfbfa64d8u, 0x75b40000u);
-    Array256 y_arr(0xed469d79u, 0xaba8d6fau, 0x6724432cu, 0x7221f040u,
-                   0x6416351du, 0x923ec2cau, 0x72bc1127u, 0xf1e018aau);
+    Array256 x_arr(
+        0x1f82f372'62639538'ca640ff9'ed12396a'9c4d50da'ff21e339'fbfa64d8'75b40000_int);
+    Array256 y_arr(
+        0xed469d79'aba8d6fa'6724432c'7221f040'6416351d'923ec2ca'72bc1127'f1e018aa_int);
     Int &x_int = static_cast<Int &>(x_arr);
     Int &y_int = static_cast<Int &>(y_arr);
     Array256 mon_x_arr, mon_y_arr, mon_xy_arr, xy_arr;
@@ -499,8 +481,8 @@ TEST_CASE("montgomery inv", "[field]") {
                 a.array()[k] = dis_u32(gen);
             }
         } while (a >= F::mod());
-        // a = Field(0x31a50ad6u, 0x93f524b7u, 0xa6ea2efeu, 0xed31237au,
-        //           0x2d2731f7u);
+        // a = Field(0x31a50ad6'93f524b7'a6ea2efe'ed31237a_int,
+        //           0x2d2731f7_int);
         F::to_montgomery(mon_a, a);
         F::inv(inv_a, mon_a);
         F::mul(mon_prod, mon_a, inv_a);
@@ -530,14 +512,14 @@ TEST_CASE("montgomery exp", "[field]") {
                 a.array()[k] = dis_u32(gen);
             }
         } while (a >= F::mod() && !a.is_zero());
-        // a = Field(0x31a50ad6u, 0x93f524b7u, 0xa6ea2efeu, 0xed31237au,
-        //           0x2d2731f7u);
+        // a = Field(0x31a50ad6'93f524b7'a6ea2efe'ed31237a_int,
+        //           0x2d2731f7_int);
         F::to_montgomery(mon_a, a);
 
-        F::pow(mon_exp_a, mon_a, 1u);
+        F::pow(mon_exp_a, mon_a, 1);
         REQUIRE(mon_exp_a == mon_a);
 
-        F::pow(mon_exp_a, mon_a, 0u);
+        F::pow(mon_exp_a, mon_a, 0);
         F::from_montgomery(exp_a, mon_exp_a);
         REQUIRE(exp_a.is_one());
 

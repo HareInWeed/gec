@@ -1,1 +1,1 @@
-#include <gec/curve/secp256k1.hpp>
+#include <gec/curve/sm2.hpp>
