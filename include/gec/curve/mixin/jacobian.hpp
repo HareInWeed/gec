@@ -229,9 +229,9 @@ class GEC_EMPTY_BASES JacobianCoordinate
                            const Core &GEC_RSTRCT c) {
         // checking for infinity here is not necessary
         if (b.is_inf()) {
-            a.set_inf();
+            a = c;
         } else if (c.is_inf()) {
-            a.set_inf();
+            a = b;
         } else {
             {
                 F ta, tb, tc, td;

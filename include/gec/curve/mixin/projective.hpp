@@ -211,9 +211,9 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
                            const Core &GEC_RSTRCT c) {
         // checking for infinity here is not necessary
         if (b.is_inf()) {
-            a.set_inf();
+            a = c;
         } else if (c.is_inf()) {
-            a.set_inf();
+            a = b;
         } else {
             {
                 F x1z2, x2z1, y1z2, y2z1;
