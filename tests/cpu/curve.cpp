@@ -1,5 +1,9 @@
 #include <curve.hpp>
 
+#ifdef GEC_NVCC
+GEC_INT_TOO_LARGE
+#endif // GEC_NVCC
+
 using namespace gec::bigint::literal;
 
 GEC_DEF_GLOBAL(AR_160, Field160, //

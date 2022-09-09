@@ -1,5 +1,9 @@
 #include <gec/curve/secp256k1.hpp>
 
+#ifdef GEC_NVCC
+GEC_INT_TOO_LARGE
+#endif // GEC_NVCC
+
 namespace gec {
 
 namespace curve {

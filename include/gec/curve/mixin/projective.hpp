@@ -95,11 +95,11 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
     }
 
     GEC_HD static bool on_curve(const Core &GEC_RSTRCT a) {
-#ifdef __CUDACC__
+#ifdef GEC_NVCC
         // suppress false positive NULL reference warning
         GEC_NV_DIAGNOSTIC_PUSH
         GEC_NV_DIAG_SUPPRESS(284)
-#endif // __CUDACC__
+#endif // GEC_NVCC
 
         F l, r, t1, t2;
         if (a.a() != nullptr || a.b() != nullptr) {
@@ -123,9 +123,9 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
         F::mul(l, t1, a.z());         // left = y^2 z
         return l == r;
 
-#ifdef __CUDACC__
+#ifdef GEC_NVCC
         GEC_NV_DIAGNOSTIC_POP
-#endif // __CUDACC__
+#endif // GEC_NVCC
     }
 
     GEC_HD static bool eq(const Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
@@ -168,11 +168,11 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
     }
 
     GEC_HD static void add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
-#ifdef __CUDACC__
+#ifdef GEC_NVCC
         // suppress false positive NULL reference warning
         GEC_NV_DIAGNOSTIC_PUSH
         GEC_NV_DIAG_SUPPRESS(284)
-#endif // __CUDACC__
+#endif // GEC_NVCC
 
         F t1, t2, t3;
 
@@ -202,9 +202,9 @@ class GEC_EMPTY_BASES ProjectiveCoordinate
         F::sub(a.y(), t3);              // y = a(4 c - d) - 8 y1^2 b^2
         F::mul(a.z(), t2, t1);          // z = 8 b^3
 
-#ifdef __CUDACC__
+#ifdef GEC_NVCC
         GEC_NV_DIAGNOSTIC_POP
-#endif // __CUDACC__
+#endif // GEC_NVCC
     }
 
     GEC_HD static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,

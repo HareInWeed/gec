@@ -21,7 +21,7 @@
 #endif
 
 // compiler macro
-#if defined(__CUDACC__)
+#if defined(__CUDACC__) && defined(__NVCC__)
 #define GEC_NVCC __NVCC__
 #endif
 #if defined(__clang__)
@@ -128,6 +128,8 @@
 // Disable the "invalid error number" message that we get with older versions of
 // nvcc
 GEC_NV_DIAG_SUPPRESS(1222)
+// Disable the "integer constant is too large" message
+#define GEC_INT_TOO_LARGE GEC_NV_DIAG_SUPPRESS(23)
 // Disable the "calling a GEC_H function from a GEC_HD function
 // is not allowed" messages
 #define GEC_CALL_H_FROM_H_D                                                    \

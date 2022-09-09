@@ -70,11 +70,11 @@ class GEC_EMPTY_BASES JacobianCoordinate
     }
 
     GEC_HD static bool on_curve(const Core &GEC_RSTRCT a) {
-#ifdef __CUDACC__
+#ifdef GEC_NVCC
         // suppress false positive NULL reference warning in nvcc
         GEC_NV_DIAGNOSTIC_PUSH
         GEC_NV_DIAG_SUPPRESS(284)
-#endif // __CUDACC__
+#endif // GEC_NVCC
 
         F l, r, t1, t2;
         if (a.b() != nullptr || a.a() != nullptr) {
@@ -102,9 +102,9 @@ class GEC_EMPTY_BASES JacobianCoordinate
         F::mul(l, a.y(), a.y());      // left = y^2
         return l == r;
 
-#ifdef __CUDACC__
+#ifdef GEC_NVCC
         GEC_NV_DIAGNOSTIC_POP
-#endif // __CUDACC__
+#endif // GEC_NVCC
     }
 
     GEC_HD static void to_affine(Core &GEC_RSTRCT a) {
@@ -190,11 +190,11 @@ class GEC_EMPTY_BASES JacobianCoordinate
     }
 
     GEC_HD static void add_self(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b) {
-#ifdef __CUDACC__
+#ifdef GEC_NVCC
         // suppress false positive NULL reference warning in nvcc
         GEC_NV_DIAGNOSTIC_PUSH
         GEC_NV_DIAG_SUPPRESS(284)
-#endif // __CUDACC__
+#endif // GEC_NVCC
 
         F t4, t5;
         F::mul(t4, b.x(), b.x());        // x1^2
@@ -220,9 +220,9 @@ class GEC_EMPTY_BASES JacobianCoordinate
         F::mul(a.z(), b.y(), b.z());     // y1 z1
         F::template mul_pow2<1>(a.z());  // z = 2 y1 z1
 
-#ifdef __CUDACC__
+#ifdef GEC_NVCC
         GEC_NV_DIAGNOSTIC_POP
-#endif // __CUDACC__
+#endif // GEC_NVCC
     }
 
     GEC_HD static void add(Core &GEC_RSTRCT a, const Core &GEC_RSTRCT b,

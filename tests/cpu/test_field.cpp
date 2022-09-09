@@ -658,7 +658,13 @@ static void test_mod_sqrt(std::random_device::result_type seed) {
         F::sample(x, rng);
         F::mul(xx, x, x);
         CAPTURE(x, xx);
+
         REQUIRE(F::mod_sqrt(sqrt, xx, rng));
+        CAPTURE(sqrt);
+        F::mul(sqr, sqrt, sqrt);
+        REQUIRE(xx == sqr);
+
+        REQUIRE(F::mod_sqrt(sqrt, xx));
         CAPTURE(sqrt);
         F::mul(sqr, sqrt, sqrt);
         REQUIRE(xx == sqr);

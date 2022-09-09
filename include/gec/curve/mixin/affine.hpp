@@ -47,11 +47,11 @@ class GEC_EMPTY_BASES AffineCoordinate
             return true;
         }
 
-#ifdef __CUDACC__
+#ifdef GEC_NVCC
         // suppress false positive NULL reference warning
         GEC_NV_DIAGNOSTIC_PUSH
         GEC_NV_DIAG_SUPPRESS(284)
-#endif // __CUDACC__
+#endif // GEC_NVCC
 
         F t, l, r;
         F::mul(l, a.y(), a.y());      // left = y^2
@@ -66,9 +66,9 @@ class GEC_EMPTY_BASES AffineCoordinate
         }
         return l == r;
 
-#ifdef __CUDACC__
+#ifdef GEC_NVCC
         GEC_NV_DIAGNOSTIC_POP
-#endif // __CUDACC__
+#endif // GEC_NVCC
     }
 
     GEC_HD static void add_distinct(Core &GEC_RSTRCT a,
@@ -95,11 +95,11 @@ class GEC_EMPTY_BASES AffineCoordinate
             return;
         }
 
-#ifdef __CUDACC__
+#ifdef GEC_NVCC
         // suppress false positive NULL reference warning
         GEC_NV_DIAGNOSTIC_PUSH
         GEC_NV_DIAG_SUPPRESS(284)
-#endif // __CUDACC__
+#endif // GEC_NVCC
 
         F d;
         F::add(d, b.y(), b.y());     // 2 y1
@@ -119,9 +119,9 @@ class GEC_EMPTY_BASES AffineCoordinate
         F::mul(d, l, a.y());         // l (x1 - x)
         F::sub(a.y(), d, b.y());     // y = l (x1 - x) - y1
 
-#ifdef __CUDACC__
+#ifdef GEC_NVCC
         GEC_NV_DIAGNOSTIC_POP
-#endif // __CUDACC__
+#endif // GEC_NVCC
     }
 
     GEC_HD static void add(Core &GEC_RSTRCT a, const Core &b, const Core &c) {

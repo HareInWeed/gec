@@ -4,6 +4,10 @@
 
 #include <configured_catch.hpp>
 
+#ifdef GEC_NVCC
+GEC_INT_TOO_LARGE
+#endif // GEC_NVCC
+
 using namespace gec;
 using namespace bigint;
 using namespace gec::bigint::literal;

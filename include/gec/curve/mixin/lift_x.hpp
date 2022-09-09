@@ -46,11 +46,11 @@ class LiftX : protected CRTP<Core, LiftX<Core, FIELD_T>> {
     static bool lift_x(Core &a, const FIELD_T &x, GecRng<Rng> &rng) {
         F x2, x3;
 
-#ifdef __CUDACC__
+#ifdef GEC_NVCC
         // suppress false positive NULL reference warning
         GEC_NV_DIAGNOSTIC_PUSH
         GEC_NV_DIAG_SUPPRESS(284)
-#endif // __CUDACC__
+#endif // GEC_NVCC
 
         F::mul(x2, x, x);          // x^2
         F::mul(x3, x2, x);         // x^3
@@ -62,9 +62,9 @@ class LiftX : protected CRTP<Core, LiftX<Core, FIELD_T>> {
             F::add(x3, *a.b());    // x^3 + a x + b
         }                          //
 
-#ifdef __CUDACC__
+#ifdef GEC_NVCC
         GEC_NV_DIAGNOSTIC_POP
-#endif // __CUDACC__
+#endif // GEC_NVCC
 
         bool flag = F::mod_sqrt(a.y(), x3, rng);
 
