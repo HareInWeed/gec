@@ -69,15 +69,10 @@ template <class Core>
 class GEC_EMPTY_BASES ModSqrt : protected CRTP<Core, ModSqrt<Core>> {
     friend CRTP<Core, ModSqrt<Core>>;
 
-  public:
-    template <typename Rng>
-    GEC_HD static bool mod_sqrt(Core &x, const Core &a, GecRng<Rng> &rng) {
+    GEC_INLINE GEC_HD static bool mod_sqrt_inner(Core &GEC_RSTRCT x,
+                                                 const Core &GEC_RSTRCT a,
+                                                 Core &GEC_RSTRCT b) {
         using T = typename Core::LimbT;
-
-        Core b;
-        do {
-            Core::sample(b, rng);
-        } while (b.legendre() != -1);
 
         Core y, r, t;
         Core::sub(r, a.mod(), T(1));   // p - 1 = 2^s r
@@ -113,6 +108,32 @@ class GEC_EMPTY_BASES ModSqrt : protected CRTP<Core, ModSqrt<Core>> {
         }
 
         return true;
+    }
+
+  public:
+    GEC_HD static bool mod_sqrt(Core &GEC_RSTRCT x, const Core &GEC_RSTRCT a,
+                                Core &GEC_RSTRCT b) {
+        return mod_sqrt_inner(x, a, b);
+    }
+
+    template <typename Rng>
+    GEC_HD static bool mod_sqrt(Core &GEC_RSTRCT x, const Core &GEC_RSTRCT a,
+                                GecRng<Rng> &rng) {
+        Core b;
+        do {
+            Core::sample(b, rng);
+        } while (b.legendre() != -1);
+
+        return mod_sqrt_inner(x, a, b);
+    }
+
+    GEC_HD static bool mod_sqrt(Core &GEC_RSTRCT x, const Core &GEC_RSTRCT a) {
+        Core b;
+        do {
+            Core::add(b, 1);
+        } while (b.legendre() != -1);
+
+        return mod_sqrt_inner(x, a, b);
     }
 };
 
