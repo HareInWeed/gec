@@ -11,7 +11,7 @@ using namespace dlp;
 TEST_CASE("cu_pollard_lambda", "[dlp][pollard_lambda][cuda]") {
     using C = Dlp3CurveA;
     const C &g = Dlp3Gen1;
-    using S = Dlp3G1Scaler;
+    using S = Dlp3G1Scalar;
     using F = C::Field;
 
     std::random_device rd;

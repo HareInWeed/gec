@@ -17,7 +17,7 @@
 #include "mixin/projective.hpp"
 
 #include "mixin/lift_x.hpp"
-#include "mixin/scaler_mul.hpp"
+#include "mixin/scalar_mul.hpp"
 
 #include "mixin/ostream.hpp"
 #include "mixin/print.hpp"
@@ -29,7 +29,7 @@ namespace curve {
 template <typename Core, typename FT, const FT *A, const FT *B,
           const FT *d_A = nullptr, const FT *d_B = nullptr>
 class BasicCurveMixin : public CurveParams<Core, FT, A, B, d_A, d_B>,
-                        public ScalerMul<Core>,
+                        public ScalarMul<Core>,
                         public LiftX<Core, FT>,
                         public WithPointHasher<Core>,
                         public PointOstream<Core>,

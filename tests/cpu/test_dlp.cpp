@@ -27,7 +27,7 @@ using namespace dlp;
 TEST_CASE("pollard_rho", "[dlp][pollard_rho]") {
     using C = Dlp3CurveA;
     const C &g = Dlp3Gen1;
-    using S = Dlp3G1Scaler;
+    using S = Dlp3G1Scalar;
 
     std::random_device rd;
     auto seed = rd();
@@ -67,7 +67,7 @@ TEST_CASE("pollard_rho", "[dlp][pollard_rho]") {
 }
 
 TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
-    using S = Dlp3G1Scaler;
+    using S = Dlp3G1Scalar;
 
     std::random_device rd;
     auto seed = rd();
@@ -145,7 +145,7 @@ TEST_CASE("pollard_rho bench", "[dlp][pollard_rho][bench]") {
 TEST_CASE("pollard_lambda", "[dlp][pollard_lambda]") {
     using C = Dlp3CurveA;
     const C &g = Dlp3Gen1;
-    using S = Dlp3G1Scaler;
+    using S = Dlp3G1Scalar;
 
     std::random_device rd;
     auto seed = rd();
@@ -184,7 +184,7 @@ TEST_CASE("pollard_lambda", "[dlp][pollard_lambda]") {
 TEST_CASE("multithread_pollard_rho", "[dlp][pollard_rho][multithread]") {
     using C = Dlp3CurveA;
     const C &g = Dlp3Gen1;
-    using S = Dlp3G1Scaler;
+    using S = Dlp3G1Scalar;
     using F = C::Field;
 
     std::random_device rd;
@@ -226,7 +226,7 @@ TEST_CASE("multithread_pollard_rho", "[dlp][pollard_rho][multithread]") {
 
 TEST_CASE("multithread_pollard_rho bench",
           "[dlp][pollard_rho][multithread][bench]") {
-    using S = Dlp3G1Scaler;
+    using S = Dlp3G1Scalar;
 
     std::random_device rd;
     auto seed = rd();
@@ -326,7 +326,7 @@ TEST_CASE("multithread_pollard_rho bench",
 TEST_CASE("multithread_pollard_lambda", "[dlp][pollard_lambda][multithread]") {
     using C = Dlp3CurveA;
     const C &g = Dlp3Gen1;
-    using S = Dlp3G1Scaler;
+    using S = Dlp3G1Scalar;
 
     std::random_device rd;
     auto seed = rd();
@@ -359,7 +359,7 @@ TEST_CASE("multithread_pollard_lambda bench",
           "[dlp][pollard_lambda][multithread][bench]") {
     using C = Dlp3CurveA;
     const C &g = Dlp3Gen1;
-    using S = Dlp3G1Scaler;
+    using S = Dlp3G1Scalar;
 
     std::random_device rd;
     auto seed = rd();

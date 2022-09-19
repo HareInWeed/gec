@@ -39,9 +39,9 @@ using Field = bigint::BaseField<_sm2_::FBase, &_sm2_::MOD, _sm2_::MOD_P,
 #endif // __CUDACC__
                                 >;
 
-// ----- Scaler -----
+// ----- Scalar -----
 namespace _sm2_ {
-// same base between finite field and scaler
+// same base between finite field and scalar
 using SBase = FBase;
 extern const SBase CARD;
 constexpr FT CARD_P = 0x327f9e8872350975;
@@ -54,7 +54,7 @@ __constant__ extern const SBase d_CARD_RR;
 __constant__ extern const SBase d_CARD_ONE_R;
 #endif // __CUDACC__
 } // namespace _sm2_
-using Scaler =
+using Scalar =
     bigint::BaseField<_sm2_::SBase, &_sm2_::CARD, _sm2_::CARD_P,
                       &_sm2_::CARD_RR, &_sm2_::CARD_ONE_R
 #ifdef __CUDACC__

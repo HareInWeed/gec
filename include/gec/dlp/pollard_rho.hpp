@@ -244,7 +244,7 @@ __global__ void init_rng_kernel(GecRng<Rng> *GEC_RSTRCT rng, size_t seed) {
     rng[id] = make_gec_rng(Rng((unsigned int)(seed)));
 }
 template <typename S, typename Rng>
-__global__ void sampling_scaler_kernel(S *GEC_RSTRCT s,
+__global__ void sampling_scalar_kernel(S *GEC_RSTRCT s,
                                        GecRng<Rng> *GEC_RSTRCT rng) {
     size_t id = blockIdx.x * blockDim.x + threadIdx.x;
     S tmp;
@@ -427,9 +427,9 @@ cudaError_t cu_pollard_rho(S &c,
                                          cudaMemcpyHostToDevice, stream1));
 
     init_rng_kernel<cuRng><<<block_num, thread_num, 0, stream2>>>(d_rng, seed);
-    sampling_scaler_kernel<S, cuRng>
+    sampling_scalar_kernel<S, cuRng>
         <<<block_num, thread_num, 0, stream2>>>(d_init_xs, d_rng);
-    sampling_scaler_kernel<S, cuRng>
+    sampling_scalar_kernel<S, cuRng>
         <<<block_num, thread_num, 0, stream2>>>(d_init_ys, d_rng);
 
     init_ps_kernel<S, P>

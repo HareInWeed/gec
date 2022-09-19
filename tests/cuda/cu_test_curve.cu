@@ -155,10 +155,10 @@ TEST_CASE("cuda affine", "[curve][affine][cuda]") {
     CUDA_REQUIRE(cudaFree(d_sum));
 }
 
-TEST_CASE("cuda affine scaler_mul", "[curve][affine][scaler_mul]") {
+TEST_CASE("cuda affine scalar_mul", "[curve][affine][scalar_mul]") {
     using C = Dlp1CurveA;
     using F = Dlp1Field;
-    using S = Dlp1Scaler;
+    using S = Dlp1Scalar;
 
     std::random_device rd;
     auto seed = rd();

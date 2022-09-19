@@ -14,7 +14,7 @@ using namespace std;
 TEST_CASE("lift_x", "[curve][jacobian]") {
     using C = secp256k1::Curve<>;
     using F = secp256k1::Field;
-    using S = secp256k1::Scaler;
+    using S = secp256k1::Scalar;
     using secp256k1::Gen;
 
     F x;

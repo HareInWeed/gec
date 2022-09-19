@@ -41,9 +41,9 @@ using Field =
 #endif // __CUDACC__
                       >;
 
-// ----- Scaler -----
+// ----- Scalar -----
 namespace _secp256k1_ {
-// same base between finite field and scaler
+// same base between finite field and scalar
 using SBase = FBase;
 
 extern const SBase CARD;
@@ -58,7 +58,7 @@ __constant__ extern const SBase d_CARD_ONE_R;
 #endif // __CUDACC__
 
 } // namespace _secp256k1_
-using Scaler = bigint::BaseField<
+using Scalar = bigint::BaseField<
     _secp256k1_::SBase, &_secp256k1_::CARD, _secp256k1_::CARD_P,
     &_secp256k1_::CARD_RR, &_secp256k1_::CARD_ONE_R
 #ifdef __CUDACC__

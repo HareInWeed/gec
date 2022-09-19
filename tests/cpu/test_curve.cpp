@@ -258,10 +258,10 @@ TEST_CASE("jacobian bench", "[curve][jacobian][bench]") {
     };
 }
 
-TEST_CASE("affine scaler_mul", "[curve][affine][scaler_mul]") {
+TEST_CASE("affine scalar_mul", "[curve][affine][scalar_mul]") {
     using C = Dlp1CurveA;
     using F = Dlp1Field;
-    using S = Dlp1Scaler;
+    using S = Dlp1Scalar;
 
     std::random_device rd;
     auto seed = rd();
@@ -316,10 +316,10 @@ TEST_CASE("affine scaler_mul", "[curve][affine][scaler_mul]") {
     }
 }
 
-TEST_CASE("jacobian scaler_mul", "[curve][jacobian][scaler_mul]") {
+TEST_CASE("jacobian scalar_mul", "[curve][jacobian][scalar_mul]") {
     using C = Dlp1CurveJ;
     using F = Dlp1Field;
-    using S = Dlp1Scaler;
+    using S = Dlp1Scalar;
 
     std::random_device rd;
     auto seed = rd();

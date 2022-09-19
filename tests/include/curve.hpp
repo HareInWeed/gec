@@ -37,7 +37,7 @@ GEC_DECL_GLOBAL(Dlp1B, Dlp1Field);
 
 using Dlp1SArray = gec::bigint::ArrayBE<LIMB_T, LN_160>;
 GEC_DECL_GLOBAL(Dlp1Card, Dlp1SArray);
-using Dlp1Scaler = GEC_BASE_ADD_GROUP(Dlp1SArray, Dlp1Card);
+using Dlp1Scalar = GEC_BASE_ADD_GROUP(Dlp1SArray, Dlp1Card);
 
 using Dlp1CurveA = GEC_CURVE_B(gec::curve::AffineCurve, Dlp1Field, Dlp1B);
 using Dlp1CurveJ = GEC_CURVE_B(gec::curve::JacobianCurve, Dlp1Field, Dlp1B);
@@ -57,7 +57,7 @@ GEC_DECL_GLOBAL(Dlp1B2, Dlp1Field2);
 
 using Dlp1SArray_2 = gec::bigint::ArrayBE<LIMB2_T, LN2_160>;
 GEC_DECL_GLOBAL(Dlp1Card2, Dlp1SArray_2);
-using Dlp1Scaler2 = GEC_BASE_ADD_GROUP(Dlp1SArray_2, Dlp1Card2);
+using Dlp1Scalar2 = GEC_BASE_ADD_GROUP(Dlp1SArray_2, Dlp1Card2);
 
 using Dlp1CurveJ2 = GEC_CURVE_B(gec::curve::JacobianCurve, Dlp1Field2, Dlp1B2);
 
@@ -79,7 +79,7 @@ GEC_DECL_GLOBAL(Dlp2Card, Dlp2SArray);
 constexpr LIMB_T Dlp2Card_P = 0xfbd05cfu;
 GEC_DECL_GLOBAL(Dlp2Card_RR, Dlp2SArray);
 GEC_DECL_GLOBAL(Dlp2Card_OneR, Dlp2SArray);
-using Dlp2Scaler = GEC_BASE_FIELD(Dlp2SArray, Dlp2Card, Dlp2Card_P, Dlp2Card_RR,
+using Dlp2Scalar = GEC_BASE_FIELD(Dlp2SArray, Dlp2Card, Dlp2Card_P, Dlp2Card_RR,
                                   Dlp2Card_OneR);
 
 using Dlp2CurveJ = GEC_CURVE(gec::curve::JacobianCurve, Dlp2Field, Dlp2A,
@@ -119,7 +119,7 @@ GEC_DECL_GLOBAL(Dlp3G1Card, Dlp3G1SArray);
 constexpr LIMB_T Dlp3G1Card_P = 0x36a04ecdu;
 GEC_DECL_GLOBAL(Dlp3G1Card_RR, Dlp3G1SArray);
 GEC_DECL_GLOBAL(Dlp3G1Card_OneR, Dlp3G1SArray);
-using Dlp3G1Scaler = GEC_BASE_FIELD(Dlp3G1SArray, Dlp3G1Card, Dlp3G1Card_P,
+using Dlp3G1Scalar = GEC_BASE_FIELD(Dlp3G1SArray, Dlp3G1Card, Dlp3G1Card_P,
                                     Dlp3G1Card_RR, Dlp3G1Card_OneR);
 
 GEC_DECL_GLOBAL(Dlp3Gen2, Dlp3CurveA);
@@ -129,7 +129,7 @@ GEC_DECL_GLOBAL(Dlp3G2Card, Dlp3G2SArray);
 constexpr LIMB_T Dlp3G2Card_P = 0x9013b4b9u;
 GEC_DECL_GLOBAL(Dlp3G2Card_RR, Dlp3G2SArray);
 GEC_DECL_GLOBAL(Dlp3G2Card_OneR, Dlp3G2SArray);
-using Dlp3G2Scaler = GEC_BASE_FIELD(Dlp3G2SArray, Dlp3G2Card, Dlp3G2Card_P,
+using Dlp3G2Scalar = GEC_BASE_FIELD(Dlp3G2SArray, Dlp3G2Card, Dlp3G2Card_P,
                                     Dlp3G2Card_RR, Dlp3G2Card_OneR);
 
 // -------------------- dlp 3 with 64-bit limb --------------------
@@ -152,7 +152,7 @@ GEC_DECL_GLOBAL(Dlp3Card2, Dlp3SArray_2);
 constexpr LIMB2_T Dlp3Card2_P = 0x61edaaec36a04ecdllu;
 GEC_DECL_GLOBAL(Dlp3Card2_RR, Dlp3SArray_2);
 GEC_DECL_GLOBAL(Dlp3Card2_OneR, Dlp3SArray_2);
-using Dlp3Scaler2 = GEC_BASE_FIELD(Dlp3SArray_2, Dlp3Card2, Dlp3Card2_P,
+using Dlp3Scalar2 = GEC_BASE_FIELD(Dlp3SArray_2, Dlp3Card2, Dlp3Card2_P,
                                    Dlp3Card2_RR, Dlp3Card2_OneR);
 
 using Dlp3CurveJ2 = GEC_CURVE_B(gec::curve::JacobianCurve, Dlp3Field2, Dlp3B2);

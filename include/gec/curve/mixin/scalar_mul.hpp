@@ -15,8 +15,8 @@ namespace curve {
  * require `Core::set_mul_id`, `Core::mul` methods
  */
 template <class Core>
-class GEC_EMPTY_BASES ScalerMul : protected CRTP<Core, ScalerMul<Core>> {
-    friend CRTP<Core, ScalerMul<Core>>;
+class GEC_EMPTY_BASES ScalarMul : protected CRTP<Core, ScalarMul<Core>> {
+    friend CRTP<Core, ScalarMul<Core>>;
 
   public:
     template <

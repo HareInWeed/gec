@@ -555,7 +555,6 @@ static void test_montgomery(std::random_device::result_type seed) {
     CUDA_REQUIRE(cudaGetLastError());
 
     Int mon_x, mon_y, mon_prod, prod;
-    printf("host: \n");
     Int::to_montgomery(mon_x, x);
     Int::to_montgomery(mon_y, y);
     Int::mul(mon_prod, mon_x, mon_y);
