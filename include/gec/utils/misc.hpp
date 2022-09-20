@@ -229,7 +229,7 @@ struct HostMostSignificantBit<
 };
 
 template <typename T>
-struct HostCLZ<T, std::enable_if_t<(utils::type_bits<T>::value <= 32 &&
+struct HostCLZ<T, std::enable_if_t<(utils::type_bits<T>::value > 32 &&
                                     utils::type_bits<T>::value <= 64)>> {
     GEC_H GEC_INLINE static size_t call(T x) {
         constexpr size_t max_bit = utils::type_bits<T>::value - 1;

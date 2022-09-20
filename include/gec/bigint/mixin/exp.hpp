@@ -35,7 +35,7 @@ class GEC_EMPTY_BASES Exponentiation
         int i = N - 1, j;
         for (; i >= 0; --i) {
             if (e[i]) {
-                j = utils::most_significant_bit(e[i]);
+                j = int(utils::most_significant_bit(e[i]));
                 break;
             }
         }

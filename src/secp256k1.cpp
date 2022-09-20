@@ -36,7 +36,7 @@ const SBase CARD( //
 const SBase CARD_RR( //
     0x9d671cd5'81c69bc5'e697f5e4'5bcd07c6'741496c2'0e7cf878'896cf214'67d7d140_int);
 const SBase CARD_ONE_R( //
-    0x1'45512319'50b75fc4'402da1732fc9bebf_int);
+    0x1'45512319'50b75fc4'402da173'2fc9bebf_int);
 
 #ifdef __CUDACC__
 __constant__ const SBase d_CARD( //

@@ -87,9 +87,10 @@ struct CastSingleDivRemHelper {
                                        const T &GEC_RSTRCT b) {
         using namespace gec::utils;
         constexpr size_t bits = type_bits<T>::value;
+        TT wide_b = TT(b);
         TT t = (TT(r) << bits) | TT(a[I]);
-        q[I] = t / b;
-        r = t % b;
+        q[I] = T(t / wide_b);
+        r = T(t % wide_b);
         CastSingleDivRemHelper<NeedR, TT, T, I - 1>::call(q, r, a, b);
     }
 };
@@ -100,10 +101,11 @@ struct CastSingleDivRemHelper<NeedR, TT, T, 0> {
                                        const T &GEC_RSTRCT b) {
         using namespace gec::utils;
         constexpr size_t bits = type_bits<T>::value;
+        TT wide_b = TT(b);
         TT t = (TT(r) << bits) | TT(a[0]);
-        q[0] = t / b;
+        q[0] = T(t / wide_b);
         if (NeedR) {
-            r = t % b;
+            r = T(t % wide_b);
         }
     }
 };
@@ -203,7 +205,7 @@ GEC_HD static void cast_div_rem(T *GEC_RSTRCT q, T *GEC_RSTRCT a,
 
     // min((a[n + m] * base + a[n + m - 1]) / b[n - 1], base - 1)
     q_est2 = ((TT(a_last) << bits) | TT(a[N - 1])) / b[n - 1];
-    q_est = (q_est2 > max_limb) ? max_limb : q_est2;
+    q_est = (q_est2 > TT(max_limb)) ? max_limb : T(q_est2);
 
     // q_est * (b[n - 1] * base + b[n - 2])
     uint_mul_lh(b0, b1, q_est, b[n - 2]);
@@ -247,7 +249,7 @@ GEC_HD static void cast_div_rem(T *GEC_RSTRCT q, T *GEC_RSTRCT a,
 
             // min((a[n + m] * base + a[n + m - 1]) / b[n - 1], base - 1)
             q_est2 = ((TT(a[in]) << bits) | TT(a[in - 1])) / b[n - 1];
-            q_est = (q_est2 > max_limb) ? max_limb : q_est2;
+            q_est = (q_est2 > TT(max_limb)) ? max_limb : T(q_est2);
 
             // q_est * (b[n - 1] * base + b[n - 2])
             uint_mul_lh(b0, b1, q_est, b[n - 2]);
@@ -364,8 +366,8 @@ struct SplitDivRemHelper {
     GEC_HD GEC_INLINE static void split(HT *h_arr, const T *arr) {
         using namespace ::gec::utils;
         constexpr size_t shift = type_bits<T>::value / 2;
-        h_arr[2 * I + 1] = arr[I] >> shift;
-        h_arr[2 * I] = arr[I];
+        h_arr[2 * I + 1] = HT(arr[I] >> shift);
+        h_arr[2 * I] = HT(arr[I]);
         SplitDivRemHelper<I - 1, T, HT>::split(h_arr, arr);
     }
 
@@ -381,8 +383,8 @@ struct SplitDivRemHelper<0, T, HT> {
     GEC_HD GEC_INLINE static void split(HT *h_arr, const T *arr) {
         using namespace ::gec::utils;
         constexpr size_t shift = type_bits<T>::value / 2;
-        h_arr[1] = arr[0] >> shift;
-        h_arr[0] = arr[0];
+        h_arr[1] = HT(arr[0] >> shift);
+        h_arr[0] = HT(arr[0]);
     }
 
     GEC_HD GEC_INLINE static void merge(T *arr, const HT *h_arr) {

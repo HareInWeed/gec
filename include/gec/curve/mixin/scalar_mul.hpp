@@ -36,7 +36,7 @@ class GEC_EMPTY_BASES ScalarMul : protected CRTP<Core, ScalarMul<Core>> {
         int i = N - 1, j = -1;
         for (; i >= 0; --i) {
             if (s[i]) {
-                j = utils::most_significant_bit(s[i]);
+                j = int(utils::most_significant_bit(s[i]));
                 break;
             }
         }

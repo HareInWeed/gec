@@ -85,10 +85,11 @@ class GEC_EMPTY_BASES Array {
  */
 template <class LIMB_T, size_t LIMB_N, size_t align = alignof(LIMB_T)>
 class GEC_EMPTY_BASES ArrayBE : public Array<LIMB_T, LIMB_N, align> {
-    using Base = Array<LIMB_T, LIMB_N, align>;
-
   public:
-    using Base::Base;
+    using ::gec::bigint::Array<LIMB_T, LIMB_N, align>::Array;
+
+    GEC_HD GEC_INLINE constexpr ArrayBE() noexcept
+        : ::gec::bigint::Array<LIMB_T, LIMB_N, align>::Array() {}
 
     template <typename... LIMBS,
               std::enable_if_t<(sizeof...(LIMBS) == LIMB_N &&
@@ -102,12 +103,12 @@ class GEC_EMPTY_BASES ArrayBE : public Array<LIMB_T, LIMB_N, align> {
  */
 template <class LIMB_T, size_t LIMB_N, size_t align = alignof(LIMB_T)>
 class GEC_EMPTY_BASES ArrayLE : public Array<LIMB_T, LIMB_N, align> {
-    using Base = Array<LIMB_T, LIMB_N, align>;
 
   public:
-    using Base::Base;
+    using ::gec::bigint::Array<LIMB_T, LIMB_N, align>::Array;
 
-    GEC_HD GEC_INLINE constexpr ArrayLE() noexcept : Base() {}
+    GEC_HD GEC_INLINE constexpr ArrayLE() noexcept
+        : ::gec::bigint::Array<LIMB_T, LIMB_N, align>::Array() {}
 
     template <typename... LIMBS,
               std::enable_if_t<(sizeof...(LIMBS) == LIMB_N &&
