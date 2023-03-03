@@ -22,14 +22,23 @@ const FBase RR( //
 const FBase ONE_R( //
     0x1'000003d1_int);
 
+#ifdef GEC_ENABLE_CUDA
 #ifdef __CUDACC__
-__constant__ const FBase d_MOD( //
-    0xffffffff'ffffffff'ffffffff'ffffffff'ffffffff'ffffffff'fffffffe'fffffc2f_int);
-__constant__ const FBase d_RR( //
-    0x1'000007a2'000e90a1_int);
-__constant__ const FBase d_ONE_R( //
-    0x1'000003d1_int);
-#endif // __CUDACC__
+__constant__
+#endif
+    const FBase d_MOD( //
+        0xffffffff'ffffffff'ffffffff'ffffffff'ffffffff'ffffffff'fffffffe'fffffc2f_int);
+#ifdef __CUDACC__
+__constant__
+#endif
+    const FBase d_RR( //
+        0x1'000007a2'000e90a1_int);
+#ifdef __CUDACC__
+__constant__
+#endif
+    const FBase d_ONE_R( //
+        0x1'000003d1_int);
+#endif // GEC_ENABLE_CUDA
 
 const SBase CARD( //
     0xffffffff'ffffffff'ffffffff'fffffffe'baaedce6'af48a03b'bfd25e8c'd0364141_int);
@@ -38,17 +47,34 @@ const SBase CARD_RR( //
 const SBase CARD_ONE_R( //
     0x1'45512319'50b75fc4'402da173'2fc9bebf_int);
 
+#ifdef GEC_ENABLE_CUDA
 #ifdef __CUDACC__
-__constant__ const SBase d_CARD( //
-    0xffffffff'ffffffff'ffffffff'fffffffe'baaedce6'af48a03b'bfd25e8c'd0364141_int);
-__constant__ const SBase d_CARD_RR( //
-    0x9d671cd5'81c69bc5'e697f5e4'5bcd07c6'741496c2'0e7cf878'896cf214'67d7d140_int);
-__constant__ const SBase d_CARD_ONE_R( //
-    0x1'45512319'50b75fc4'402da173'2fc9bebf_int);
-#endif // __CUDACC__
+__constant__
+#endif
+    const SBase d_CARD( //
+        0xffffffff'ffffffff'ffffffff'fffffffe'baaedce6'af48a03b'bfd25e8c'd0364141_int);
+#ifdef __CUDACC__
+__constant__
+#endif
+    const SBase d_CARD_RR( //
+        0x9d671cd5'81c69bc5'e697f5e4'5bcd07c6'741496c2'0e7cf878'896cf214'67d7d140_int);
+#ifdef __CUDACC__
+__constant__
+#endif
+    const SBase d_CARD_ONE_R( //
+        0x1'45512319'50b75fc4'402da173'2fc9bebf_int);
+#endif // GEC_ENABLE_CUDA
 
 // A = 0
 const Field B(0x7'00001ab7_int);
+
+#ifdef GEC_ENABLE_CUDA
+// d_A = 0
+#ifdef __CUDACC__
+__constant__
+#endif
+    const Field d_B(0x7'00001ab7_int);
+#endif // GEC_ENABLE_CUDA
 
 } // namespace _secp256k1_
 

@@ -24,21 +24,30 @@ constexpr FBase::LimbT MOD_P = 0xd838091dd2253531;
 extern const FBase RR;
 extern const FBase ONE_R;
 
+#ifdef GEC_ENABLE_CUDA
 #ifdef __CUDACC__
-__constant__ extern const FBase d_MOD;
-__constant__ extern const FBase d_RR;
-__constant__ extern const FBase d_ONE_R;
-#endif // __CUDACC__
+__constant__
+#endif
+    extern const FBase d_MOD;
+#ifdef __CUDACC__
+__constant__
+#endif
+    extern const FBase d_RR;
+#ifdef __CUDACC__
+__constant__
+#endif
+    extern const FBase d_ONE_R;
+#endif // GEC_ENABLE_CUDA
 
 } // namespace _secp256k1_
 using Field =
     bigint::BaseField<_secp256k1_::FBase, &_secp256k1_::MOD, _secp256k1_::MOD_P,
                       &_secp256k1_::RR, &_secp256k1_::ONE_R
-#ifdef __CUDACC__
+#ifdef GEC_ENABLE_CUDA
                       ,
                       &_secp256k1_::d_MOD, &_secp256k1_::d_RR,
                       &_secp256k1_::d_ONE_R
-#endif // __CUDACC__
+#endif // GEC_ENABLE_CUDA
                       >;
 
 // ----- Scalar -----
@@ -47,24 +56,33 @@ namespace _secp256k1_ {
 using SBase = FBase;
 
 extern const SBase CARD;
-constexpr SBase::LimbT CARD_P = 0x4b0dff665588b13f;
+constexpr SBase::LimbT CARD_P = 0x4b0dff665588b13full;
 extern const SBase CARD_RR;
 extern const SBase CARD_ONE_R;
 
+#ifdef GEC_ENABLE_CUDA
 #ifdef __CUDACC__
-__constant__ extern const SBase d_CARD;
-__constant__ extern const SBase d_CARD_RR;
-__constant__ extern const SBase d_CARD_ONE_R;
-#endif // __CUDACC__
+__constant__
+#endif
+    extern const SBase d_CARD;
+#ifdef __CUDACC__
+__constant__
+#endif
+    extern const SBase d_CARD_RR;
+#ifdef __CUDACC__
+__constant__
+#endif
+    extern const SBase d_CARD_ONE_R;
+#endif // GEC_ENABLE_CUDA
 
 } // namespace _secp256k1_
 using Scalar = bigint::BaseField<
     _secp256k1_::SBase, &_secp256k1_::CARD, _secp256k1_::CARD_P,
     &_secp256k1_::CARD_RR, &_secp256k1_::CARD_ONE_R
-#ifdef __CUDACC__
+#ifdef GEC_ENABLE_CUDA
     ,
     &_secp256k1_::d_CARD, &_secp256k1_::d_CARD_RR, &_secp256k1_::d_CARD_ONE_R
-#endif // __CUDACC__
+#endif // GEC_ENABLE_CUDA
     >;
 
 // ----- Curve -----
@@ -72,10 +90,13 @@ namespace _secp256k1_ {
 // A = 0
 extern const Field B;
 
-#ifdef __CUDACC__
+#ifdef GEC_ENABLE_CUDA
 // d_A = 0
-__constant__ extern const Field d_B;
-#endif // __CUDACC__
+#ifdef __CUDACC__
+__constant__
+#endif
+    extern const Field d_B;
+#endif // GEC_ENABLE_CUDA
 
 } // namespace _secp256k1_
 template <template <typename FT, const FT *, const FT *, const FT *, const FT *,
@@ -83,11 +104,12 @@ template <template <typename FT, const FT *, const FT *, const FT *, const FT *,
           class Coordinate = curve::JacobianCurve,
           bool InfYZero = true>
 using Curve = Coordinate<Field, nullptr, &_secp256k1_::B, nullptr,
-#ifdef __CUDACC__
-                         &_secp256k1_::d_B,
+#ifdef GEC_ENABLE_CUDA
+                         &_secp256k1_::d_B
 #else
-                         nullptr,
-#endif // __CUDACC__
+                         nullptr
+#endif // GEC_ENABLE_CUDA
+                         ,
                          InfYZero>;
 
 extern const Curve<> Gen;

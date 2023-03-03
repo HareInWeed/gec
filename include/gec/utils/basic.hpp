@@ -97,7 +97,7 @@
 #define GEC_EMPTY_BASES
 #endif
 
-#if defined _MSC_VER
+#if defined(_MSC_VER)
 #define GEC_PRAGMA(X) __pragma(#X)
 #else
 #define GEC_PRAGMA(X) _Pragma(#X)
@@ -110,18 +110,21 @@
 #else
 // there are not any alternatives in older versions of nvcc
 #define GEC_NV_DIAGNOSTIC_PUSH
-#endif
+#endif // __NVCC_DIAG_PRAGMA_SUPPORT__
+
 #ifdef __NVCC_DIAG_PRAGMA_SUPPORT__
 #define GEC_NV_DIAGNOSTIC_POP GEC_PRAGMA(nv_diagnostic pop)
 #else
 // there are not any alternatives in older versions of nvcc
 #define GEC_NV_DIAGNOSTIC_POP
-#endif
-#ifdef __NVCC_DIAG_PRAGMA_SUPPORT__
-#define GEC_NV_DIAG_SUPPRESS(X) GEC_PRAGMA(nv_diag_suppress X)
-#else
-#define GEC_NV_DIAG_SUPPRESS(X) GEC_PRAGMA(diag_suppress X)
-#endif
+#endif // __NVCC_DIAG_PRAGMA_SUPPORT__
+
+#define GEC_NV_DIAG_SUPPRESS(X)
+// #ifdef __NVCC_DIAG_PRAGMA_SUPPORT__
+// #define GEC_NV_DIAG_SUPPRESS(X) GEC_PRAGMA(nv_diag_suppress X)
+// #else
+// #define GEC_NV_DIAG_SUPPRESS(X) GEC_PRAGMA(diag_suppress X)
+// #endif // __NVCC_DIAG_PRAGMA_SUPPORT__
 
 // source:
 // <https://gitlab.com/libeigen/eigen/-/blob/master/Eigen/src/Core/util/DisableStupidWarnings.h>

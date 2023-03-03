@@ -27,7 +27,7 @@ TEST_CASE("lift_x", "[curve][jacobian]") {
     CAPTURE(data_seed, seed);
 
     auto data_rng = make_gec_rng(std::mt19937(data_seed));
-    std::uniform_int_distribution<uint8_t> gen;
+    std::uniform_int_distribution<uint32_t> gen;
 
     auto rng = make_gec_rng(std::mt19937(seed));
 

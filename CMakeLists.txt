@@ -66,6 +66,7 @@ endif()
 if(GEC_ENABLE_CUDA)
     find_package(CUDAToolkit)
     target_link_libraries(gec INTERFACE CUDA::curand)
+    target_compile_definitions(gec INTERFACE GEC_ENABLE_CUDA)
 
     set_source_files_properties("src/secp256k1.cpp" PROPERTIES LANGUAGE CUDA)
     set_target_properties(secp256k1 PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
