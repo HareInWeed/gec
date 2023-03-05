@@ -50,13 +50,13 @@ using Bigint256 = bigint::ArrayBE<uint64_t, 4>;
 
 // define parameters required by montgomery multiplication:
 GEC_DEF_GLOBAL(MOD, Bigint256,     // cardinality of finite field
-    0xffffffff'ffffffff'ffffffff'ffffffff'ffffffff'ffffffff'fffffffe'fffffc2f_int);
+    0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f_int);
 constexpr Bigint256::LimbT MOD_P = // -MOD^-1 mod 2^64
-    0xd838091d'd2253531ull;
+    0xd838091dd2253531ull;
 GEC_DEF_GLOBAL(RR, Bigint256,      // 2^512 mod MOD
-    0x01'000007a2'000e90a1_int);
+    0x01000007a2000e90a1_int);
 GEC_DEF_GLOBAL(ONE_R, Bigint256,   // 2^256 mod MOD
-    0x1'000003d1_int);
+    0x1000003d1_int);
 
 // define the finite field type
 using Field = GEC_BASE_FIELD(Bigint256, MOD, MOD_P, RR, ONE_R);
@@ -67,13 +67,13 @@ Then define `Scalar` as the scalar of secp256k1.
 ```c++
 // define parameters required by montgomery multiplication:
 GEC_DEF_GLOBAL(CARD, Bigint256,       // cardinality of the elliptic curve
-    0xffffffff'ffffffff'ffffffff'fffffffe'baaedce6'af48a03b'bfd25e8c'd0364141_int);
+    0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141_int);
 constexpr Bigint256::LimbT CARD_P =   // -CARD^-1 mod 2^64
-    0x4b0dff6'65588b13full;
+    0x4b0dff665588b13full;
 GEC_DEF_GLOBAL(CARD_RR, Bigint256,    // 2^512 mod CARD
-    0x9d671cd5'81c69bc5'e697f5e4'5bcd07c6'741496c2'0e7cf878'896cf214'67d7d140_int);
+    0x9d671cd581c69bc5e697f5e45bcd07c6741496c20e7cf878896cf21467d7d140_int);
 GEC_DEF_GLOBAL(CARD_ONE_R, Bigint256, // 2^256 mod CARD
-    0x1'45512319'50b75fc4'402da173'2fc9bebf_int);
+    0x14551231950b75fc4402da1732fc9bebf_int);
 
 // define the scalar type
 using Scalar = GEC_BASE_FIELD(Bigint256, CARD, CARD_P, CARD_RR, CARD_ONE_R);
@@ -84,7 +84,7 @@ Finally, define `Secp256k1` as curve secp256k1.
 ```c++
 // parameters of the elliptic curve, in montgomery form
 const Field A(0);                 // = A * 2^256 mod MOD
-const Field B(0x7'00001ab7_int);  // = B * 2^256 mod MOD
+const Field B(0x700001ab7_int);  // = B * 2^256 mod MOD
 
 // define the curve with Jacobian coordinate
 using Secp256k1_  = GEC_CURVE(gec::curve::JacobianCurve, Field, A, B);
@@ -93,9 +93,9 @@ using Secp256k1   = GEC_CURVE_B(gec::curve::JacobianCurve, Field, B);
 
 // define the generator, in montgomery form
 const Secp256k1 GEN(
-    Field(0x9981e643'e9089f48'979f48c0'33fd129c'231e2953'29bc66db'd7362e5a'487e2097_int),
-    Field(0xcf3f851f'd4a582d6'70b6b59a'ac19c136'8dfc5d5d'1f1dc64d'b15ea6d2'd3dbabe2_int),
-    Field(0x1'000003d1_int),
+    Field(0x9981e643e9089f48979f48c033fd129c231e295329bc66dbd7362e5a487e2097_int),
+    Field(0xcf3f851fd4a582d670b6b59aac19c1368dfc5d5d1f1dc64db15ea6d2d3dbabe2_int),
+    Field(0x1000003d1_int),
 );
 ```
 
@@ -117,9 +117,9 @@ With CUDA support enabled, you can use `Secp256k1` in CUDA kernels as well.
 
 ```c++
 __constant__ const Secp256k1 d_GEN(
-    Field(0x9981e643'e9089f48'979f48c0'33fd129c'231e2953'29bc66db'd7362e5a'487e2097_int),
-    Field(0xcf3f851f'd4a582d6'70b6b59a'ac19c136'8dfc5d5d'1f1dc64d'b15ea6d2'd3dbabe2_int),
-    Field(0x1'000003d1_int),
+    Field(0x9981e643e9089f48979f48c033fd129c231e295329bc66dbd7362e5a487e2097_int),
+    Field(0xcf3f851fd4a582d670b6b59aac19c1368dfc5d5d1f1dc64db15ea6d2d3dbabe2_int),
+    Field(0x1000003d1_int),
 );
 
 __global__ void cuda_kernel() {
