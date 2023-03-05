@@ -21,27 +21,14 @@ Elliptic curve cryptography with GPU acceleration
 - discrete logarithm for elliptic curve
   - pollard lambda
   - pollard rho
+- acceleration
+  - AVX2
+  - multi-thread
+  - GPU (with CUDA)
 
-### AVX2
+## Benchmarks
 
-To enable AVX2, set `GEC_ENABLE_AVX2` option to `On` in CMake.
-
-Note that this option only adds some mixins built with AVX2.
-To enable AVX2 acceleration in finite field and elliptic curve algorithms, 
-make sure the finite field and elliptic curve classes
-are built with AVX2 accelerated mixins, 
-such as [`AVX2MontgomeryOps`](include/gec/bigint/mixin/montgomery.hpp#L297).
-
-### Multi-thread Discrete Logarithm
-
-To enable multi-thread discrete logarithm, set `GEC_ENABLE_PTHREADS` option to `On` in CMake.
-Make sure pthreads is available before turning this flag on.
-
-### CUDA
-
-To enable CUDA support, set `GEC_ENABLE_CUDA` option to `On` in CMake.
-
-GEC has been tested under CUDA 11.1. Older CUDA might work as well, but it is not guaranteed.
+See [benchmarks.md](docs/benchmarks.md).
 
 ## Usage
 
@@ -148,6 +135,26 @@ __global__ void cuda_kernel() {
 }
 ```
 
+### AVX2
+
+To enable AVX2, set `GEC_ENABLE_AVX2` option to `On` in CMake.
+
+Note that this option only adds some mixins built with AVX2.
+To enable AVX2 acceleration in finite field and elliptic curve algorithms, 
+make sure the finite field and elliptic curve classes
+are built with AVX2 accelerated mixins, 
+such as [`AVX2MontgomeryOps`](include/gec/bigint/mixin/montgomery.hpp#L297).
+
+### Multi-thread Discrete Logarithm
+
+To enable multi-thread discrete logarithm, set `GEC_ENABLE_PTHREADS` option to `On` in CMake.
+Make sure pthreads is available before turning this flag on.
+
+### CUDA
+
+To enable CUDA support, set `GEC_ENABLE_CUDA` option to `On` in CMake.
+
+GEC has been tested under CUDA 11.1. Older CUDA might work as well, but it is not guaranteed.
 
 **Notice**: When `GEC_ENABLE_CUDA` is set to `On`, in order to support CUDA,
 the macro `GEC_DEF_GLOBAL(VAR, ...)` will define an additional variable, 
@@ -159,6 +166,6 @@ refer to `d_VAR` when CUDA support is enabled.
 You may need to replace them as well.
 Check out [secp256k1.cpp](src/secp256k1.cpp) for an example.
 
-## Benchmarks
+## License
 
-See [benchmarks.md](docs/benchmarks.md).
+MIT
