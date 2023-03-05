@@ -1,6 +1,7 @@
 #include <configured_catch.hpp>
 #include <gec/curve/secp256k1.hpp>
 #include <iomanip>
+#include <sstream>
 #include <utility>
 #include <vector>
 
@@ -32,9 +33,12 @@ struct StringMaker<cudaError> {
 #define CUDA_REQUIRE(code) REQUIRE(cudaSuccess == (code))
 
 using namespace gec;
+using namespace gec::bigint::literal;
+using F = curve::secp256k1::Field;
 using S = curve::secp256k1::Scalar;
 using C = curve::secp256k1::Curve<curve::ProjectiveCurve>;
-using curve::secp256k1::Gen;
+// work around for MSVC linkage problem
+// using curve::secp256k1::Gen;
 
 __global__ static void point_add_kernel(C *sum, C *p1, C *p2, size_t n) {
     const size_t steps = blockDim.x * gridDim.x;
@@ -82,7 +86,12 @@ TEST_CASE("gec_cuda", "[gec][bench]") {
     const size_t n2 = factor * gridSize2 * blockSize2;
     const size_t n = std::max(n1, n2);
 
-    const C G{Gen.x(), Gen.y(), Gen.z()};
+    // const C G{Gen.x(), Gen.y(), Gen.z()};
+    // work around for MSVC linkage problem
+    const C G(
+        F(0x9981e643'e9089f48'979f48c0'33fd129c'231e2953'29bc66db'd7362e5a'487e2097_int),
+        F(0xcf3f851f'd4a582d6'70b6b59a'ac19c136'8dfc5d5d'1f1dc64d'b15ea6d2'd3dbabe2_int),
+        F(0x1'000003d1_int));
 
     std::vector<S> s1(n), s2(n);
     std::vector<C> p1(n), p2(n);
