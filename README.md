@@ -2,6 +2,8 @@
 
 Elliptic curve cryptography with GPU acceleration
 
+**Notice**: **This implementation is experimental and has not undergone any code audit. Use it at your own risk.**
+
 ## Features
 
 - finite field
@@ -16,23 +18,28 @@ Elliptic curve cryptography with GPU acceleration
   - pre-defined curves
     - secp256k1
     - sm2
-- discrete logarithm
+- discrete logarithm for elliptic curve
   - pollard lambda
   - pollard rho
 
 ### AVX2
 
-To enable AVX2, set `GEC_ENABLE_AVX2` option to `On` in CMake
+To enable AVX2, set `GEC_ENABLE_AVX2` option to `On` in CMake.
 
-Notice that the option only adds some mixins built with AVX2. To 
+Note that this option only adds some mixins built with AVX2.
+To enable AVX2 acceleration in finite field and elliptic curve algorithms, 
+make sure the finite field and elliptic curve classes
+are built with AVX2 accelerated mixins, 
+such as [`AVX2MontgomeryOps`](include/gec/bigint/mixin/montgomery.hpp#L297).
 
 ### Multi-thread Discrete Logarithm
 
-To enable multi-thread discrete logarithm, set `GEC_ENABLE_PTHREADS` option to `On` in CMake
+To enable multi-thread discrete logarithm, set `GEC_ENABLE_PTHREADS` option to `On` in CMake.
+Make sure pthreads is available before turning this flag on.
 
 ### CUDA
 
-To enable CUDA support, set `GEC_ENABLE_CUDA` option to `On` in CMake
+To enable CUDA support, set `GEC_ENABLE_CUDA` option to `On` in CMake.
 
 GEC has been tested under CUDA 11.1. Older CUDA might work as well, but it is not guaranteed.
 
@@ -88,16 +95,16 @@ using Scalar = GEC_BASE_FIELD(Bigint256, CARD, CARD_P, CARD_RR, CARD_ONE_R);
 Finally, define `Secp256k1` as curve secp256k1.
 
 ```c++
-// parameters of the elliptic curve
-const Field A(0);
-const Field B(0x7'00001ab7_int);
+// parameters of the elliptic curve, in montgomery form
+const Field A(0);                 // = A * 2^256 mod MOD
+const Field B(0x7'00001ab7_int);  // = B * 2^256 mod MOD
 
 // define the curve with Jacobian coordinate
 using Secp256k1_  = GEC_CURVE(gec::curve::JacobianCurve, Field, A, B);
 // use the specialized implementation for curves whose A = 0 to boost performance
 using Secp256k1   = GEC_CURVE_B(gec::curve::JacobianCurve, Field, B);
 
-// define the generator
+// define the generator, in montgomery form
 const Secp256k1 GEN(
     Field(0x9981e643'e9089f48'979f48c0'33fd129c'231e2953'29bc66db'd7362e5a'487e2097_int),
     Field(0xcf3f851f'd4a582d6'70b6b59a'ac19c136'8dfc5d5d'1f1dc64d'b15ea6d2'd3dbabe2_int),
@@ -150,3 +157,8 @@ you can define the variables for CPU and variables for CUDA manually.
 Other macros such as `GEC_BASE_FIELD` and `GEC_CURVE` also implicitly
 refer to `d_VAR` when CUDA support is enabled. 
 You may need to replace them as well.
+Check out [secp256k1.cpp](src/secp256k1.cpp) for an example.
+
+## Benchmarks
+
+See [benchmarks.md](docs/benchmarks.md).
