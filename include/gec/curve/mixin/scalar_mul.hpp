@@ -26,10 +26,13 @@ class GEC_EMPTY_BASES ScalarMul : protected CRTP<Core, ScalarMul<Core>> {
                            const Core &GEC_RSTRCT b) {
         Core ap;
 
-        bool in_dest = true;
-#define GEC_DEST_ (in_dest ? ap : a)
-#define GEC_SRC_ (in_dest ? a : ap)
-#define GEC_RELOAD_ (in_dest = !in_dest)
+        // bool in_dest = true;
+// #define GEC_DEST_ (in_dest ? ap : a)
+// #define GEC_SRC_ (in_dest ? a : ap)
+// #define GEC_RELOAD_ (in_dest = !in_dest)
+#define GEC_DEST_ (ap)
+#define GEC_SRC_ (a)
+#define GEC_RELOAD_ (a = ap)
 
         a.set_inf();
         constexpr size_t Bits = utils::type_bits<IntT>::value;
@@ -42,7 +45,7 @@ class GEC_EMPTY_BASES ScalarMul : protected CRTP<Core, ScalarMul<Core>> {
         }
         for (; i >= 0; --i) {
             for (; j >= 0; --j) {
-                Core::add(GEC_DEST_, GEC_SRC_, GEC_SRC_);
+                Core::add_self(GEC_DEST_, GEC_SRC_);
                 GEC_RELOAD_;
                 if ((IntT(1) << j) & s[i]) {
                     Core::add(GEC_DEST_, GEC_SRC_, b);
@@ -51,9 +54,9 @@ class GEC_EMPTY_BASES ScalarMul : protected CRTP<Core, ScalarMul<Core>> {
             }
             j = Bits - 1;
         }
-        if (!in_dest) {
-            a = ap;
-        }
+        // if (!in_dest) {
+        //     a = ap;
+        // }
 
 #undef GEC_DEST_
 #undef GEC_SRC_

@@ -2,5 +2,13 @@
   "name": "gec",
   "version": "0.1.0",
   "dependencies": [{ "name": "catch2", "version>=": "2.13.8#1" }, "pthreads"],
+  "features": {
+    "bench": {
+      "description": "enable benchmarks",
+      "dependencies": [
+        "openssl"
+      ]
+    }
+  },
   "builtin-baseline": "aebb363eaa0b658beb19cbefdd5aa2f9cbc14f1e"
 }

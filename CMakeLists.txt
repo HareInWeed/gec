@@ -84,4 +84,8 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     if(BUILD_TESTING)
         add_subdirectory(tests)
     endif()
+
+    if(GEC_ENABLE_BENCH)
+        add_subdirectory(bench)
+    endif()
 endif()

@@ -1,0 +1,9 @@
+#pragma once
+#ifndef GEC_BENCH_CONFIGURED_CATCH_H
+#define GEC_BENCH_CONFIGURED_CATCH_H
+
+#define CATCH_CONFIG_FAST_COMPILE
+#define CATCH_CONFIG_ENABLE_BENCHMARKING
+#include <catch2/catch.hpp>
+
+#endif // !GEC_BENCH_CONFIGURED_CATCH_H
